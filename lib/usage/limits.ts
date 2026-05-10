@@ -1,54 +1,135 @@
-import type { Database } from "@/lib/db/types";
+import type { AppPlan, DailyUsageKind } from "@/lib/db/types";
+import {
+  getDailyUsage,
+  getProfile,
+  incrementDailyUsage
+} from "@/lib/db/queries";
+import { toIsoDate } from "@/lib/db/helpers";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-type Plan = Database["public"]["Enums"]["app_plan"];
+type UsageLimit = number | null;
 
-type UsageSummary = {
-  plan: Plan;
+export type UsageSummary = {
+  plan: AppPlan;
+  usageDate: string;
+  marketingGenerations: number;
+  marketingGenerationLimit: UsageLimit;
+  remainingMarketingGenerations: UsageLimit;
   imageGenerations: number;
-  imageGenerationLimit: number;
-  remainingImageGenerations: number;
+  imageGenerationLimit: UsageLimit;
+  remainingImageGenerations: UsageLimit;
 };
 
-const PLAN_IMAGE_LIMITS: Record<Plan, number> = {
-  free: 25,
-  pro: 500,
-  team: 2500
+export type UsageEntitlement =
+  | { allowed: true; usage: UsageSummary }
+  | { allowed: false; usage: UsageSummary; reason: string };
+
+const DAILY_LIMITS: Record<
+  AppPlan,
+  { marketingGenerations: UsageLimit; imageGenerations: UsageLimit }
+> = {
+  free: {
+    marketingGenerations: 5,
+    imageGenerations: 3
+  },
+  pro: {
+    marketingGenerations: 50,
+    imageGenerations: 50
+  },
+  agency: {
+    marketingGenerations: null,
+    imageGenerations: null
+  }
 };
 
-export async function getUsageSummary(userId: string): Promise<UsageSummary> {
+function remaining(limit: UsageLimit, used: number): UsageLimit {
+  return limit === null ? null : Math.max(limit - used, 0);
+}
+
+function usageValue(summary: UsageSummary, kind: DailyUsageKind) {
+  return kind === "marketing_generations"
+    ? summary.marketingGenerations
+    : summary.imageGenerations;
+}
+
+function usageLimit(summary: UsageSummary, kind: DailyUsageKind) {
+  return kind === "marketing_generations"
+    ? summary.marketingGenerationLimit
+    : summary.imageGenerationLimit;
+}
+
+export function getPlanDailyLimits(plan: AppPlan) {
+  return DAILY_LIMITS[plan];
+}
+
+export async function getUsageSummary(
+  userId: string,
+  date = new Date()
+): Promise<UsageSummary> {
   const supabase = createSupabaseServerClient();
-  const { data: profile } = await supabase.from("profiles").select("plan").eq("id", userId).maybeSingle();
-  const { data: usageRows } = await supabase.from("usage_totals_current_month").select("event_type,total_quantity").eq("user_id", userId);
+  const usageDate = toIsoDate(date);
+  const [profile, usage] = await Promise.all([
+    getProfile(supabase, userId),
+    getDailyUsage(supabase, userId, usageDate)
+  ]);
   const plan = profile?.plan ?? "free";
-  const imageGenerations = usageRows?.find((row) => row.event_type === "image_generation")?.total_quantity ?? 0;
-  const imageGenerationLimit = PLAN_IMAGE_LIMITS[plan];
+  const limits = getPlanDailyLimits(plan);
+  const marketingGenerations = usage?.marketing_generations ?? 0;
+  const imageGenerations = usage?.image_generations ?? 0;
 
   return {
     plan,
+    usageDate,
+    marketingGenerations,
+    marketingGenerationLimit: limits.marketingGenerations,
+    remainingMarketingGenerations: remaining(
+      limits.marketingGenerations,
+      marketingGenerations
+    ),
     imageGenerations,
-    imageGenerationLimit,
-    remainingImageGenerations: Math.max(imageGenerationLimit - imageGenerations, 0)
+    imageGenerationLimit: limits.imageGenerations,
+    remainingImageGenerations: remaining(
+      limits.imageGenerations,
+      imageGenerations
+    )
   };
 }
 
-export async function assertCanGenerateImage(userId: string) {
+export async function assertCanUse(
+  userId: string,
+  kind: DailyUsageKind
+): Promise<UsageEntitlement> {
   const usage = await getUsageSummary(userId);
+  const limit = usageLimit(usage, kind);
 
-  if (usage.imageGenerations >= usage.imageGenerationLimit) {
-    return { allowed: false as const, usage };
+  if (limit !== null && usageValue(usage, kind) >= limit) {
+    return {
+      allowed: false,
+      usage,
+      reason:
+        kind === "marketing_generations"
+          ? "Daily marketing generation limit reached"
+          : "Daily image generation limit reached"
+    };
   }
 
-  return { allowed: true as const, usage };
+  return { allowed: true, usage };
 }
 
-export async function recordUsageEvent(userId: string, metadata: Record<string, unknown> = {}) {
+export function assertCanGenerateMarketing(userId: string) {
+  return assertCanUse(userId, "marketing_generations");
+}
+
+export function assertCanGenerateImage(userId: string) {
+  return assertCanUse(userId, "image_generations");
+}
+
+export async function recordSuccessfulUsage(
+  userId: string,
+  kind: DailyUsageKind,
+  quantity = 1
+) {
   const supabase = createSupabaseServerClient();
 
-  await supabase.from("usage_events").insert({
-    user_id: userId,
-    event_type: "image_generation",
-    quantity: 1,
-    metadata
-  });
+  return incrementDailyUsage(supabase, userId, kind, quantity);
 }
