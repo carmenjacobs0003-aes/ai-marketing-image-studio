@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import type { Project } from "@/lib/db/queries";
+import type { BrandKit, Project } from "@/lib/db/queries";
 import type { UsageSummary } from "@/lib/usage/limits";
 
 type StudioCanvasProps = {
   projects: Project[];
+  brandKits: BrandKit[];
   usage: UsageSummary;
 };
 
@@ -20,10 +21,12 @@ type GeneratedImageResponse = {
 
 export function StudioCanvas({
   projects,
+  brandKits,
   usage: initialUsage
 }: StudioCanvasProps) {
   const [prompt, setPrompt] = useState("");
   const [projectId, setProjectId] = useState("");
+  const [brandKitId, setBrandKitId] = useState("");
   const [usage, setUsage] = useState(initialUsage);
   const [image, setImage] = useState<GeneratedImageResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +54,8 @@ export function StudioCanvas({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt,
-          projectId: projectId || undefined
+          projectId: projectId || undefined,
+          brandKitId: brandKitId || undefined
         })
       });
       const payload = await response.json();
@@ -129,6 +133,23 @@ export function StudioCanvas({
               {projects.map((project) => (
                 <option key={project.id} value={project.id}>
                   {project.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block space-y-2 text-sm font-medium">
+            <span>Brand kit</span>
+            <select
+              className="w-full rounded-2xl border border-white/10 bg-black px-4 py-3 text-white outline-none ring-cyan-300 transition hover:border-cyan-300/40 hover:shadow-lg hover:shadow-cyan-500/10 focus:border-cyan-300/80 focus:ring-2"
+              disabled={isLoading || limitReached}
+              onChange={(event) => setBrandKitId(event.target.value)}
+              value={brandKitId}
+            >
+              <option value="">Auto: project/default brand kit</option>
+              {brandKits.map((brandKit) => (
+                <option key={brandKit.id} value={brandKit.id}>
+                  {brandKit.name}
+                  {brandKit.is_default ? " · default" : ""}
                 </option>
               ))}
             </select>

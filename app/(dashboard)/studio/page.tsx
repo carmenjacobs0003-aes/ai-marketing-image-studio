@@ -1,5 +1,5 @@
 import { requireUser } from "@/lib/auth/session";
-import { listProjects } from "@/lib/db/queries";
+import { listBrandKits, listProjects } from "@/lib/db/queries";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getUsageSummary } from "@/lib/usage/limits";
 import { StudioCanvas } from "@/components/studio/studio-canvas";
@@ -7,10 +7,13 @@ import { StudioCanvas } from "@/components/studio/studio-canvas";
 export default async function StudioPage() {
   const user = await requireUser("/studio");
   const supabase = createSupabaseServerClient();
-  const [usage, projects] = await Promise.all([
+  const [usage, projects, brandKits] = await Promise.all([
     getUsageSummary(user.id),
-    listProjects(supabase, user.id)
+    listProjects(supabase, user.id),
+    listBrandKits(supabase, user.id)
   ]);
 
-  return <StudioCanvas projects={projects} usage={usage} />;
+  return (
+    <StudioCanvas brandKits={brandKits} projects={projects} usage={usage} />
+  );
 }

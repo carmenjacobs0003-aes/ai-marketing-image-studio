@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth/session";
+import { injectBrandIntoImagePrompt } from "@/lib/brand/prompt";
 import {
   createMarketingImage,
   getGeneratedImageBase64,
@@ -89,20 +90,26 @@ export async function POST(request: NextRequest) {
     listBrandKits(supabase, user.id)
   ]);
 
-  if (
-    payload.projectId &&
-    !projects.some((project) => project.id === payload.projectId)
-  ) {
+  const project = payload.projectId
+    ? projects.find((item) => item.id === payload.projectId)
+    : null;
+
+  if (payload.projectId && !project) {
     return NextResponse.json(
       { error: "Select a valid project before saving this image." },
       { status: 400 }
     );
   }
 
-  if (
-    payload.brandKitId &&
-    !brandKits.some((brandKit) => brandKit.id === payload.brandKitId)
-  ) {
+  const selectedBrandKitId =
+    payload.brandKitId ??
+    project?.brand_kit_id ??
+    brandKits.find((item) => item.is_default)?.id;
+  const brandKit = selectedBrandKitId
+    ? brandKits.find((item) => item.id === selectedBrandKitId)
+    : null;
+
+  if (selectedBrandKitId && !brandKit) {
     return NextResponse.json(
       { error: "Select a valid brand kit before generating this image." },
       { status: 400 }
@@ -125,7 +132,7 @@ export async function POST(request: NextRequest) {
   const generation = await createImageGeneration(supabase, {
     user_id: user.id,
     project_id: payload.projectId ?? null,
-    brand_kit_id: payload.brandKitId ?? null,
+    brand_kit_id: brandKit?.id ?? null,
     prompt: payload.prompt,
     model: env.OPENAI_IMAGE_MODEL,
     status: "processing",
@@ -144,8 +151,9 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const brandedPrompt = injectBrandIntoImagePrompt(payload.prompt, brandKit);
     const image = await createMarketingImage({
-      prompt: payload.prompt,
+      prompt: brandedPrompt,
       size: payload.size,
       quality: payload.quality
     });
@@ -163,7 +171,8 @@ export async function POST(request: NextRequest) {
         size: payload.size,
         quality: payload.quality,
         openai_created: image.created ?? null,
-        revised_prompt: image.data?.[0]?.revised_prompt ?? null
+        revised_prompt: image.data?.[0]?.revised_prompt ?? null,
+        brand_kit_id: brandKit?.id ?? null
       }
     });
     await recordSuccessfulUsage(user.id, "image_generations");
