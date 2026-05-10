@@ -128,11 +128,11 @@ export function BrandKitManager({ brandKits }: BrandKitManagerProps) {
   return (
     <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
       <form
-        className="space-y-4 rounded-3xl border border-cyan-300/20 bg-black/80 p-5 shadow-2xl shadow-cyan-500/10 ring-1 ring-white/10"
+        className="space-y-4 glass-card p-5"
         onSubmit={onSubmit}
       >
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-300">
+          <p className="eyebrow">
             Brand kit
           </p>
           <h2 className="mt-2 text-2xl font-black">
@@ -221,7 +221,7 @@ export function BrandKitManager({ brandKits }: BrandKitManagerProps) {
       <section className="grid gap-4 md:grid-cols-2">
         {items.map((brandKit) => (
           <article
-            className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-cyan-950/20 transition hover:border-cyan-300/50"
+            className="glass-card glass-hover p-5"
             key={brandKit.id}
           >
             <div className="flex items-start justify-between gap-3">

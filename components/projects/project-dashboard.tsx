@@ -111,11 +111,11 @@ export function ProjectDashboard({
     <div className="space-y-8">
       <section className="grid gap-6 lg:grid-cols-[420px_1fr]">
         <form
-          className="space-y-4 rounded-3xl border border-cyan-300/20 bg-black/80 p-5 shadow-2xl shadow-cyan-500/10 ring-1 ring-white/10"
+          className="space-y-4 glass-card p-5"
           onSubmit={onSubmit}
         >
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-300">
+            <p className="eyebrow">
               Saved projects
             </p>
             <h2 className="mt-2 text-2xl font-black">
@@ -209,7 +209,7 @@ export function ProjectDashboard({
           {items.length ? (
             items.map((project) => (
               <article
-                className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-cyan-950/20 transition hover:border-cyan-300/50 hover:shadow-cyan-500/20"
+                className="glass-card glass-hover p-5"
                 key={project.id}
               >
                 <div className="flex items-start justify-between gap-3">
@@ -258,14 +258,14 @@ export function ProjectDashboard({
               </article>
             ))
           ) : (
-            <p className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 text-slate-300 md:col-span-2">
+            <p className="glass-card p-6 text-slate-300 md:col-span-2">
               No projects yet. Save your first campaign workspace.
             </p>
           )}
         </div>
       </section>
-      <section className="rounded-3xl border border-cyan-300/20 bg-black/80 p-5 shadow-2xl shadow-cyan-500/10 ring-1 ring-white/10">
-        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-300">
+      <section className="glass-card p-5">
+        <p className="eyebrow">
           Project history
         </p>
         <h2 className="mt-2 text-2xl font-black">Saved content timeline</h2>
@@ -306,7 +306,7 @@ export function ProjectDashboard({
 
 function HistoryCard({ title, meta }: { title: string; meta: string }) {
   return (
-    <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+    <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition hover:border-cyan-300/40">
       <p className="line-clamp-2 font-medium text-white">{title}</p>
       <p className="mt-2 text-xs capitalize text-slate-400">{meta}</p>
     </article>

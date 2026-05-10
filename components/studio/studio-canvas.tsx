@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState, type FormEvent } from "react";
 import type { BrandKit, Project } from "@/lib/db/queries";
 import type { UsageSummary } from "@/lib/usage/limits";
@@ -83,10 +84,10 @@ export function StudioCanvas({
   }
 
   return (
-    <main className="grid gap-6 p-4 text-white sm:p-6 lg:grid-cols-[360px_1fr] lg:p-8">
-      <aside className="space-y-6 rounded-3xl border border-cyan-300/20 bg-black/80 p-6 shadow-2xl shadow-cyan-500/10 ring-1 ring-white/10 backdrop-blur">
+    <main className="page-shell grid gap-6 lg:grid-cols-[360px_1fr]">
+      <aside className="glass-card space-y-6 p-6">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-300">
+          <p className="eyebrow">
             Studio
           </p>
           <h1 className="mt-2 text-3xl font-black tracking-tight">
@@ -165,7 +166,7 @@ export function StudioCanvas({
             </p>
           ) : null}
           <button
-            className="w-full rounded-2xl bg-cyan-300 px-4 py-3 font-semibold text-slate-950 transition hover:bg-cyan-200 hover:shadow-[0_0_28px_rgba(103,232,249,0.55)] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:shadow-none"
+            className="neon-button w-full"
             disabled={isLoading || limitReached || prompt.trim().length < 10}
             type="submit"
           >
@@ -173,7 +174,7 @@ export function StudioCanvas({
           </button>
         </form>
       </aside>
-      <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-cyan-950/20 sm:p-6">
+      <section className="glass-card p-4 shadow-2xl shadow-cyan-950/20 sm:p-6">
         <div className="flex h-full min-h-[460px] items-center justify-center rounded-2xl border border-dashed border-cyan-300/30 bg-black p-4 text-center text-slate-300">
           {isLoading ? (
             <div className="w-full max-w-xl animate-pulse space-y-4">
@@ -183,11 +184,16 @@ export function StudioCanvas({
             </div>
           ) : image?.signedUrl ? (
             <article className="w-full max-w-3xl overflow-hidden rounded-3xl border border-cyan-300/20 bg-black shadow-2xl shadow-cyan-500/20">
-              <img
-                alt="Generated marketing asset"
-                className="max-h-[640px] w-full object-contain"
-                src={image.signedUrl}
-              />
+              <div className="relative aspect-square max-h-[640px] w-full">
+                <Image
+                  alt="Generated marketing asset"
+                  className="object-contain"
+                  fill
+                  sizes="(min-width: 1024px) 60vw, 100vw"
+                  src={image.signedUrl}
+                  unoptimized
+                />
+              </div>
               <div className="space-y-4 border-t border-white/10 p-4 text-left sm:flex sm:items-center sm:justify-between sm:gap-4 sm:space-y-0">
                 <div>
                   <p className="text-sm font-semibold text-white">
@@ -199,7 +205,7 @@ export function StudioCanvas({
                 </div>
                 {image.downloadUrl ? (
                   <a
-                    className="inline-flex w-full justify-center rounded-xl border border-cyan-300/40 px-4 py-2 text-sm font-semibold text-cyan-200 transition hover:bg-cyan-300 hover:text-slate-950 hover:shadow-[0_0_22px_rgba(103,232,249,0.5)] sm:w-auto"
+                    className="inline-flex w-full justify-center ghost-button px-4 py-2 text-sm sm:w-auto"
                     download
                     href={image.downloadUrl}
                   >

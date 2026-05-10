@@ -20,7 +20,7 @@ export function PricingCards({ currentPlan }: { currentPlan?: AppPlan }) {
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300 to-transparent" />
             <div className="absolute -right-20 -top-24 h-44 w-44 rounded-full bg-cyan-300/20 blur-3xl" />
             {plan.highlighted ? (
-              <span className="rounded-full border border-cyan-300/50 bg-cyan-300/10 px-3 py-1 text-xs font-black uppercase tracking-[0.2em] text-cyan-100">
+              <span className="premium-badge">
                 Best value
               </span>
             ) : null}
@@ -59,21 +59,21 @@ export function PricingCards({ currentPlan }: { currentPlan?: AppPlan }) {
             <div className="mt-8">
               {plan.id === "free" ? (
                 <Link
-                  className="inline-flex w-full justify-center rounded-xl border border-cyan-300/30 px-4 py-3 font-semibold text-cyan-100 transition hover:bg-cyan-300/10"
+                  className="ghost-button w-full"
                   href="/signup"
                 >
                   Start free
                 </Link>
               ) : isCurrent ? (
                 <Link
-                  className="inline-flex w-full justify-center rounded-xl border border-cyan-300/50 bg-cyan-300/10 px-4 py-3 font-semibold text-cyan-100"
+                  className="ghost-button w-full border-cyan-300/60 bg-cyan-300/10"
                   href="/billing"
                 >
                   Current plan
                 </Link>
               ) : (
                 <UpgradeButton
-                  className="w-full rounded-xl bg-cyan-300 px-4 py-3 font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="neon-button w-full"
                   plan={plan.id}
                 >
                   Upgrade with PayPal

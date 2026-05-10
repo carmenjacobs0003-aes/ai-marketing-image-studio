@@ -56,10 +56,10 @@ export default async function BillingPage({
   const currentPlan = getBillingPlan(profile?.plan ?? "free");
 
   return (
-    <main className="p-4 text-white sm:p-6 lg:p-8">
-      <div className="mx-auto max-w-7xl space-y-8">
-        <header className="rounded-3xl border border-cyan-300/20 bg-white/[0.04] p-6 shadow-[0_0_50px_rgba(34,211,238,0.16)] md:p-8">
-          <p className="text-sm font-semibold uppercase tracking-[0.35em] text-cyan-300">
+    <main className="page-shell">
+      <div className="page-container">
+        <header className="page-hero md:p-8">
+          <p className="eyebrow">
             Billing dashboard
           </p>
           <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -73,7 +73,7 @@ export default async function BillingPage({
               </p>
             </div>
             <Link
-              className="rounded-xl bg-cyan-300 px-4 py-3 text-center font-semibold text-slate-950 transition hover:bg-cyan-200"
+              className="neon-button"
               href="/pricing"
             >
               Compare plans
@@ -90,25 +90,25 @@ export default async function BillingPage({
         ) : null}
 
         <section className="grid gap-4 md:grid-cols-4">
-          <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+          <article className="metric-card">
             <p className="text-sm text-slate-400">Current plan</p>
             <p className="mt-2 text-3xl font-black capitalize text-cyan-300">
               {profile?.plan ?? "free"}
             </p>
           </article>
-          <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+          <article className="metric-card">
             <p className="text-sm text-slate-400">Subscription status</p>
             <p className="mt-2 text-2xl font-black capitalize text-white">
               {(profile?.subscription_status ?? "free").replaceAll("_", " ")}
             </p>
           </article>
-          <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+          <article className="metric-card">
             <p className="text-sm text-slate-400">Next billing date</p>
             <p className="mt-2 text-2xl font-black text-white">
               {formatDate(profile?.subscription_current_period_end)}
             </p>
           </article>
-          <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+          <article className="metric-card">
             <p className="text-sm text-slate-400">PayPal subscription</p>
             <p className="mt-2 truncate text-sm font-semibold text-cyan-100">
               {profile?.paypal_subscription_id ?? "Not connected"}
@@ -133,7 +133,7 @@ export default async function BillingPage({
               <CancelSubscriptionButton />
             ) : (
               <Link
-                className="rounded-xl border border-cyan-300/40 px-4 py-3 text-center font-semibold text-cyan-100 transition hover:bg-cyan-300/10"
+                className="ghost-button"
                 href="/pricing"
               >
                 Upgrade plan

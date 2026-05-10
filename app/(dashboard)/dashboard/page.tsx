@@ -20,11 +20,11 @@ export default async function DashboardPage() {
     ]);
 
   return (
-    <main className="p-4 text-white sm:p-6 lg:p-8">
-      <div className="mx-auto max-w-6xl space-y-8">
-        <header className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-cyan-950/20 md:flex-row md:items-center md:justify-between md:p-8">
+    <main className="page-shell">
+      <div className="page-container max-w-6xl">
+        <header className="flex flex-col gap-4 page-hero md:flex-row md:items-center md:justify-between md:p-8">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-300">
+            <p className="eyebrow">
               Dashboard
             </p>
             <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
@@ -32,33 +32,33 @@ export default async function DashboardPage() {
             </h1>
           </div>
           <Link
-            className="rounded-xl bg-cyan-300 px-4 py-3 text-center font-semibold text-slate-950 transition hover:bg-cyan-200"
+            className="neon-button"
             href="/studio"
           >
             Open studio
           </Link>
         </header>
         <section className="grid gap-4 md:grid-cols-5">
-          <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-6">
+          <article className="metric-card">
             <p className="text-sm text-slate-300">Plan</p>
             <p className="mt-2 text-3xl font-black capitalize text-cyan-300">
               {usage.plan}
             </p>
           </article>
-          <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-6">
+          <article className="metric-card">
             <p className="text-sm text-slate-300">Daily images</p>
             <p className="mt-2 text-3xl font-black">
               {usage.imageGenerations}/{usage.imageGenerationLimit ?? "∞"}
             </p>
           </article>
-          <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-6">
+          <article className="metric-card">
             <p className="text-sm text-slate-300">Daily marketing</p>
             <p className="mt-2 text-3xl font-black">
               {usage.marketingGenerations}/
               {usage.marketingGenerationLimit ?? "∞"}
             </p>
           </article>
-          <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-6">
+          <article className="metric-card">
             <p className="text-sm text-slate-300">Projects</p>
             <p className="mt-2 text-3xl font-black">{projectCount}</p>
           </article>
@@ -73,7 +73,7 @@ export default async function DashboardPage() {
           </article>
         </section>
         <section className="grid gap-6 lg:grid-cols-2">
-          <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
+          <div className="glass-card p-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="text-2xl font-black">Recent images</h2>
               <Link
@@ -98,13 +98,13 @@ export default async function DashboardPage() {
                   </div>
                 ))
               ) : (
-                <p className="rounded-xl border border-dashed border-white/10 p-6 text-slate-300">
-                  No images generated yet.
+                <p className="empty-state">
+                  No images generated yet. Start with the Studio to populate this cinematic gallery.
                 </p>
               )}
             </div>
           </div>
-          <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
+          <div className="glass-card p-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="text-2xl font-black">Recent marketing</h2>
               <Link
@@ -129,7 +129,7 @@ export default async function DashboardPage() {
                   </div>
                 ))
               ) : (
-                <p className="rounded-xl border border-dashed border-white/10 p-6 text-slate-300">
+                <p className="empty-state">
                   No marketing copy generated yet.
                 </p>
               )}

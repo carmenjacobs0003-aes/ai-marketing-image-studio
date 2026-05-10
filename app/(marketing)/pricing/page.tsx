@@ -14,7 +14,7 @@ export default async function PricingPage() {
     <main className="min-h-screen bg-black px-4 py-16 text-white sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl space-y-10">
         <div className="mx-auto max-w-3xl text-center">
-          <p className="text-sm font-semibold uppercase tracking-[0.35em] text-cyan-300">
+          <p className="eyebrow">
             PayPal subscriptions
           </p>
           <h1 className="mt-4 text-4xl font-black tracking-tight sm:text-6xl">
@@ -26,13 +26,13 @@ export default async function PricingPage() {
           </p>
           <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
             <Link
-              className="rounded-full bg-cyan-300 px-6 py-3 font-semibold text-slate-950 transition hover:bg-cyan-200"
+              className="neon-button"
               href={user ? "/billing" : "/signup"}
             >
               {user ? "Open billing dashboard" : "Create account"}
             </Link>
             <Link
-              className="rounded-full border border-cyan-300/40 px-6 py-3 font-semibold text-cyan-100 transition hover:bg-cyan-300/10"
+              className="ghost-button"
               href="/login"
             >
               Sign in
@@ -40,7 +40,7 @@ export default async function PricingPage() {
           </div>
         </div>
         <PricingCards currentPlan={profile?.plan} />
-        <section className="rounded-3xl border border-cyan-300/20 bg-white/[0.04] p-6 shadow-[0_0_40px_rgba(34,211,238,0.12)] md:p-8">
+        <section className="glass-card p-6 md:p-8">
           <div className="grid gap-6 md:grid-cols-3">
             <div>
               <h2 className="text-xl font-black text-cyan-300">

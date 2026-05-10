@@ -2,12 +2,15 @@
 
 export default function ErrorPage({ error, reset }: { error: Error; reset: () => void }) {
   return (
-    <main className="p-8">
-      <h2 className="text-xl font-semibold">Something went wrong</h2>
-      <p className="mt-2 text-slate-300">{error.message}</p>
-      <button className="mt-4 rounded bg-brand-500 px-4 py-2" onClick={reset}>
-        Try again
-      </button>
+    <main className="aurora-shell flex min-h-screen items-center justify-center px-6 text-white">
+      <section className="glass-card max-w-xl p-8 text-center">
+        <p className="eyebrow">System alert</p>
+        <h2 className="mt-3 text-3xl font-black">Something went wrong</h2>
+        <p className="mt-3 text-slate-300">{error.message}</p>
+        <button className="neon-button mt-6" onClick={reset}>
+          Try again
+        </button>
+      </section>
     </main>
   );
 }
