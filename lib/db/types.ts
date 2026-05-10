@@ -47,6 +47,8 @@ export type Database = {
           user_id: string;
           name: string;
           voice: string | null;
+          tone: string | null;
+          logo_url: string | null;
           colors: string[];
           fonts: string[];
           products: Json;
@@ -60,6 +62,8 @@ export type Database = {
           user_id: string;
           name: string;
           voice?: string | null;
+          tone?: string | null;
+          logo_url?: string | null;
           colors?: string[];
           fonts?: string[];
           products?: Json;
@@ -71,6 +75,8 @@ export type Database = {
         Update: {
           name?: string;
           voice?: string | null;
+          tone?: string | null;
+          logo_url?: string | null;
           colors?: string[];
           fonts?: string[];
           products?: Json;

@@ -18,6 +18,8 @@ create table public.brand_kits (
   user_id uuid not null references auth.users(id) on delete cascade,
   name text not null check (char_length(name) between 1 and 120),
   voice text,
+  tone text,
+  logo_url text,
   colors text[] not null default '{}',
   fonts text[] not null default '{}',
   products jsonb not null default '[]'::jsonb,

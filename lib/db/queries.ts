@@ -63,6 +63,25 @@ export async function listBrandKits(
   return requireDatabaseData(data, error, "Unable to load brand kits");
 }
 
+export async function clearDefaultBrandKits(
+  supabase: TypedSupabaseClient,
+  userId: string,
+  exceptId?: string
+) {
+  let query = supabase
+    .from("brand_kits")
+    .update({ is_default: false })
+    .eq("user_id", userId);
+
+  if (exceptId) {
+    query = query.neq("id", exceptId);
+  }
+
+  const { error } = await query;
+
+  return requireMutation(error, "Unable to update default brand kits");
+}
+
 export async function createBrandKit(
   supabase: TypedSupabaseClient,
   brandKit: Inserts<"brand_kits">
@@ -93,6 +112,20 @@ export async function updateBrandKit(
   return requireDatabaseData(data, error, "Unable to update brand kit");
 }
 
+export async function deleteBrandKit(
+  supabase: TypedSupabaseClient,
+  id: string,
+  userId: string
+) {
+  const { error } = await supabase
+    .from("brand_kits")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", userId);
+
+  return requireMutation(error, "Unable to delete brand kit");
+}
+
 export async function listProjects(
   supabase: TypedSupabaseClient,
   userId: string
@@ -117,6 +150,37 @@ export async function createProject(
     .single();
 
   return requireDatabaseData(data, error, "Unable to create project");
+}
+
+export async function updateProject(
+  supabase: TypedSupabaseClient,
+  id: string,
+  userId: string,
+  updates: Updates<"projects">
+) {
+  const { data, error } = await supabase
+    .from("projects")
+    .update(updates)
+    .eq("id", id)
+    .eq("user_id", userId)
+    .select("*")
+    .single();
+
+  return requireDatabaseData(data, error, "Unable to update project");
+}
+
+export async function deleteProject(
+  supabase: TypedSupabaseClient,
+  id: string,
+  userId: string
+) {
+  const { error } = await supabase
+    .from("projects")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", userId);
+
+  return requireMutation(error, "Unable to delete project");
 }
 
 export async function countProjects(
@@ -234,6 +298,46 @@ export async function listMarketingGenerations(
     data,
     error,
     "Unable to load marketing generations"
+  );
+}
+
+export async function listProjectMarketingGenerations(
+  supabase: TypedSupabaseClient,
+  userId: string,
+  limit = 24
+): Promise<MarketingGeneration[]> {
+  const { data, error } = await supabase
+    .from("marketing_generations")
+    .select("*")
+    .eq("user_id", userId)
+    .not("project_id", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  return requireDatabaseData(
+    data,
+    error,
+    "Unable to load project marketing history"
+  );
+}
+
+export async function listProjectImageGenerations(
+  supabase: TypedSupabaseClient,
+  userId: string,
+  limit = 24
+): Promise<ImageGeneration[]> {
+  const { data, error } = await supabase
+    .from("image_generations")
+    .select("*")
+    .eq("user_id", userId)
+    .not("project_id", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  return requireDatabaseData(
+    data,
+    error,
+    "Unable to load project image history"
   );
 }
 

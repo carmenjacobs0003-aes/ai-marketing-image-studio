@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState, type FormEvent } from "react";
-import type { MarketingGeneration } from "@/lib/db/queries";
+import type { BrandKit, MarketingGeneration, Project } from "@/lib/db/queries";
+import { marketingTemplates } from "@/lib/templates/catalog";
 import type { UsageSummary } from "@/lib/usage/limits";
 import {
   marketingOutputSchema,
@@ -12,6 +13,8 @@ import {
 type MarketingGeneratorProps = {
   usage: UsageSummary;
   generations: MarketingGeneration[];
+  projects: Project[];
+  brandKits: BrandKit[];
 };
 
 type MarketingGeneratePayload =
@@ -132,14 +135,22 @@ function MarketingOutputView({ output }: { output: MarketingOutput }) {
 
 export function MarketingGenerator({
   usage: initialUsage,
-  generations: initialGenerations
+  generations: initialGenerations,
+  projects,
+  brandKits
 }: MarketingGeneratorProps) {
   const [prompt, setPrompt] = useState("");
   const [contentType, setContentType] = useState<MarketingContentType>(
     "complete_marketing_pack"
   );
+  const [projectId, setProjectId] = useState("");
+  const [brandKitId, setBrandKitId] = useState("");
+  const [templateId, setTemplateId] = useState("");
   const [usage, setUsage] = useState(initialUsage);
   const [generations, setGenerations] = useState(initialGenerations);
+  const [savingGenerationId, setSavingGenerationId] = useState<string | null>(
+    null
+  );
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -159,6 +170,50 @@ export function MarketingGenerator({
     }
   }
 
+  async function saveGenerationToProject(
+    generationId: string,
+    nextProjectId: string | null
+  ) {
+    setSavingGenerationId(generationId);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        `/api/marketing/${generationId}/save-to-project`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ projectId: nextProjectId })
+        }
+      );
+      const payload = await response.json();
+
+      if (!response.ok) {
+        setError(
+          payload.error ?? "Unable to save marketing content to project."
+        );
+        return;
+      }
+
+      setGenerations((current) =>
+        current.map((item) =>
+          item.id === generationId
+            ? { ...item, project_id: payload.projectId }
+            : item
+        )
+      );
+      setSuccessMessage("Marketing content project updated.");
+    } catch (saveError) {
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : "Unable to save marketing content to project."
+      );
+    } finally {
+      setSavingGenerationId(null);
+    }
+  }
+
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
@@ -169,7 +224,13 @@ export function MarketingGenerator({
       const response = await fetch("/api/marketing/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, contentType })
+        body: JSON.stringify({
+          prompt,
+          contentType,
+          projectId: projectId || undefined,
+          brandKitId: brandKitId || undefined,
+          templateId: templateId || undefined
+        })
       });
       const payload = (await response.json()) as MarketingGeneratePayload;
 
@@ -190,7 +251,9 @@ export function MarketingGenerator({
           [payload.generation, ...current].slice(0, 8)
         );
         setPrompt("");
-        setSuccessMessage("Marketing content generated and saved.");
+        setSuccessMessage(
+          "Marketing content generated and saved to your project history."
+        );
         await refreshUsage();
       }
     } catch (generationError) {
@@ -254,6 +317,63 @@ export function MarketingGenerator({
               <span className="block text-xs text-slate-400">
                 {selectedContentType?.description}
               </span>
+            </label>
+            <label className="block space-y-2 text-sm font-medium">
+              <span>Reusable template</span>
+              <select
+                className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 outline-none ring-cyan-300 focus:border-cyan-300/70 focus:ring-2"
+                disabled={isLoading || limitReached}
+                onChange={(event) => {
+                  const selected = marketingTemplates.find(
+                    (template) => template.id === event.target.value
+                  );
+                  setTemplateId(event.target.value);
+                  if (selected) {
+                    setContentType(selected.contentType);
+                  }
+                }}
+                value={templateId}
+              >
+                <option value="">No template</option>
+                {marketingTemplates.map((template) => (
+                  <option key={template.id} value={template.id}>
+                    {template.name} · {template.category}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block space-y-2 text-sm font-medium">
+              <span>Save to project</span>
+              <select
+                className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 outline-none ring-cyan-300 focus:border-cyan-300/70 focus:ring-2"
+                disabled={isLoading || limitReached}
+                onChange={(event) => setProjectId(event.target.value)}
+                value={projectId}
+              >
+                <option value="">Marketing library only</option>
+                {projects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block space-y-2 text-sm font-medium">
+              <span>Brand kit</span>
+              <select
+                className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 outline-none ring-cyan-300 focus:border-cyan-300/70 focus:ring-2"
+                disabled={isLoading || limitReached}
+                onChange={(event) => setBrandKitId(event.target.value)}
+                value={brandKitId}
+              >
+                <option value="">Auto: project/default brand kit</option>
+                {brandKits.map((brandKit) => (
+                  <option key={brandKit.id} value={brandKit.id}>
+                    {brandKit.name}
+                    {brandKit.is_default ? " · default" : ""}
+                  </option>
+                ))}
+              </select>
             </label>
             <label className="block space-y-2 text-sm font-medium">
               <span>Brief</span>
@@ -327,6 +447,29 @@ export function MarketingGenerator({
                   <p className="mt-3 text-sm text-slate-300">
                     {generation.prompt}
                   </p>
+                  <label className="mt-4 block space-y-2 text-sm">
+                    <span className="text-slate-300">
+                      Save content to project
+                    </span>
+                    <select
+                      className="w-full rounded-xl border border-white/10 bg-black px-3 py-2 text-white outline-none ring-cyan-300 transition focus:border-cyan-300/80 focus:ring-2"
+                      disabled={savingGenerationId === generation.id}
+                      onChange={(event) =>
+                        saveGenerationToProject(
+                          generation.id,
+                          event.target.value || null
+                        )
+                      }
+                      value={generation.project_id ?? ""}
+                    >
+                      <option value="">Marketing library only</option>
+                      {projects.map((project) => (
+                        <option key={project.id} value={project.id}>
+                          {project.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                   {output ? (
                     <MarketingOutputView output={output} />
                   ) : (

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth/session";
+import { buildBrandPromptContext } from "@/lib/brand/prompt";
 import {
   createMarketingGeneration,
   getDailyUsage,
@@ -14,6 +15,7 @@ import {
   getMarketingModelName,
   moderateMarketingInput
 } from "@/lib/openai/marketing";
+import { getMarketingTemplate } from "@/lib/templates/catalog";
 import { marketingContentTypeSchema } from "@/types/marketing";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { TypedSupabaseClient } from "@/lib/db/helpers";
@@ -26,7 +28,8 @@ const requestSchema = z.object({
   prompt: z.string().trim().min(10).max(4000),
   contentType: marketingContentTypeSchema.default("complete_marketing_pack"),
   projectId: z.string().uuid().optional(),
-  brandKitId: z.string().uuid().optional()
+  brandKitId: z.string().uuid().optional(),
+  templateId: z.string().trim().optional()
 });
 
 type MarketingGenerateResponse =
@@ -84,33 +87,43 @@ export async function POST(request: NextRequest) {
   const supabase =
     createSupabaseServerClient() as unknown as TypedSupabaseClient;
 
-  if (payload.projectId) {
-    const projects = (await listProjects(supabase, user.id)) as Project[];
-    const project = projects.find((item) => item.id === payload.projectId);
+  const [projects, brandKits] = (await Promise.all([
+    listProjects(supabase, user.id),
+    listBrandKits(supabase, user.id)
+  ])) as [Project[], BrandKit[]];
+  const project = payload.projectId
+    ? projects.find((item) => item.id === payload.projectId)
+    : null;
 
-    if (!project) {
-      return NextResponse.json<MarketingGenerateResponse>(
-        { error: "Project not found" },
-        { status: 404 }
-      );
-    }
+  if (payload.projectId && !project) {
+    return NextResponse.json<MarketingGenerateResponse>(
+      { error: "Project not found" },
+      { status: 404 }
+    );
   }
 
-  let brandContext: { voice: string | null; guidelines: string | null } | null =
-    null;
+  const selectedBrandKitId =
+    payload.brandKitId ??
+    project?.brand_kit_id ??
+    brandKits.find((item) => item.is_default)?.id;
+  const brandKit = selectedBrandKitId
+    ? brandKits.find((item) => item.id === selectedBrandKitId)
+    : null;
 
-  if (payload.brandKitId) {
-    const brandKits = (await listBrandKits(supabase, user.id)) as BrandKit[];
-    const brandKit = brandKits.find((item) => item.id === payload.brandKitId);
+  if (selectedBrandKitId && !brandKit) {
+    return NextResponse.json<MarketingGenerateResponse>(
+      { error: "Brand kit not found" },
+      { status: 404 }
+    );
+  }
 
-    if (!brandKit) {
-      return NextResponse.json<MarketingGenerateResponse>(
-        { error: "Brand kit not found" },
-        { status: 404 }
-      );
-    }
+  const template = getMarketingTemplate(payload.templateId);
 
-    brandContext = { voice: brandKit.voice, guidelines: brandKit.guidelines };
+  if (payload.templateId && !template) {
+    return NextResponse.json<MarketingGenerateResponse>(
+      { error: "Template not found" },
+      { status: 404 }
+    );
   }
 
   try {
@@ -130,14 +143,14 @@ export async function POST(request: NextRequest) {
     const copy = await createMarketingCopy({
       prompt: payload.prompt,
       contentType: payload.contentType,
-      brandVoice: brandContext?.voice,
-      guidelines: brandContext?.guidelines
+      brandContext: buildBrandPromptContext(brandKit),
+      templateInstruction: template?.prompt
     });
 
     const generation = await createMarketingGeneration(supabase, {
       user_id: user.id,
       project_id: payload.projectId ?? null,
-      brand_kit_id: payload.brandKitId ?? null,
+      brand_kit_id: brandKit?.id ?? null,
       prompt: payload.prompt,
       content_type: payload.contentType,
       model: getMarketingModelName(),
@@ -147,7 +160,9 @@ export async function POST(request: NextRequest) {
         openai_id: copy.raw.id,
         model: copy.model,
         moderation_id: moderation.moderationId,
-        moderation_model: moderation.model
+        moderation_model: moderation.model,
+        template_id: template?.id ?? null,
+        template_name: template?.name ?? null
       }
     });
 

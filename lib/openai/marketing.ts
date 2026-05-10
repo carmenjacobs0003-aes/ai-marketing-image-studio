@@ -12,8 +12,8 @@ export const MARKETING_MODERATION_MODEL = "omni-moderation-latest";
 export type MarketingCopyInput = {
   prompt: string;
   contentType: MarketingContentType;
-  brandVoice?: string | null;
-  guidelines?: string | null;
+  brandContext?: string | null;
+  templateInstruction?: string | null;
 };
 
 export type MarketingModerationResult = {
@@ -86,8 +86,8 @@ export async function moderateMarketingInput(
 export async function createMarketingCopy({
   prompt,
   contentType,
-  brandVoice,
-  guidelines
+  brandContext,
+  templateInstruction
 }: MarketingCopyInput) {
   const openai = createOpenAIClient();
   const response = await openai.chat.completions.create({
@@ -107,8 +107,13 @@ export async function createMarketingCopy({
           "socialMediaPosts must include at least LinkedIn, X, and Instagram variants with platform, post, callToAction, and hashtags.",
           "emailOutreach must include subjectLines, previewText, body, callToAction, and followUp.",
           "seoBlogContent must include title, metaDescription, slug, keywords, outline, intro, and callToAction.",
-          brandVoice ? `Brand voice: ${brandVoice}` : null,
-          guidelines ? `Brand guidelines: ${guidelines}` : null,
+          templateInstruction
+            ? `Reusable template instructions: ${templateInstruction}`
+            : null,
+          brandContext
+            ? `Saved brand kit context:
+${brandContext}`
+            : null,
           `Brief: ${prompt}`
         ]
           .filter(Boolean)
