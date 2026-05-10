@@ -10,6 +10,7 @@ export type MarketingTemplate = {
   contentType: MarketingContentType;
   prompt: string;
   channels: string[];
+  premium?: boolean;
 };
 
 export const marketingTemplates: MarketingTemplate[] = [
@@ -26,6 +27,7 @@ export const marketingTemplates: MarketingTemplate[] = [
   },
   {
     id: "social-founder-led",
+    premium: true,
     category: "social",
     name: "Founder-led social",
     description:
@@ -47,6 +49,7 @@ export const marketingTemplates: MarketingTemplate[] = [
   },
   {
     id: "email-winback",
+    premium: true,
     category: "email",
     name: "Win-back email",
     description:
@@ -58,6 +61,7 @@ export const marketingTemplates: MarketingTemplate[] = [
   },
   {
     id: "seo-comparison",
+    premium: true,
     category: "seo",
     name: "SEO comparison article",
     description: "Search-ready comparison content for high-intent buyers.",
@@ -68,6 +72,7 @@ export const marketingTemplates: MarketingTemplate[] = [
   },
   {
     id: "seo-how-to-guide",
+    premium: true,
     category: "seo",
     name: "SEO how-to guide",
     description: "Educational guide that captures problem-aware search demand.",
@@ -78,6 +83,7 @@ export const marketingTemplates: MarketingTemplate[] = [
   },
   {
     id: "industry-saas",
+    premium: true,
     category: "industry",
     name: "B2B SaaS preset",
     description:
@@ -89,6 +95,7 @@ export const marketingTemplates: MarketingTemplate[] = [
   },
   {
     id: "industry-ecommerce",
+    premium: true,
     category: "industry",
     name: "Ecommerce preset",
     description:
@@ -100,6 +107,7 @@ export const marketingTemplates: MarketingTemplate[] = [
   },
   {
     id: "industry-local-services",
+    premium: true,
     category: "industry",
     name: "Local services preset",
     description:
