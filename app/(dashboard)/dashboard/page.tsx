@@ -38,7 +38,7 @@ export default async function DashboardPage() {
             Open studio
           </Link>
         </header>
-        <section className="grid gap-4 md:grid-cols-4">
+        <section className="grid gap-4 md:grid-cols-5">
           <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-6">
             <p className="text-sm text-slate-300">Plan</p>
             <p className="mt-2 text-3xl font-black capitalize text-cyan-300">
@@ -61,6 +61,15 @@ export default async function DashboardPage() {
           <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-6">
             <p className="text-sm text-slate-300">Projects</p>
             <p className="mt-2 text-3xl font-black">{projectCount}</p>
+          </article>
+          <article className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-6">
+            <p className="text-sm text-cyan-100">Billing</p>
+            <Link
+              className="mt-3 inline-flex rounded-full border border-cyan-300/40 px-3 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/10"
+              href="/billing"
+            >
+              Manage plan
+            </Link>
           </article>
         </section>
         <section className="grid gap-6 lg:grid-cols-2">

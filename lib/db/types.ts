@@ -20,6 +20,19 @@ export type Database = {
           full_name: string | null;
           avatar_url: string | null;
           plan: "free" | "pro" | "agency";
+          paypal_customer_id: string | null;
+          paypal_subscription_id: string | null;
+          paypal_plan_id: string | null;
+          subscription_status:
+            | "free"
+            | "approval_pending"
+            | "active"
+            | "suspended"
+            | "cancelled"
+            | "expired"
+            | "past_due";
+          subscription_current_period_end: string | null;
+          subscription_cancel_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -29,6 +42,19 @@ export type Database = {
           full_name?: string | null;
           avatar_url?: string | null;
           plan?: "free" | "pro" | "agency";
+          paypal_customer_id?: string | null;
+          paypal_subscription_id?: string | null;
+          paypal_plan_id?: string | null;
+          subscription_status?:
+            | "free"
+            | "approval_pending"
+            | "active"
+            | "suspended"
+            | "cancelled"
+            | "expired"
+            | "past_due";
+          subscription_current_period_end?: string | null;
+          subscription_cancel_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -37,6 +63,19 @@ export type Database = {
           full_name?: string | null;
           avatar_url?: string | null;
           plan?: "free" | "pro" | "agency";
+          paypal_customer_id?: string | null;
+          paypal_subscription_id?: string | null;
+          paypal_plan_id?: string | null;
+          subscription_status?:
+            | "free"
+            | "approval_pending"
+            | "active"
+            | "suspended"
+            | "cancelled"
+            | "expired"
+            | "past_due";
+          subscription_current_period_end?: string | null;
+          subscription_cancel_at?: string | null;
           updated_at?: string;
         };
         Relationships: [];
@@ -227,6 +266,31 @@ export type Database = {
         };
         Relationships: [];
       };
+      paypal_webhook_events: {
+        Row: {
+          id: string;
+          event_type: string;
+          paypal_subscription_id: string | null;
+          payload: Json;
+          processed_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id: string;
+          event_type: string;
+          paypal_subscription_id?: string | null;
+          payload: Json;
+          processed_at?: string;
+          created_at?: string;
+        };
+        Update: {
+          event_type?: string;
+          paypal_subscription_id?: string | null;
+          payload?: Json;
+          processed_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -238,6 +302,26 @@ export type Database = {
           p_quantity?: number;
         };
         Returns: Database["public"]["Tables"]["daily_usage"]["Row"];
+      };
+      sync_profile_subscription: {
+        Args: {
+          p_user_id: string;
+          p_plan: "free" | "pro" | "agency";
+          p_subscription_status:
+            | "free"
+            | "approval_pending"
+            | "active"
+            | "suspended"
+            | "cancelled"
+            | "expired"
+            | "past_due";
+          p_paypal_subscription_id?: string | null;
+          p_paypal_plan_id?: string | null;
+          p_paypal_customer_id?: string | null;
+          p_current_period_end?: string | null;
+          p_cancel_at?: string | null;
+        };
+        Returns: Database["public"]["Tables"]["profiles"]["Row"];
       };
     };
     Enums: {

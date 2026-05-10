@@ -16,6 +16,7 @@ import {
   moderateMarketingInput
 } from "@/lib/openai/marketing";
 import { getMarketingTemplate } from "@/lib/templates/catalog";
+import { isPaidPlan } from "@/lib/billing/plans";
 import { marketingContentTypeSchema } from "@/types/marketing";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { TypedSupabaseClient } from "@/lib/db/helpers";
@@ -123,6 +124,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json<MarketingGenerateResponse>(
       { error: "Template not found" },
       { status: 404 }
+    );
+  }
+
+  if (template?.premium && !isPaidPlan(entitlement.usage.plan)) {
+    return NextResponse.json<MarketingGenerateResponse>(
+      {
+        error: "Premium templates are available on Pro and Agency plans.",
+        usage: entitlement.usage
+      },
+      { status: 402 }
     );
   }
 

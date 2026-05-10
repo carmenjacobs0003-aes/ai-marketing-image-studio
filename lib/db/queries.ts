@@ -1,4 +1,5 @@
 import type {
+  AppPlan,
   DailyUsageKind,
   Inserts,
   Json,
@@ -18,6 +19,7 @@ export type Project = Tables<"projects">;
 export type MarketingGeneration = Tables<"marketing_generations">;
 export type ImageGeneration = Tables<"image_generations">;
 export type DailyUsage = Tables<"daily_usage">;
+export type PayPalWebhookEvent = Tables<"paypal_webhook_events">;
 
 export async function getProfile(
   supabase: TypedSupabaseClient,
@@ -47,6 +49,82 @@ export async function upsertProfile(
     .single();
 
   return requireDatabaseData(data, error, "Unable to save profile");
+}
+
+export async function updateProfileSubscription(
+  supabase: TypedSupabaseClient,
+  userId: string,
+  updates: Updates<"profiles">
+): Promise<Profile> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .update(updates)
+    .eq("id", userId)
+    .select("*")
+    .single();
+
+  return requireDatabaseData(data, error, "Unable to update subscription");
+}
+
+export async function getProfileByPayPalSubscriptionId(
+  supabase: TypedSupabaseClient,
+  subscriptionId: string
+): Promise<Profile | null> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("paypal_subscription_id", subscriptionId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+export async function recordPayPalWebhookEvent(
+  supabase: TypedSupabaseClient,
+  event: Inserts<"paypal_webhook_events">
+) {
+  const { data, error } = await supabase
+    .from("paypal_webhook_events")
+    .upsert(event, { onConflict: "id", ignoreDuplicates: true })
+    .select("*")
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+export async function syncProfileSubscription(
+  supabase: TypedSupabaseClient,
+  input: {
+    userId: string;
+    plan: AppPlan;
+    subscriptionStatus: NonNullable<Updates<"profiles">["subscription_status"]>;
+    paypalSubscriptionId?: string | null;
+    paypalPlanId?: string | null;
+    paypalCustomerId?: string | null;
+    currentPeriodEnd?: string | null;
+    cancelAt?: string | null;
+  }
+): Promise<Profile> {
+  const { data, error } = await supabase.rpc("sync_profile_subscription", {
+    p_user_id: input.userId,
+    p_plan: input.plan,
+    p_subscription_status: input.subscriptionStatus,
+    p_paypal_subscription_id: input.paypalSubscriptionId ?? null,
+    p_paypal_plan_id: input.paypalPlanId ?? null,
+    p_paypal_customer_id: input.paypalCustomerId ?? null,
+    p_current_period_end: input.currentPeriodEnd ?? null,
+    p_cancel_at: input.cancelAt ?? null
+  });
+
+  return requireDatabaseData(data, error, "Unable to sync subscription");
 }
 
 export async function listBrandKits(

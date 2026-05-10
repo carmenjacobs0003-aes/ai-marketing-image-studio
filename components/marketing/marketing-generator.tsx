@@ -2,7 +2,9 @@
 
 import { useMemo, useState, type FormEvent } from "react";
 import type { BrandKit, MarketingGeneration, Project } from "@/lib/db/queries";
+import Link from "next/link";
 import { marketingTemplates } from "@/lib/templates/catalog";
+import { isPaidPlan } from "@/lib/billing/plans";
 import type { UsageSummary } from "@/lib/usage/limits";
 import {
   marketingOutputSchema,
@@ -157,6 +159,7 @@ export function MarketingGenerator({
   const limitReached =
     usage.marketingGenerationLimit !== null &&
     usage.marketingGenerations >= usage.marketingGenerationLimit;
+  const canUsePremiumTemplates = isPaidPlan(usage.plan);
   const selectedContentType = useMemo(
     () => contentTypes.find((item) => item.value === contentType),
     [contentType]
@@ -328,20 +331,44 @@ export function MarketingGenerator({
                     (template) => template.id === event.target.value
                   );
                   setTemplateId(event.target.value);
-                  if (selected) {
+                  if (
+                    selected &&
+                    (!selected.premium || canUsePremiumTemplates)
+                  ) {
                     setContentType(selected.contentType);
                   }
                 }}
                 value={templateId}
               >
                 <option value="">No template</option>
-                {marketingTemplates.map((template) => (
-                  <option key={template.id} value={template.id}>
-                    {template.name} · {template.category}
-                  </option>
-                ))}
+                {marketingTemplates.map((template) => {
+                  const locked = Boolean(
+                    template.premium && !canUsePremiumTemplates
+                  );
+
+                  return (
+                    <option
+                      disabled={locked}
+                      key={template.id}
+                      value={template.id}
+                    >
+                      {template.name} · {template.category}
+                      {template.premium ? " · premium" : ""}
+                      {locked ? " · upgrade required" : ""}
+                    </option>
+                  );
+                })}
               </select>
             </label>
+            {!canUsePremiumTemplates ? (
+              <p className="rounded-xl border border-cyan-300/20 bg-black p-3 text-xs text-cyan-100">
+                Premium templates are locked on Free.{" "}
+                <Link className="font-semibold underline" href="/pricing">
+                  Upgrade to Pro or Agency
+                </Link>
+                .
+              </p>
+            ) : null}
             <label className="block space-y-2 text-sm font-medium">
               <span>Save to project</span>
               <select

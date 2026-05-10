@@ -1,8 +1,11 @@
 import { TemplateGallery } from "@/components/templates/template-gallery";
 import { requireUser } from "@/lib/auth/session";
+import { getProfile } from "@/lib/db/queries";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export default async function TemplatesPage() {
-  await requireUser("/templates");
+  const user = await requireUser("/templates");
+  const profile = await getProfile(createSupabaseServerClient(), user.id);
 
   return (
     <main className="p-4 text-white sm:p-6 lg:p-8">
@@ -17,10 +20,10 @@ export default async function TemplatesPage() {
           <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">
             Choose production-ready social, email, SEO, and industry presets in
             the Marketing generator to shape outputs without rebuilding prompts
-            from scratch.
+            from scratch. Premium templates are available on Pro and Agency.
           </p>
         </header>
-        <TemplateGallery />
+        <TemplateGallery plan={profile?.plan ?? "free"} />
       </div>
     </main>
   );
