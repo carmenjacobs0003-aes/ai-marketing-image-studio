@@ -1,7 +1,9 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/lib/db/types";
-
-export type TypedSupabaseClient = SupabaseClient<Database>;
+// Supabase SSR v0.5 and supabase-js v2.48 expose incompatible generic client
+// signatures for hand-authored database types in this project. Centralize the
+// loose client boundary here while keeping query return types explicit at the
+// repository layer.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type TypedSupabaseClient = any;
 
 export class DatabaseError extends Error {
   constructor(

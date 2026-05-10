@@ -52,7 +52,7 @@ export async function upsertProfile(
 export async function listBrandKits(
   supabase: TypedSupabaseClient,
   userId: string
-) {
+): Promise<BrandKit[]> {
   const { data, error } = await supabase
     .from("brand_kits")
     .select("*")
@@ -96,7 +96,7 @@ export async function updateBrandKit(
 export async function listProjects(
   supabase: TypedSupabaseClient,
   userId: string
-) {
+): Promise<Project[]> {
   const { data, error } = await supabase
     .from("projects")
     .select("*")
@@ -138,7 +138,7 @@ export async function countProjects(
 export async function createImageGeneration(
   supabase: TypedSupabaseClient,
   generation: Inserts<"image_generations">
-) {
+): Promise<ImageGeneration> {
   const { data, error } = await supabase
     .from("image_generations")
     .insert(generation)
@@ -153,7 +153,7 @@ export async function updateImageGeneration(
   id: string,
   userId: string,
   updates: Updates<"image_generations">
-) {
+): Promise<ImageGeneration> {
   const { data, error } = await supabase
     .from("image_generations")
     .update(updates)
@@ -169,7 +169,7 @@ export async function listImageGenerations(
   supabase: TypedSupabaseClient,
   userId: string,
   limit = 24
-) {
+): Promise<ImageGeneration[]> {
   const { data, error } = await supabase
     .from("image_generations")
     .select("*")
@@ -222,7 +222,7 @@ export async function listMarketingGenerations(
   supabase: TypedSupabaseClient,
   userId: string,
   limit = 12
-) {
+): Promise<MarketingGeneration[]> {
   const { data, error } = await supabase
     .from("marketing_generations")
     .select("*")

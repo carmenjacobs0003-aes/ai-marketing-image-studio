@@ -1,7 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import type { Database } from "@/lib/db/types";
-import { DEFAULT_AUTHENTICATED_ROUTE, DEFAULT_UNAUTHENTICATED_ROUTE, isAuthRoute, isProtectedRoute } from "@/lib/auth/routes";
+import {
+  DEFAULT_AUTHENTICATED_ROUTE,
+  DEFAULT_UNAUTHENTICATED_ROUTE,
+  isAuthRoute,
+  isProtectedRoute
+} from "@/lib/auth/routes";
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -17,12 +22,12 @@ export async function updateSession(request: NextRequest) {
       get(name: string) {
         return request.cookies.get(name)?.value;
       },
-      set(name: string, value: string, options) {
+      set(name: string, value: string, options: Record<string, unknown>) {
         request.cookies.set({ name, value, ...options });
         response = NextResponse.next({ request });
         response.cookies.set({ name, value, ...options });
       },
-      remove(name: string, options) {
+      remove(name: string, options: Record<string, unknown>) {
         request.cookies.set({ name, value: "", ...options });
         response = NextResponse.next({ request });
         response.cookies.set({ name, value: "", ...options });
@@ -39,7 +44,10 @@ export async function updateSession(request: NextRequest) {
   if (!user && isProtectedRoute(pathname)) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = DEFAULT_UNAUTHENTICATED_ROUTE;
-    redirectUrl.searchParams.set("redirectTo", `${pathname}${request.nextUrl.search}`);
+    redirectUrl.searchParams.set(
+      "redirectTo",
+      `${pathname}${request.nextUrl.search}`
+    );
     return NextResponse.redirect(redirectUrl);
   }
 
