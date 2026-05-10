@@ -1,9 +1,14 @@
 import { createClient } from "@supabase/supabase-js";
-import { env } from "@/lib/env";
+import type { Database } from "@/lib/db/types";
+import { requireSupabaseAdminConfig } from "@/lib/supabase/config";
 
-export const supabaseAdmin = createClient(env.NEXT_PUBLIC_SUPABASE_URL ?? "", env.SUPABASE_SERVICE_ROLE_KEY ?? "", {
-  auth: {
-    persistSession: false,
-    autoRefreshToken: false
-  }
-});
+export function createSupabaseAdminClient() {
+  const { url, serviceRoleKey } = requireSupabaseAdminConfig();
+
+  return createClient<Database>(url, serviceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false
+    }
+  });
+}
