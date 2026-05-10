@@ -1,4 +1,14 @@
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[];
+
+export type AppPlan = Database["public"]["Enums"]["app_plan"];
+export type GenerationStatus = Database["public"]["Enums"]["generation_status"];
+export type DailyUsageKind = "marketing_generations" | "image_generations";
 
 export type Database = {
   public: {
@@ -9,7 +19,7 @@ export type Database = {
           email: string | null;
           full_name: string | null;
           avatar_url: string | null;
-          plan: "free" | "pro" | "team";
+          plan: "free" | "pro" | "agency";
           created_at: string;
           updated_at: string;
         };
@@ -18,7 +28,7 @@ export type Database = {
           email?: string | null;
           full_name?: string | null;
           avatar_url?: string | null;
-          plan?: "free" | "pro" | "team";
+          plan?: "free" | "pro" | "agency";
           created_at?: string;
           updated_at?: string;
         };
@@ -26,16 +36,21 @@ export type Database = {
           email?: string | null;
           full_name?: string | null;
           avatar_url?: string | null;
-          plan?: "free" | "pro" | "team";
+          plan?: "free" | "pro" | "agency";
           updated_at?: string;
         };
       };
-      projects: {
+      brand_kits: {
         Row: {
           id: string;
           user_id: string;
           name: string;
-          description: string | null;
+          voice: string | null;
+          colors: string[];
+          fonts: string[];
+          products: Json;
+          guidelines: string | null;
+          is_default: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -43,25 +58,66 @@ export type Database = {
           id?: string;
           user_id: string;
           name: string;
-          description?: string | null;
+          voice?: string | null;
+          colors?: string[];
+          fonts?: string[];
+          products?: Json;
+          guidelines?: string | null;
+          is_default?: boolean;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           name?: string;
-          description?: string | null;
+          voice?: string | null;
+          colors?: string[];
+          fonts?: string[];
+          products?: Json;
+          guidelines?: string | null;
+          is_default?: boolean;
           updated_at?: string;
         };
       };
-      image_generations: {
+      projects: {
+        Row: {
+          id: string;
+          user_id: string;
+          brand_kit_id: string | null;
+          name: string;
+          description: string | null;
+          status: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          brand_kit_id?: string | null;
+          name: string;
+          description?: string | null;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          brand_kit_id?: string | null;
+          name?: string;
+          description?: string | null;
+          status?: string;
+          updated_at?: string;
+        };
+      };
+      marketing_generations: {
         Row: {
           id: string;
           user_id: string;
           project_id: string | null;
+          brand_kit_id: string | null;
           prompt: string;
+          content_type: string;
           model: string;
+          output: Json;
           status: "queued" | "processing" | "completed" | "failed";
-          storage_path: string | null;
           error_message: string | null;
           metadata: Json;
           created_at: string;
@@ -71,10 +127,12 @@ export type Database = {
           id?: string;
           user_id: string;
           project_id?: string | null;
+          brand_kit_id?: string | null;
           prompt: string;
+          content_type: string;
           model: string;
+          output?: Json;
           status?: "queued" | "processing" | "completed" | "failed";
-          storage_path?: string | null;
           error_message?: string | null;
           metadata?: Json;
           created_at?: string;
@@ -82,47 +140,104 @@ export type Database = {
         };
         Update: {
           project_id?: string | null;
+          brand_kit_id?: string | null;
           status?: "queued" | "processing" | "completed" | "failed";
-          storage_path?: string | null;
+          output?: Json;
           error_message?: string | null;
           metadata?: Json;
           updated_at?: string;
         };
       };
-      usage_events: {
+      image_generations: {
         Row: {
           id: string;
           user_id: string;
-          event_type: "image_generation" | "image_upload" | "api_request";
-          quantity: number;
+          project_id: string | null;
+          brand_kit_id: string | null;
+          prompt: string;
+          model: string;
+          status: "queued" | "processing" | "completed" | "failed";
+          storage_path: string | null;
+          signed_url: string | null;
+          error_message: string | null;
           metadata: Json;
           created_at: string;
+          updated_at: string;
         };
         Insert: {
           id?: string;
           user_id: string;
-          event_type: "image_generation" | "image_upload" | "api_request";
-          quantity?: number;
+          project_id?: string | null;
+          brand_kit_id?: string | null;
+          prompt: string;
+          model: string;
+          status?: "queued" | "processing" | "completed" | "failed";
+          storage_path?: string | null;
+          signed_url?: string | null;
+          error_message?: string | null;
           metadata?: Json;
           created_at?: string;
+          updated_at?: string;
         };
-        Update: never;
+        Update: {
+          project_id?: string | null;
+          brand_kit_id?: string | null;
+          status?: "queued" | "processing" | "completed" | "failed";
+          storage_path?: string | null;
+          signed_url?: string | null;
+          error_message?: string | null;
+          metadata?: Json;
+          updated_at?: string;
+        };
       };
-    };
-    Views: {
-      usage_totals_current_month: {
+      daily_usage: {
         Row: {
-          user_id: string | null;
-          event_type: "image_generation" | "image_upload" | "api_request" | null;
-          total_quantity: number | null;
+          id: string;
+          user_id: string;
+          usage_date: string;
+          marketing_generations: number;
+          image_generations: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          usage_date?: string;
+          marketing_generations?: number;
+          image_generations?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          marketing_generations?: number;
+          image_generations?: number;
+          updated_at?: string;
         };
       };
     };
-    Functions: Record<string, never>;
+    Views: Record<string, never>;
+    Functions: {
+      increment_daily_usage: {
+        Args: {
+          p_user_id: string;
+          p_usage_date: string;
+          p_kind: DailyUsageKind;
+          p_quantity?: number;
+        };
+        Returns: Database["public"]["Tables"]["daily_usage"]["Row"];
+      };
+    };
     Enums: {
-      app_plan: "free" | "pro" | "team";
-      image_generation_status: "queued" | "processing" | "completed" | "failed";
-      usage_event_type: "image_generation" | "image_upload" | "api_request";
+      app_plan: "free" | "pro" | "agency";
+      generation_status: "queued" | "processing" | "completed" | "failed";
     };
   };
 };
+
+export type Tables<T extends keyof Database["public"]["Tables"]> =
+  Database["public"]["Tables"][T]["Row"];
+export type Inserts<T extends keyof Database["public"]["Tables"]> =
+  Database["public"]["Tables"][T]["Insert"];
+export type Updates<T extends keyof Database["public"]["Tables"]> =
+  Database["public"]["Tables"][T]["Update"];
