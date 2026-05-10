@@ -1,28 +1,155 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import type { MarketingGeneration } from "@/lib/db/queries";
-import { stringifyMarketingOutput } from "@/lib/db/queries";
 import type { UsageSummary } from "@/lib/usage/limits";
+import {
+  marketingOutputSchema,
+  type MarketingContentType,
+  type MarketingOutput
+} from "@/types/marketing";
 
 type MarketingGeneratorProps = {
   usage: UsageSummary;
   generations: MarketingGeneration[];
 };
 
+type MarketingGeneratePayload =
+  | {
+      generation: MarketingGeneration;
+    }
+  | { error: string; usage?: UsageSummary; categories?: string[] };
+
+const contentTypes: Array<{
+  value: MarketingContentType;
+  label: string;
+  description: string;
+}> = [
+  {
+    value: "complete_marketing_pack",
+    label: "Complete marketing pack",
+    description: "Social posts, email outreach, and SEO blog content."
+  },
+  {
+    value: "social_media_posts",
+    label: "Social media posts",
+    description: "Prioritize platform-ready social content."
+  },
+  {
+    value: "email_outreach",
+    label: "Email outreach",
+    description: "Prioritize subject lines, body copy, and follow-up."
+  },
+  {
+    value: "seo_blog_content",
+    label: "SEO blog content",
+    description: "Prioritize search-focused blog planning."
+  }
+];
+
+function formatMarketingOutput(output: MarketingGeneration["output"]) {
+  const parsed = marketingOutputSchema.safeParse(output);
+
+  return parsed.success ? parsed.data : null;
+}
+
+function MarketingOutputView({ output }: { output: MarketingOutput }) {
+  return (
+    <div className="mt-4 space-y-4 text-sm leading-6 text-slate-100">
+      <section className="rounded-xl border border-cyan-300/20 bg-black p-4">
+        <h4 className="font-black text-cyan-300">Campaign summary</h4>
+        <p className="mt-2 text-slate-200">{output.campaignSummary}</p>
+      </section>
+      <section className="rounded-xl border border-white/10 bg-black p-4">
+        <h4 className="font-black text-cyan-300">Social media posts</h4>
+        <div className="mt-3 grid gap-3 md:grid-cols-3">
+          {output.socialMediaPosts.map((post) => (
+            <div
+              className="rounded-lg border border-white/10 bg-white/[0.04] p-3"
+              key={`${post.platform}-${post.callToAction}`}
+            >
+              <p className="font-semibold text-white">{post.platform}</p>
+              <p className="mt-2 whitespace-pre-wrap text-slate-200">
+                {post.post}
+              </p>
+              <p className="mt-2 font-semibold text-cyan-200">
+                CTA: {post.callToAction}
+              </p>
+              {post.hashtags.length ? (
+                <p className="mt-2 text-xs text-slate-400">
+                  {post.hashtags.join(" ")}
+                </p>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      </section>
+      <section className="rounded-xl border border-white/10 bg-black p-4">
+        <h4 className="font-black text-cyan-300">Email outreach</h4>
+        <p className="mt-2 text-cyan-100">
+          {output.emailOutreach.subjectLines.join(" • ")}
+        </p>
+        <p className="mt-2 text-slate-400">
+          {output.emailOutreach.previewText}
+        </p>
+        <p className="mt-3 whitespace-pre-wrap text-slate-200">
+          {output.emailOutreach.body}
+        </p>
+        <p className="mt-3 font-semibold text-cyan-200">
+          CTA: {output.emailOutreach.callToAction}
+        </p>
+        <p className="mt-2 text-slate-300">
+          Follow-up: {output.emailOutreach.followUp}
+        </p>
+      </section>
+      <section className="rounded-xl border border-white/10 bg-black p-4">
+        <h4 className="font-black text-cyan-300">SEO blog content</h4>
+        <p className="mt-2 text-lg font-black text-white">
+          {output.seoBlogContent.title}
+        </p>
+        <p className="text-slate-400">/{output.seoBlogContent.slug}</p>
+        <p className="mt-2 text-slate-200">
+          {output.seoBlogContent.metaDescription}
+        </p>
+        <p className="mt-2 text-xs uppercase tracking-[0.2em] text-cyan-200">
+          {output.seoBlogContent.keywords.join(" · ")}
+        </p>
+        <ul className="mt-3 list-inside list-disc space-y-1 text-slate-300">
+          {output.seoBlogContent.outline.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+        <p className="mt-3 whitespace-pre-wrap text-slate-200">
+          {output.seoBlogContent.intro}
+        </p>
+        <p className="mt-3 font-semibold text-cyan-200">
+          CTA: {output.seoBlogContent.callToAction}
+        </p>
+      </section>
+    </div>
+  );
+}
+
 export function MarketingGenerator({
   usage: initialUsage,
   generations: initialGenerations
 }: MarketingGeneratorProps) {
   const [prompt, setPrompt] = useState("");
-  const [contentType, setContentType] = useState("campaign");
+  const [contentType, setContentType] = useState<MarketingContentType>(
+    "complete_marketing_pack"
+  );
   const [usage, setUsage] = useState(initialUsage);
   const [generations, setGenerations] = useState(initialGenerations);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const limitReached =
     usage.marketingGenerationLimit !== null &&
     usage.marketingGenerations >= usage.marketingGenerationLimit;
+  const selectedContentType = useMemo(
+    () => contentTypes.find((item) => item.value === contentType),
+    [contentType]
+  );
 
   async function refreshUsage() {
     const response = await fetch("/api/me/usage", { cache: "no-store" });
@@ -35,6 +162,7 @@ export function MarketingGenerator({
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    setSuccessMessage(null);
     setIsLoading(true);
 
     try {
@@ -43,24 +171,33 @@ export function MarketingGenerator({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt, contentType })
       });
-      const payload = await response.json();
+      const payload = (await response.json()) as MarketingGeneratePayload;
 
       if (!response.ok) {
-        setError(payload.error ?? "Unable to generate marketing copy.");
-        if (payload.usage) {
+        if ("usage" in payload && payload.usage) {
           setUsage(payload.usage);
         }
+        setError(
+          "error" in payload
+            ? payload.error
+            : "Unable to generate marketing content."
+        );
         return;
       }
 
-      setGenerations((current) => [payload.generation, ...current].slice(0, 8));
-      setPrompt("");
-      await refreshUsage();
+      if ("generation" in payload) {
+        setGenerations((current) =>
+          [payload.generation, ...current].slice(0, 8)
+        );
+        setPrompt("");
+        setSuccessMessage("Marketing content generated and saved.");
+        await refreshUsage();
+      }
     } catch (generationError) {
       setError(
         generationError instanceof Error
           ? generationError.message
-          : "Unable to generate marketing copy."
+          : "Unable to generate marketing content."
       );
     } finally {
       setIsLoading(false);
@@ -69,18 +206,18 @@ export function MarketingGenerator({
 
   return (
     <main className="p-4 text-white sm:p-6 lg:p-8">
-      <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[360px_1fr]">
-        <section className="space-y-6 rounded-3xl border border-white/10 bg-white/[0.04] p-6 sm:p-8">
+      <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[400px_1fr]">
+        <section className="space-y-6 rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-cyan-950/30 sm:p-8">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-300">
               Marketing
             </p>
             <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
-              Generate campaign copy
+              Generate campaign content
             </h1>
             <p className="mt-3 text-sm leading-6 text-slate-300">
-              Daily limits are checked before generation and only successful
-              generations count.
+              Create social posts, email outreach, and SEO blog content with
+              plan checks, safety moderation, and usage tracking.
             </p>
           </div>
           <div className="rounded-xl border border-cyan-300/20 bg-cyan-300/10 p-4">
@@ -97,34 +234,45 @@ export function MarketingGenerator({
                 : `${usage.remainingMarketingGenerations} generations remaining today`}
             </p>
           </div>
-          <form className="space-y-3" onSubmit={onSubmit}>
+          <form className="space-y-4" onSubmit={onSubmit}>
             <label className="block space-y-2 text-sm font-medium">
-              <span>Content type</span>
+              <span>Content focus</span>
               <select
                 className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 outline-none ring-cyan-300 focus:border-cyan-300/70 focus:ring-2"
                 disabled={isLoading || limitReached}
-                onChange={(event) => setContentType(event.target.value)}
+                onChange={(event) =>
+                  setContentType(event.target.value as MarketingContentType)
+                }
                 value={contentType}
               >
-                <option value="campaign">Campaign</option>
-                <option value="social">Social post</option>
-                <option value="email">Email</option>
-                <option value="ad">Ad creative</option>
+                {contentTypes.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
               </select>
+              <span className="block text-xs text-slate-400">
+                {selectedContentType?.description}
+              </span>
             </label>
             <label className="block space-y-2 text-sm font-medium">
               <span>Brief</span>
               <textarea
-                className="min-h-40 w-full rounded-xl border border-white/10 bg-black px-4 py-3 outline-none ring-cyan-300 transition placeholder:text-slate-500 focus:border-cyan-300/70 focus:ring-2"
+                className="min-h-44 w-full rounded-xl border border-white/10 bg-black px-4 py-3 outline-none ring-cyan-300 transition placeholder:text-slate-500 focus:border-cyan-300/70 focus:ring-2"
                 disabled={isLoading || limitReached}
                 onChange={(event) => setPrompt(event.target.value)}
-                placeholder="Describe your audience, offer, product, and desired tone..."
+                placeholder="Describe your audience, offer, product, goal, keywords, and desired tone..."
                 value={prompt}
               />
             </label>
             {error ? (
               <p className="rounded-xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
                 {error}
+              </p>
+            ) : null}
+            {successMessage ? (
+              <p className="rounded-xl border border-cyan-300/30 bg-cyan-300/10 p-3 text-sm text-cyan-100">
+                {successMessage}
               </p>
             ) : null}
             {limitReached ? (
@@ -135,41 +283,64 @@ export function MarketingGenerator({
             ) : null}
             <button
               className="w-full rounded-xl bg-cyan-300 px-4 py-3 font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={isLoading || limitReached || prompt.length < 10}
+              disabled={isLoading || limitReached || prompt.trim().length < 10}
               type="submit"
             >
-              {isLoading ? "Generating..." : "Generate copy"}
+              {isLoading ? "Generating and saving..." : "Generate marketing"}
             </button>
           </form>
         </section>
         <section className="space-y-4">
-          <h2 className="text-2xl font-black">Recent marketing generations</h2>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-sm uppercase tracking-[0.3em] text-cyan-300">
+                Library
+              </p>
+              <h2 className="text-2xl font-black sm:text-3xl">
+                Recent marketing generations
+              </h2>
+            </div>
+            {isLoading ? (
+              <div className="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100">
+                OpenAI is writing your content...
+              </div>
+            ) : null}
+          </div>
           {generations.length ? (
-            generations.map((generation) => (
-              <article
-                className="rounded-2xl border border-white/10 bg-white/[0.04] p-5"
-                key={generation.id}
-              >
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <h3 className="font-black capitalize text-cyan-300">
-                    {generation.content_type}
-                  </h3>
-                  <p className="text-xs capitalize text-slate-400">
-                    {generation.status} ·{" "}
-                    {new Date(generation.created_at).toLocaleString()}
+            generations.map((generation) => {
+              const output = formatMarketingOutput(generation.output);
+
+              return (
+                <article
+                  className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 shadow-xl shadow-black/20 sm:p-5"
+                  key={generation.id}
+                >
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <h3 className="font-black capitalize text-cyan-300">
+                      {generation.content_type.replaceAll("_", " ")}
+                    </h3>
+                    <p className="text-xs capitalize text-slate-400">
+                      {generation.status} ·{" "}
+                      {new Date(generation.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                  <p className="mt-3 text-sm text-slate-300">
+                    {generation.prompt}
                   </p>
-                </div>
-                <p className="mt-3 text-sm text-slate-300">
-                  {generation.prompt}
-                </p>
-                <pre className="mt-4 whitespace-pre-wrap rounded-xl border border-white/10 bg-black p-4 text-sm leading-6 text-white">
-                  {stringifyMarketingOutput(generation.output)}
-                </pre>
-              </article>
-            ))
+                  {output ? (
+                    <MarketingOutputView output={output} />
+                  ) : (
+                    <pre className="mt-4 overflow-x-auto whitespace-pre-wrap rounded-xl border border-white/10 bg-black p-4 text-sm leading-6 text-white">
+                      {JSON.stringify(generation.output, null, 2)}
+                    </pre>
+                  )}
+                </article>
+              );
+            })
           ) : (
             <p className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 text-slate-300">
-              No marketing generations yet.
+              No marketing generations yet. Add a brief to create your first
+              social, email, and SEO pack.
             </p>
           )}
         </section>
