@@ -4,7 +4,7 @@ import { getUsageSummary } from "@/lib/usage/limits";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export default async function DashboardPage() {
-  const user = await requireUser();
+  const user = await requireUser("/dashboard");
   const supabase = createSupabaseServerClient();
   const usage = await getUsageSummary(user.id);
   const { count: projectCount } = await supabase.from("projects").select("id", { count: "exact", head: true }).eq("user_id", user.id);
@@ -16,36 +16,33 @@ export default async function DashboardPage() {
     .limit(5);
 
   return (
-    <main className="min-h-screen bg-slate-950 p-8 text-white">
+    <main className="p-4 text-white sm:p-6 lg:p-8">
       <div className="mx-auto max-w-6xl space-y-8">
-        <header className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-white/5 p-8 md:flex-row md:items-center md:justify-between">
+        <header className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-cyan-950/20 md:flex-row md:items-center md:justify-between md:p-8">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-300">Dashboard</p>
-            <h1 className="mt-2 text-4xl font-bold">Welcome, {user.email}</h1>
+            <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">Welcome, {user.email}</h1>
           </div>
-          <div className="flex gap-3">
-            <Link className="rounded-xl bg-cyan-300 px-4 py-3 font-semibold text-slate-950" href="/studio">Open studio</Link>
-            <Link className="rounded-xl border border-white/10 px-4 py-3 font-semibold" href="/logout">Log out</Link>
-          </div>
+          <Link className="rounded-xl bg-cyan-300 px-4 py-3 text-center font-semibold text-slate-950 transition hover:bg-cyan-200" href="/studio">Open studio</Link>
         </header>
         <section className="grid gap-4 md:grid-cols-3">
-          <article className="rounded-2xl border border-white/10 bg-white/5 p-6">
+          <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-6">
             <p className="text-sm text-slate-300">Plan</p>
-            <p className="mt-2 text-3xl font-bold capitalize">{usage.plan}</p>
+            <p className="mt-2 text-3xl font-black capitalize text-cyan-300">{usage.plan}</p>
           </article>
-          <article className="rounded-2xl border border-white/10 bg-white/5 p-6">
+          <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-6">
             <p className="text-sm text-slate-300">Monthly generations</p>
-            <p className="mt-2 text-3xl font-bold">{usage.imageGenerations}/{usage.imageGenerationLimit}</p>
+            <p className="mt-2 text-3xl font-black">{usage.imageGenerations}/{usage.imageGenerationLimit}</p>
           </article>
-          <article className="rounded-2xl border border-white/10 bg-white/5 p-6">
+          <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-6">
             <p className="text-sm text-slate-300">Projects</p>
-            <p className="mt-2 text-3xl font-bold">{projectCount ?? 0}</p>
+            <p className="mt-2 text-3xl font-black">{projectCount ?? 0}</p>
           </article>
         </section>
-        <section className="rounded-3xl border border-white/10 bg-white/5 p-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold">Recent generations</h2>
-            <Link className="text-sm font-semibold text-cyan-300" href="/projects">View projects</Link>
+        <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="text-2xl font-black">Recent generations</h2>
+            <Link className="text-sm font-semibold text-cyan-300 hover:text-cyan-200" href="/images">View images</Link>
           </div>
           <div className="mt-4 space-y-3">
             {generations?.length ? (
@@ -56,7 +53,7 @@ export default async function DashboardPage() {
                 </div>
               ))
             ) : (
-              <p className="text-slate-300">No images generated yet.</p>
+              <p className="rounded-xl border border-dashed border-white/10 p-6 text-slate-300">No images generated yet.</p>
             )}
           </div>
         </section>
