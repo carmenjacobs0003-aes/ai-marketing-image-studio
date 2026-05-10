@@ -7,6 +7,8 @@ const envSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_IMAGE_MODEL: z.string().default("gpt-image-1"),
+  IMAGE_GENERATION_RATE_LIMIT: z.coerce.number().int().positive().default(10),
+  IMAGE_GENERATION_RATE_LIMIT_WINDOW_SECONDS: z.coerce.number().int().positive().default(3600),
   PAYPAL_ENV: z.enum(["sandbox", "live"]).default("sandbox"),
   PAYPAL_CLIENT_ID: z.string().optional(),
   PAYPAL_CLIENT_SECRET: z.string().optional(),
