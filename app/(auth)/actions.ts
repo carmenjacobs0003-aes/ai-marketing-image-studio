@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { getSafeRedirectPath } from "@/lib/auth/routes";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 function getString(formData: FormData, key: string) {
@@ -8,28 +9,51 @@ function getString(formData: FormData, key: string) {
   return typeof value === "string" ? value : "";
 }
 
-export async function signInWithPassword(formData: FormData) {
-  const email = getString(formData, "email").trim();
-  const password = getString(formData, "password");
-  const redirectTo = getString(formData, "redirectTo") || "/dashboard";
-  const supabase = createSupabaseServerClient();
+function redirectWithMessage(pathname: string, type: "error" | "message", message: string, redirectTo?: string) {
+  const params = new URLSearchParams({ [type]: message });
 
+  if (redirectTo) {
+    params.set("redirectTo", redirectTo);
+  }
+
+  redirect(`${pathname}?${params.toString()}`);
+}
+
+export async function signInWithPassword(formData: FormData) {
+  const email = getString(formData, "email").trim().toLowerCase();
+  const password = getString(formData, "password");
+  const redirectTo = getSafeRedirectPath(getString(formData, "redirectTo"));
+
+  if (!email || !password) {
+    redirectWithMessage("/login", "error", "Enter your email and password to continue.", redirectTo);
+  }
+
+  const supabase = createSupabaseServerClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    redirect(`/login?error=${encodeURIComponent(error.message)}`);
+    redirectWithMessage("/login", "error", error.message, redirectTo);
   }
 
-  redirect(redirectTo.startsWith("/") ? redirectTo : "/dashboard");
+  redirect(redirectTo);
 }
 
 export async function signUpWithPassword(formData: FormData) {
-  const email = getString(formData, "email").trim();
+  const email = getString(formData, "email").trim().toLowerCase();
   const password = getString(formData, "password");
   const fullName = getString(formData, "fullName").trim();
-  const supabase = createSupabaseServerClient();
+  const redirectTo = getSafeRedirectPath(getString(formData, "redirectTo"));
 
-  const { error } = await supabase.auth.signUp({
+  if (!fullName || !email || !password) {
+    redirectWithMessage("/signup", "error", "Name, email, and password are required.", redirectTo);
+  }
+
+  if (password.length < 8) {
+    redirectWithMessage("/signup", "error", "Password must be at least 8 characters.", redirectTo);
+  }
+
+  const supabase = createSupabaseServerClient();
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -40,14 +64,18 @@ export async function signUpWithPassword(formData: FormData) {
   });
 
   if (error) {
-    redirect(`/signup?error=${encodeURIComponent(error.message)}`);
+    redirectWithMessage("/signup", "error", error.message, redirectTo);
   }
 
-  redirect("/dashboard");
+  if (!data.session) {
+    redirectWithMessage("/login", "message", "Check your email to confirm your account, then log in.", redirectTo);
+  }
+
+  redirect(redirectTo);
 }
 
 export async function signOut() {
   const supabase = createSupabaseServerClient();
   await supabase.auth.signOut();
-  redirect("/login");
+  redirect("/login?message=You%20have%20been%20logged%20out.");
 }

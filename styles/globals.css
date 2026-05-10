@@ -3,9 +3,17 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: #000;
 }
 
 body {
-  @apply min-h-screen bg-slate-950 text-white antialiased;
+  @apply min-h-screen bg-black text-white antialiased;
 }
