@@ -9,16 +9,17 @@ type AuthSubmitButtonProps = {
   className?: string;
 };
 
-export function AuthSubmitButton({ children, pendingText, className }: AuthSubmitButtonProps) {
+export function AuthSubmitButton({
+  children,
+  pendingText,
+  className
+}: AuthSubmitButtonProps) {
   const { pending } = useFormStatus();
 
   return (
     <button
       aria-disabled={pending}
-      className={cn(
-        "flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-300 px-4 py-3 font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-70",
-        className
-      )}
+      className={cn("neon-button flex w-full gap-2", className)}
       disabled={pending}
       type="submit"
     >

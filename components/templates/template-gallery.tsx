@@ -22,7 +22,7 @@ export function TemplateGallery({ plan = "free" }: { plan?: AppPlan }) {
     <section className="grid gap-5 lg:grid-cols-2">
       {(Object.keys(labels) as TemplateCategory[]).map((category) => (
         <div
-          className="rounded-3xl border border-cyan-300/20 bg-black/80 p-5 shadow-2xl shadow-cyan-500/10 ring-1 ring-white/10"
+          className="glass-card p-5"
           key={category}
         >
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-cyan-300">
@@ -52,7 +52,7 @@ export function TemplateGallery({ plan = "free" }: { plan?: AppPlan }) {
                             {template.name}
                           </h2>
                           {template.premium ? (
-                            <span className="rounded-full border border-cyan-300/40 bg-cyan-300/10 px-2 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-cyan-100">
+                            <span className="premium-badge">
                               Pro
                             </span>
                           ) : null}

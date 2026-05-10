@@ -9,10 +9,10 @@ export default async function BrandPage() {
   const brandKits = await listBrandKits(supabase, user.id);
 
   return (
-    <main className="p-4 text-white sm:p-6 lg:p-8">
-      <div className="mx-auto max-w-7xl space-y-6">
-        <header className="rounded-3xl border border-cyan-300/20 bg-black/80 p-6 shadow-2xl shadow-cyan-500/10 ring-1 ring-white/10">
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-300">
+    <main className="page-shell">
+      <div className="page-container">
+        <header className="page-hero">
+          <p className="eyebrow">
             Brand
           </p>
           <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">

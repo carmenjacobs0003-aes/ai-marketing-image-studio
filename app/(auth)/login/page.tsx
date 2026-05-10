@@ -6,23 +6,23 @@ export default function LoginPage({ searchParams }: { searchParams: { error?: st
   const redirectTo = searchParams.redirectTo ?? "/dashboard";
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-black px-4 py-10 text-white sm:px-6">
-      <form action={signInWithPassword} className="w-full max-w-md space-y-6 rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-cyan-950/30 sm:p-8">
+    <main className="aurora-shell flex min-h-screen items-center justify-center px-4 py-10 text-white sm:px-6">
+      <form action={signInWithPassword} className="glass-card relative z-10 w-full max-w-md space-y-6 p-6 sm:p-8">
         <div className="space-y-3 text-center sm:text-left">
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-300">Welcome back</p>
+          <p className="eyebrow">Welcome back</p>
           <h1 className="text-3xl font-black tracking-tight sm:text-4xl">Log in to your studio</h1>
-          <p className="text-sm leading-6 text-slate-300">Your secure Supabase session unlocks protected campaigns, image history, brand assets, and admin tools.</p>
+          <p className="text-sm leading-6 text-slate-300">Enter the neural workspace for protected campaigns, image history, brand assets, and admin tools.</p>
         </div>
         {searchParams.message ? <p className="rounded-xl border border-cyan-300/30 bg-cyan-300/10 p-3 text-sm text-cyan-100">{searchParams.message}</p> : null}
         {searchParams.error ? <p className="rounded-xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">{searchParams.error}</p> : null}
         <input type="hidden" name="redirectTo" value={redirectTo} />
         <label className="block space-y-2 text-sm font-medium">
           <span>Email</span>
-          <input autoComplete="email" className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-white outline-none ring-cyan-300 transition placeholder:text-slate-500 focus:border-cyan-300/70 focus:ring-2" name="email" type="email" required />
+          <input autoComplete="email" className="w-full rounded-2xl border px-4 py-3 outline-none ring-cyan-300 hover:border-cyan-300/40 focus:border-cyan-300/70 focus:ring-2" name="email" type="email" required />
         </label>
         <label className="block space-y-2 text-sm font-medium">
           <span>Password</span>
-          <input autoComplete="current-password" className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-white outline-none ring-cyan-300 transition focus:border-cyan-300/70 focus:ring-2" name="password" type="password" minLength={8} required />
+          <input autoComplete="current-password" className="w-full rounded-2xl border px-4 py-3 outline-none ring-cyan-300 hover:border-cyan-300/40 focus:border-cyan-300/70 focus:ring-2" name="password" type="password" minLength={8} required />
         </label>
         <AuthSubmitButton pendingText="Logging in...">Log in</AuthSubmitButton>
         <p className="text-center text-sm text-slate-300">

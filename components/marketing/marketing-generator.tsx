@@ -70,7 +70,7 @@ function MarketingOutputView({ output }: { output: MarketingOutput }) {
         <div className="mt-3 grid gap-3 md:grid-cols-3">
           {output.socialMediaPosts.map((post) => (
             <div
-              className="rounded-lg border border-white/10 bg-white/[0.04] p-3"
+              className="rounded-lg border border-white/10 bg-white/[0.04] p-3 transition hover:border-cyan-300/40"
               key={`${post.platform}-${post.callToAction}`}
             >
               <p className="font-semibold text-white">{post.platform}</p>
@@ -273,9 +273,9 @@ export function MarketingGenerator({
   return (
     <main className="p-4 text-white sm:p-6 lg:p-8">
       <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[400px_1fr]">
-        <section className="space-y-6 rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-cyan-950/30 sm:p-8">
+        <section className="glass-card space-y-6 p-5 sm:p-8">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-300">
+            <p className="eyebrow">
               Marketing
             </p>
             <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
@@ -429,7 +429,7 @@ export function MarketingGenerator({
               </p>
             ) : null}
             <button
-              className="w-full rounded-xl bg-cyan-300 px-4 py-3 font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
+              className="neon-button w-full"
               disabled={isLoading || limitReached || prompt.trim().length < 10}
               type="submit"
             >
@@ -459,7 +459,7 @@ export function MarketingGenerator({
 
               return (
                 <article
-                  className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 shadow-xl shadow-black/20 sm:p-5"
+                  className="glass-card p-4 shadow-xl shadow-black/20 sm:p-5"
                   key={generation.id}
                 >
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -508,7 +508,7 @@ export function MarketingGenerator({
               );
             })
           ) : (
-            <p className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 text-slate-300">
+            <p className="empty-state">
               No marketing generations yet. Add a brief to create your first
               social, email, and SEO pack.
             </p>

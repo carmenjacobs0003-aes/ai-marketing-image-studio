@@ -4,6 +4,8 @@
 
 :root {
   color-scheme: dark;
+  --neon-blue: 34 211 238;
+  --panel: 255 255 255;
 }
 
 * {
@@ -11,9 +13,124 @@
 }
 
 html {
+  min-height: 100%;
   background: #000;
+  scroll-behavior: smooth;
 }
 
 body {
   @apply min-h-screen bg-black text-white antialiased;
+  background:
+    radial-gradient(circle at 15% 10%, rgba(34, 211, 238, 0.16), transparent 28rem),
+    radial-gradient(circle at 85% 0%, rgba(14, 165, 233, 0.12), transparent 30rem),
+    radial-gradient(circle at 50% 100%, rgba(34, 211, 238, 0.08), transparent 34rem),
+    #000;
+}
+
+::selection {
+  background: rgba(34, 211, 238, 0.35);
+  color: #fff;
+}
+
+@layer base {
+  a,
+  button,
+  input,
+  textarea,
+  select {
+    @apply transition duration-300 ease-out;
+  }
+
+  input,
+  textarea,
+  select {
+    @apply border-white/10 bg-black/70 text-white placeholder:text-slate-500;
+  }
+}
+
+@layer components {
+  .aurora-shell {
+    @apply relative min-h-screen overflow-hidden bg-black text-white;
+  }
+
+  .aurora-shell::before {
+    content: "";
+    @apply pointer-events-none fixed inset-0 z-0 opacity-70;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+    background-size: 72px 72px;
+    mask-image: radial-gradient(circle at center, black 0%, transparent 78%);
+  }
+
+  .aurora-shell::after {
+    content: "";
+    @apply pointer-events-none fixed inset-x-0 top-0 z-0 h-96 opacity-60 blur-3xl;
+    background: radial-gradient(circle at 50% 0%, rgba(34, 211, 238, 0.24), transparent 58%);
+  }
+
+  .page-shell {
+    @apply relative z-10 p-4 text-white sm:p-6 lg:p-8;
+    animation: page-in 520ms ease-out both;
+  }
+
+  .page-container {
+    @apply mx-auto max-w-7xl space-y-8;
+  }
+
+  .glass-card {
+    @apply relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.045] shadow-2xl shadow-cyan-950/20 ring-1 ring-white/10 backdrop-blur-2xl;
+  }
+
+  .glass-card::before {
+    content: "";
+    @apply pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/80 to-transparent;
+  }
+
+  .glass-hover {
+    @apply transition duration-300 ease-out hover:-translate-y-1 hover:border-cyan-300/50 hover:shadow-[0_0_48px_rgba(34,211,238,0.18)];
+  }
+
+  .page-hero {
+    @apply glass-card p-6 md:p-8;
+  }
+
+  .eyebrow {
+    @apply text-xs font-black uppercase tracking-[0.32em] text-cyan-300;
+  }
+
+  .neon-button {
+    @apply inline-flex items-center justify-center rounded-2xl bg-cyan-300 px-5 py-3 font-black text-slate-950 shadow-[0_0_28px_rgba(34,211,238,0.32)] transition hover:-translate-y-0.5 hover:bg-cyan-200 hover:shadow-[0_0_42px_rgba(34,211,238,0.56)] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-none;
+  }
+
+  .ghost-button {
+    @apply inline-flex items-center justify-center rounded-2xl border border-cyan-300/35 bg-white/[0.03] px-5 py-3 font-semibold text-cyan-100 backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-cyan-300/70 hover:bg-cyan-300/10 hover:text-white hover:shadow-[0_0_30px_rgba(34,211,238,0.2)];
+  }
+
+  .metric-card {
+    @apply glass-card glass-hover p-5;
+  }
+
+  .empty-state {
+    @apply rounded-3xl border border-dashed border-cyan-300/25 bg-cyan-300/[0.04] p-6 text-slate-300;
+  }
+
+  .skeleton-line {
+    @apply animate-pulse rounded-full bg-gradient-to-r from-white/5 via-cyan-300/20 to-white/5;
+  }
+
+  .premium-badge {
+    @apply rounded-full border border-cyan-300/40 bg-cyan-300/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.2)];
+  }
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
