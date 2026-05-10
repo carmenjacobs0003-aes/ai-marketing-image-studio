@@ -39,6 +39,7 @@ export type Database = {
           plan?: "free" | "pro" | "agency";
           updated_at?: string;
         };
+        Relationships: [];
       };
       brand_kits: {
         Row: {
@@ -77,6 +78,7 @@ export type Database = {
           is_default?: boolean;
           updated_at?: string;
         };
+        Relationships: [];
       };
       projects: {
         Row: {
@@ -106,6 +108,7 @@ export type Database = {
           status?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       marketing_generations: {
         Row: {
@@ -147,6 +150,7 @@ export type Database = {
           metadata?: Json;
           updated_at?: string;
         };
+        Relationships: [];
       };
       image_generations: {
         Row: {
@@ -189,6 +193,7 @@ export type Database = {
           metadata?: Json;
           updated_at?: string;
         };
+        Relationships: [];
       };
       daily_usage: {
         Row: {
@@ -214,6 +219,7 @@ export type Database = {
           image_generations?: number;
           updated_at?: string;
         };
+        Relationships: [];
       };
     };
     Views: Record<string, never>;
