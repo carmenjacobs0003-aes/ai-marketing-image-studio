@@ -26,6 +26,7 @@ type CommunityGalleryProps = {
   initialQuery: string;
   initialCategory: string;
   initialSort: GallerySort;
+  loadError?: string | null;
 };
 
 const sorts: Array<{ value: GallerySort; label: string }> = [
@@ -353,6 +354,19 @@ export function CommunityGallery(props: CommunityGalleryProps) {
             Search
           </button>
         </form>
+        {props.loadError ? (
+          <div
+            className="empty-state border-amber-300/35 bg-amber-300/[0.06] text-amber-100"
+            role="status"
+          >
+            <p className="font-black">Community gallery fallback is active.</p>
+            <p className="mt-2 text-sm leading-6">
+              Live Supabase gallery data could not be loaded quickly, so the
+              page is showing a safe empty state instead of blocking the
+              storefront. Details: {props.loadError}
+            </p>
+          </div>
+        ) : null}
         <ShowcaseStrip title="Featured" items={props.featuredItems} />
         <ShowcaseStrip title="Trending" items={props.trendingItems} />
         <ShowcaseStrip title="Newest" items={props.newestItems} />
@@ -363,7 +377,9 @@ export function CommunityGallery(props: CommunityGalleryProps) {
         </section>
         {!props.items.length ? (
           <p className="empty-state">
-            No public gallery items match this search yet.
+            {props.loadError
+              ? "Gallery content is temporarily unavailable. Please refresh in a moment or try again from the dashboard."
+              : "No public gallery items match this search yet."}
           </p>
         ) : null}
         <div className="flex flex-col items-center gap-3 pb-10 text-sm text-slate-400">

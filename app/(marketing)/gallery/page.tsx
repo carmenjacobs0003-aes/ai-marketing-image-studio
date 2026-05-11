@@ -6,6 +6,7 @@ import type { TypedSupabaseClient } from "@/lib/db/helpers";
 import { createSignedImageUrl } from "@/lib/storage/images";
 
 const validSorts = new Set(["featured", "trending", "newest"]);
+const GALLERY_QUERY_TIMEOUT_MS = 3500;
 
 type GalleryPageProps = {
   searchParams: {
@@ -15,6 +16,34 @@ type GalleryPageProps = {
     page?: string;
   };
 };
+
+type GalleryDataset = Awaited<ReturnType<typeof listPublicGalleryItems>>;
+
+function emptyGalleryDataset(page = 1, pageSize = 12): GalleryDataset {
+  return {
+    count: 0,
+    hasMore: false,
+    items: [],
+    page,
+    pageSize
+  };
+}
+
+async function withTimeout<T>(promise: Promise<T>, message: string) {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeout = setTimeout(
+      () => reject(new Error(message)),
+      GALLERY_QUERY_TIMEOUT_MS
+    );
+  });
+
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
 
 async function signGalleryItems(items: GalleryItem[]) {
   return Promise.all(
@@ -31,20 +60,45 @@ export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Community Gallery | AI Marketing Image Studio",
-  description: "Browse reusable AI images, marketing generations, prompts, and creator profiles."
+  description:
+    "Browse reusable AI images, marketing generations, prompts, and creator profiles."
 };
 
 export default async function GalleryPage({ searchParams }: GalleryPageProps) {
-  const supabase = createSupabaseAdminClient() as unknown as TypedSupabaseClient;
-  const sort = validSorts.has(searchParams.sort ?? "") ? (searchParams.sort as GallerySort) : "featured";
+  const sort = validSorts.has(searchParams.sort ?? "")
+    ? (searchParams.sort as GallerySort)
+    : "featured";
   const page = Number(searchParams.page ?? "1");
+  let loadError: string | null = null;
+  let main = emptyGalleryDataset(page);
+  let featured = emptyGalleryDataset(1, 3);
+  let trending = emptyGalleryDataset(1, 3);
+  let newest = emptyGalleryDataset(1, 3);
 
-  const [main, featured, trending, newest] = await Promise.all([
-    listPublicGalleryItems(supabase, { query: searchParams.q, category: searchParams.category, sort, page, pageSize: 12 }),
-    listPublicGalleryItems(supabase, { sort: "featured", pageSize: 3 }),
-    listPublicGalleryItems(supabase, { sort: "trending", pageSize: 3 }),
-    listPublicGalleryItems(supabase, { sort: "newest", pageSize: 3 })
-  ]);
+  try {
+    const supabase =
+      createSupabaseAdminClient() as unknown as TypedSupabaseClient;
+    [main, featured, trending, newest] = await withTimeout(
+      Promise.all([
+        listPublicGalleryItems(supabase, {
+          query: searchParams.q,
+          category: searchParams.category,
+          sort,
+          page,
+          pageSize: 12
+        }),
+        listPublicGalleryItems(supabase, { sort: "featured", pageSize: 3 }),
+        listPublicGalleryItems(supabase, { sort: "trending", pageSize: 3 }),
+        listPublicGalleryItems(supabase, { sort: "newest", pageSize: 3 })
+      ]),
+      "Gallery data request timed out"
+    );
+  } catch (error) {
+    loadError =
+      error instanceof Error
+        ? error.message
+        : "Gallery data is temporarily unavailable.";
+  }
 
   const [items, featuredItems, trendingItems, newestItems] = await Promise.all([
     signGalleryItems(main.items),
@@ -61,6 +115,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
       initialQuery={searchParams.q ?? ""}
       initialSort={sort}
       items={items}
+      loadError={loadError}
       newestItems={newestItems}
       page={main.page}
       total={main.count}
