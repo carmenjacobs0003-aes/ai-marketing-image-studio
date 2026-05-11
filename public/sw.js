@@ -1,16 +1,23 @@
-const CACHE_NAME = "ai-marketing-image-studio-v1";
+const CACHE_VERSION = "v2";
+const STATIC_CACHE = `ai-marketing-image-studio-static-${CACHE_VERSION}`;
+const PAGE_CACHE = `ai-marketing-image-studio-pages-${CACHE_VERSION}`;
 const APP_SHELL = [
   "/",
   "/offline",
   "/pricing",
   "/privacy",
   "/terms",
-  "/icons/icon.svg"
+  "/manifest.webmanifest",
+  "/icons/icon.svg",
+  "/icons/icon-192.svg",
+  "/icons/icon-512.svg",
+  "/icons/maskable-icon.svg",
+  "/icons/apple-touch-icon.svg"
 ];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
+    caches.open(STATIC_CACHE).then((cache) => cache.addAll(APP_SHELL))
   );
   self.skipWaiting();
 });
@@ -22,13 +29,22 @@ self.addEventListener("activate", (event) => {
       .then((keys) =>
         Promise.all(
           keys
-            .filter((key) => key !== CACHE_NAME)
+            .filter((key) => ![STATIC_CACHE, PAGE_CACHE].includes(key))
             .map((key) => caches.delete(key))
         )
       )
   );
   self.clients.claim();
 });
+
+function isCacheableStaticAsset(url) {
+  return (
+    url.origin === self.location.origin &&
+    (url.pathname.startsWith("/_next/static/") ||
+      url.pathname.startsWith("/icons/") ||
+      url.pathname === "/manifest.webmanifest")
+  );
+}
 
 self.addEventListener("fetch", (event) => {
   const { request } = event;
@@ -39,7 +55,10 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(request.url);
 
-  if (url.pathname.startsWith("/api/")) {
+  if (
+    url.pathname.startsWith("/api/") ||
+    url.pathname.startsWith("/_next/image")
+  ) {
     return;
   }
 
@@ -47,8 +66,10 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(PAGE_CACHE).then((cache) => cache.put(request, clone));
+          }
           return response;
         })
         .catch(() =>
@@ -60,20 +81,24 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  event.respondWith(
-    caches.match(request).then((cached) => {
-      if (cached) {
-        return cached;
-      }
-
-      return fetch(request).then((response) => {
-        if (response.ok && url.origin === self.location.origin) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+  if (isCacheableStaticAsset(url)) {
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        if (cached) {
+          return cached;
         }
 
-        return response;
-      });
-    })
-  );
+        return fetch(request).then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches
+              .open(STATIC_CACHE)
+              .then((cache) => cache.put(request, clone));
+          }
+
+          return response;
+        });
+      })
+    );
+  }
 });

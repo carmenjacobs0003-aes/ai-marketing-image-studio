@@ -11,11 +11,27 @@ export default function manifest(): MetadataRoute.Manifest {
       "Create campaign-ready marketing images and conversion copy with AI.",
     start_url: "/dashboard?source=pwa",
     scope: "/",
+    id: "/?source=pwa",
+    lang: "en-US",
+    dir: "ltr",
     display: "standalone",
+    display_override: ["window-controls-overlay", "standalone", "browser"],
     orientation: "portrait-primary",
     background_color: "#020617",
     theme_color: "#22d3ee",
     categories: ["business", "productivity", "graphics"],
+    screenshots: [
+      {
+        src: "/icons/og-image.svg",
+        sizes: "1200x630",
+        type: "image/svg+xml"
+      },
+      {
+        src: "/icons/icon-512.svg",
+        sizes: "512x512",
+        type: "image/svg+xml"
+      }
+    ],
     shortcuts: [
       {
         name: "Generate image",

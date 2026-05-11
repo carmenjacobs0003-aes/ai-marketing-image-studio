@@ -38,53 +38,70 @@ const baseEnvSchema = z.object({
   SENTRY_PROFILES_SAMPLE_RATE: z.coerce.number().min(0).max(1).default(0.1)
 });
 
-const productionRequiredKeys = [
+export const productionRequiredKeys = [
   "NEXT_PUBLIC_APP_URL",
+  "NEXT_PUBLIC_SITE_DOMAIN",
   "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_ANON_KEY",
   "SUPABASE_SERVICE_ROLE_KEY",
   "OPENAI_API_KEY",
   "UPSTASH_REDIS_REST_URL",
   "UPSTASH_REDIS_REST_TOKEN",
+  "PAYPAL_CLIENT_ID",
+  "PAYPAL_CLIENT_SECRET",
+  "NEXT_PUBLIC_PAYPAL_CLIENT_ID",
+  "PAYPAL_WEBHOOK_ID",
+  "PAYPAL_PRO_PLAN_ID",
+  "PAYPAL_AGENCY_PLAN_ID",
   "NEXT_PUBLIC_SENTRY_DSN",
   "SENTRY_DSN"
 ] as const;
 
-export const envSchema = baseEnvSchema.superRefine((values, context) => {
-  const isProduction =
-    process.env.NODE_ENV === "production" ||
-    process.env.VERCEL_ENV === "production";
+export const paypalLiveRequiredKeys = [
+  "PAYPAL_CLIENT_ID",
+  "PAYPAL_CLIENT_SECRET",
+  "NEXT_PUBLIC_PAYPAL_CLIENT_ID",
+  "PAYPAL_WEBHOOK_ID",
+  "PAYPAL_PRO_PLAN_ID",
+  "PAYPAL_AGENCY_PLAN_ID"
+] as const;
 
-  if (!isProduction) {
-    return;
-  }
+export const envSchema = baseEnvSchema;
+export type AppEnv = z.infer<typeof envSchema>;
 
-  for (const key of productionRequiredKeys) {
-    if (!values[key]) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `${key} is required for production deployments.`,
-        path: [key]
-      });
-    }
-  }
+export function shouldEnforceProductionEnv(values = process.env) {
+  return (
+    values.ENFORCE_PRODUCTION_ENV === "true" ||
+    (values.VERCEL === "1" && values.VERCEL_ENV === "production")
+  );
+}
+
+export function validateProductionEnv(values: AppEnv) {
+  const missing: string[] = productionRequiredKeys.filter(
+    (key) => !values[key]
+  );
 
   if (values.PAYPAL_ENV === "live") {
-    for (const key of [
-      "PAYPAL_CLIENT_ID",
-      "PAYPAL_CLIENT_SECRET",
-      "NEXT_PUBLIC_PAYPAL_CLIENT_ID",
-      "PAYPAL_WEBHOOK_ID"
-    ] as const) {
-      if (!values[key]) {
-        context.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: `${key} is required when PAYPAL_ENV=live.`,
-          path: [key]
-        });
-      }
-    }
+    missing.push(...paypalLiveRequiredKeys.filter((key) => !values[key]));
   }
-});
 
-export const env = envSchema.parse(process.env);
+  return {
+    valid: missing.length === 0,
+    missing
+  };
+}
+
+function parseEnv() {
+  const parsed = envSchema.parse(process.env);
+  const productionValidation = validateProductionEnv(parsed);
+
+  if (shouldEnforceProductionEnv() && !productionValidation.valid) {
+    throw new Error(
+      `Missing production environment variables: ${productionValidation.missing.join(", ")}`
+    );
+  }
+
+  return parsed;
+}
+
+export const env = parseEnv();

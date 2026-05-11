@@ -2,7 +2,7 @@
   "framework": "nextjs",
   "regions": ["iad1"],
   "installCommand": "npm install",
-  "buildCommand": "npm run build",
+  "buildCommand": "npm run vercel:build",
   "outputDirectory": ".next",
   "github": {
     "silent": false
@@ -13,12 +13,28 @@
     },
     "app/api/marketing/generate/route.ts": {
       "maxDuration": 45
+    },
+    "app/api/health/route.ts": {
+      "maxDuration": 10
+    },
+    "app/api/health/ready/route.ts": {
+      "maxDuration": 10
     }
   },
   "rewrites": [
     {
       "source": "/healthz",
       "destination": "/api/health"
+    },
+    {
+      "source": "/readyz",
+      "destination": "/api/health/ready"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/health",
+      "schedule": "*/15 * * * *"
     }
   ]
 }

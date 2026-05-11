@@ -72,7 +72,15 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
     title: appName
   },
-  category: "productivity"
+  category: "productivity",
+  other: {
+    "mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-status-bar-style": "black-translucent",
+    "format-detection": "telephone=no",
+    "msapplication-TileColor": "#020617",
+    "msapplication-tap-highlight": "no"
+  }
 };
 
 export const viewport: Viewport = {
@@ -88,6 +96,18 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
+      <head>
+        <link
+          rel="apple-touch-startup-image"
+          href="/icons/og-image.svg"
+          media="(orientation: landscape)"
+        />
+        <link
+          rel="apple-touch-startup-image"
+          href="/icons/icon-512.svg"
+          media="(orientation: portrait)"
+        />
+      </head>
       <body>
         {children}
         <ServiceWorkerRegistration />
