@@ -36,8 +36,6 @@ const baseEnvSchema = z.object({
   PAYPAL_AGENCY_PLAN_ID: z.string().optional(),
   UPSTASH_REDIS_REST_URL: z.string().url().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
-  NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional(),
-  SENTRY_DSN: z.string().url().optional(),
   SENTRY_AUTH_TOKEN: z.string().optional(),
   SENTRY_ORG: z.string().optional(),
   SENTRY_PROJECT: z.string().optional(),
