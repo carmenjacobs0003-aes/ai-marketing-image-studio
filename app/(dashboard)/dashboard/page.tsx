@@ -3,22 +3,33 @@ import { ArrowRight, ImageIcon, Megaphone, Sparkles } from "lucide-react";
 import { requireUser } from "@/lib/auth/session";
 import {
   countProjects,
+  getProfile,
+  listBrandKits,
   listImageGenerations,
   listMarketingGenerations
 } from "@/lib/db/queries";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getUsageSummary } from "@/lib/usage/limits";
+import { OnboardingFlow } from "@/components/onboarding/onboarding-flow";
 
 export default async function DashboardPage() {
   const user = await requireUser("/dashboard");
   const supabase = createSupabaseServerClient();
-  const [usage, projectCount, imageGenerations, marketingGenerations] =
-    await Promise.all([
-      getUsageSummary(user.id),
-      countProjects(supabase, user.id),
-      listImageGenerations(supabase, user.id, 5),
-      listMarketingGenerations(supabase, user.id, 5)
-    ]);
+  const [
+    usage,
+    profile,
+    projectCount,
+    brandKits,
+    imageGenerations,
+    marketingGenerations
+  ] = await Promise.all([
+    getUsageSummary(user.id),
+    getProfile(supabase, user.id),
+    countProjects(supabase, user.id),
+    listBrandKits(supabase, user.id),
+    listImageGenerations(supabase, user.id, 5),
+    listMarketingGenerations(supabase, user.id, 5)
+  ]);
 
   const quickActions = [
     {
@@ -78,6 +89,15 @@ export default async function DashboardPage() {
             </div>
           </div>
         </header>
+
+        <OnboardingFlow
+          hasBrandKits={brandKits.length > 0}
+          hasGenerations={
+            imageGenerations.length + marketingGenerations.length > 0
+          }
+          hasProjects={projectCount > 0}
+          profileComplete={Boolean(profile?.full_name)}
+        />
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           <article className="metric-card">
