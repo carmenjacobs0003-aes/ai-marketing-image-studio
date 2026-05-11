@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import type { Database } from "@/lib/db/types";
+import type { TypedSupabaseClient } from "@/lib/db/helpers";
 import {
   DEFAULT_AUTHENTICATED_ROUTE,
   DEFAULT_UNAUTHENTICATED_ROUTE,
@@ -49,6 +50,10 @@ export async function updateSession(request: NextRequest) {
       `${pathname}${request.nextUrl.search}`
     );
     return NextResponse.redirect(redirectUrl);
+  }
+
+  if (user) {
+    await (supabase as unknown as TypedSupabaseClient).from("profiles").update({ last_active_at: new Date().toISOString() }).eq("id", user.id);
   }
 
   if (user && isAuthRoute(pathname)) {
