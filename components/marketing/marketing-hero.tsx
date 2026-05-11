@@ -29,6 +29,9 @@ export function MarketingHero() {
             <Link className="ghost-button" href="/pricing">
               View pricing
             </Link>
+            <Link className="ghost-button" href="/gallery">
+              Explore gallery
+            </Link>
           </div>
         </div>
 

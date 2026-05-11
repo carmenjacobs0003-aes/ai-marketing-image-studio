@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 import type { ImageGeneration, Project } from "@/lib/db/queries";
 import type { ImageWithSignedUrl } from "@/lib/storage/images";
+import { PublishGalleryButton } from "@/components/gallery/publish-gallery-button";
 
 type ImageCard = ImageWithSignedUrl<ImageGeneration>;
 
@@ -124,6 +125,14 @@ export function ImageLibraryGrid({ images, projects }: ImageLibraryGridProps) {
                 ))}
               </select>
             </label>
+            {image.status === "completed" ? (
+              <PublishGalleryButton
+                defaultPrompt={image.prompt}
+                defaultTitle={image.prompt}
+                kind="image"
+                sourceId={image.id}
+              />
+            ) : null}
             {errors[image.id] ? (
               <p className="rounded-xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
                 {errors[image.id]}

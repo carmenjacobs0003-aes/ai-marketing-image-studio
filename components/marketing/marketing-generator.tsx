@@ -1,10 +1,12 @@
 "use client";
 
 import { useMemo, useState, type FormEvent } from "react";
+import { useSearchParams } from "next/navigation";
 import type { BrandKit, MarketingGeneration, Project } from "@/lib/db/queries";
 import Link from "next/link";
 import { marketingTemplates } from "@/lib/templates/catalog";
 import { isPaidPlan } from "@/lib/billing/plans";
+import { PublishGalleryButton } from "@/components/gallery/publish-gallery-button";
 import type { UsageSummary } from "@/lib/usage/limits";
 import {
   marketingOutputSchema,
@@ -141,7 +143,8 @@ export function MarketingGenerator({
   projects,
   brandKits
 }: MarketingGeneratorProps) {
-  const [prompt, setPrompt] = useState("");
+  const searchParams = useSearchParams();
+  const [prompt, setPrompt] = useState(searchParams.get("prompt") ?? "");
   const [contentType, setContentType] = useState<MarketingContentType>(
     "complete_marketing_pack"
   );
@@ -472,6 +475,14 @@ export function MarketingGenerator({
                   <p className="mt-3 text-sm text-slate-300">
                     {generation.prompt}
                   </p>
+                  <div className="mt-4">
+                    <PublishGalleryButton
+                      defaultPrompt={generation.prompt}
+                      defaultTitle={`${generation.content_type.replaceAll("_", " ")} · ${generation.prompt}`}
+                      kind="marketing"
+                      sourceId={generation.id}
+                    />
+                  </div>
                   <label className="mt-4 block space-y-2 text-sm">
                     <span className="text-slate-300">
                       Save content to project
