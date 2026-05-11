@@ -30,11 +30,5 @@
       "source": "/readyz",
       "destination": "/api/health/ready"
     }
-  ],
-  "crons": [
-    {
-      "path": "/api/health",
-      "schedule": "*/15 * * * *"
-    }
   ]
 }
