@@ -60,9 +60,7 @@ export const productionRequiredKeys = [
   "PAYPAL_WEBHOOK_ID",
   "PAYPAL_PRO_PLAN_ID",
   "PAYPAL_AGENCY_PLAN_ID",
-  "NEXT_PUBLIC_SENTRY_DSN",
-  "SENTRY_DSN"
-] as const;
+  ] as const;
 
 export const paypalLiveRequiredKeys = [
   "PAYPAL_CLIENT_ID",
