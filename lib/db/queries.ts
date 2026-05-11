@@ -38,21 +38,47 @@ export async function getProfile(
   return data;
 }
 
-export async function upsertProfile(
+export async function updateProfileSubscription(
   supabase: TypedSupabaseClient,
-  profile: Inserts<"profiles">
-) {
+  userId: string,
+  updates: Updates<"profiles">
+): Promise<Profile> {
   const { data, error } = await supabase
     .from("profiles")
-    .upsert(profile, { onConflict: "id" })
+    .update(updates)
+    .eq("id", userId)
     .select("*")
     .single();
 
   return requireDatabaseData(data, error, "Unable to save profile");
 }
 
-export async function updateProfileSubscription() {
-  return null as any;
+export async function syncProfileSubscription(
+  supabase: TypedSupabaseClient,
+  input: {
+    userId: string;
+    plan: AppPlan;
+    subscriptionStatus: NonNullable<Updates<"profiles">["subscription_status"]>;
+    paypalSubscriptionId?: string | null;
+    paypalPlanId?: string | null;
+    paypalCustomerId?: string | null;
+    currentPeriodEnd?: string | null;
+    cancelAt?: string | null;
+  }
+): Promise<Profile> {
+  const { data, error } = await supabase.rpc("sync_profile_subscription", {
+    p_user_id: input.userId,
+    p_plan: input.plan,
+    p_subscription_status: input.subscriptionStatus,
+    p_paypal_subscription_id: input.paypalSubscriptionId ?? null,
+    p_paypal_plan_id: input.payPalPlanId ?? null,
+    p_paypal_customer_id: input.paypalCustomerId ?? null,
+    p_current_period_end: input.currentPeriodEnd ?? null,
+    p_cancel_at: input.cancelAt ?? null
+  });
+
+  return requireDatabaseData(data, error, "Unable to sync subscription");
+};
 }
 
 export async function getProfileByPayPalSubscriptionId(
