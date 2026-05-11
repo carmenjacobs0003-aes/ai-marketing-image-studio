@@ -23,6 +23,10 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ["lucide-react"]
   },
+  webpack: (config) => {
+    config.infrastructureLogging = { level: "error" };
+    return config;
+  },
   images: {
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 31536000,
@@ -44,6 +48,19 @@ const nextConfig = {
         headers: securityHeaders
       },
       {
+        source: "/api/(.*)",
+        headers: [{ key: "Cache-Control", value: "no-store, max-age=0" }]
+      },
+      {
+        source: "/manifest.webmanifest",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=3600, must-revalidate"
+          }
+        ]
+      },
+      {
         source: "/sw.js",
         headers: [
           { key: "Cache-Control", value: "public, max-age=0, must-revalidate" },
@@ -52,6 +69,12 @@ const nextConfig = {
       },
       {
         source: "/icons/(.*)",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" }
+        ]
+      },
+      {
+        source: "/_next/image(.*)",
         headers: [
           { key: "Cache-Control", value: "public, max-age=31536000, immutable" }
         ]

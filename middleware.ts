@@ -6,6 +6,36 @@ const API_RATE_LIMIT = 120;
 const API_RATE_LIMIT_WINDOW_SECONDS = 60;
 const memoryStore = new Map<string, { count: number; reset: number }>();
 
+function requestId() {
+  return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
+}
+
+function logRequest(
+  request: NextRequest,
+  response: NextResponse,
+  startedAt: number
+) {
+  if (process.env.NODE_ENV !== "production") {
+    return;
+  }
+
+  console.log(
+    JSON.stringify({
+      level: "info",
+      message: "HTTP request",
+      service: "ai-marketing-image-studio",
+      timestamp: new Date().toISOString(),
+      environment: process.env.VERCEL_ENV ?? process.env.NODE_ENV,
+      requestId: response.headers.get("X-Request-Id"),
+      method: request.method,
+      path: request.nextUrl.pathname,
+      status: response.status,
+      durationMs: Date.now() - startedAt,
+      region: process.env.VERCEL_REGION ?? "edge"
+    })
+  );
+}
+
 function getClientIp(request: NextRequest) {
   return (
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
@@ -41,6 +71,9 @@ function applyEdgeRateLimit(key: string) {
 }
 
 export async function middleware(request: NextRequest) {
+  const startedAt = Date.now();
+  const id = request.headers.get("x-request-id") ?? requestId();
+
   if (
     request.nextUrl.pathname.startsWith("/api/") &&
     request.method !== "GET"
@@ -50,7 +83,7 @@ export async function middleware(request: NextRequest) {
     );
 
     if (!limiter.success) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: "Too many requests. Please wait and try again." },
         {
           status: 429,
@@ -58,16 +91,22 @@ export async function middleware(request: NextRequest) {
             "Retry-After": String(
               Math.ceil((limiter.reset - Date.now()) / 1000)
             ),
+            "X-Request-Id": id,
             "X-RateLimit-Limit": String(limiter.limit),
             "X-RateLimit-Remaining": String(limiter.remaining),
             "X-RateLimit-Reset": String(limiter.reset)
           }
         }
       );
+      logRequest(request, response, startedAt);
+      return response;
     }
   }
 
-  return updateSession(request);
+  const response = await updateSession(request);
+  response.headers.set("X-Request-Id", id);
+  logRequest(request, response, startedAt);
+  return response;
 }
 
 export const config = {

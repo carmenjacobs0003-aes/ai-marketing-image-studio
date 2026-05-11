@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
+import { env, validateProductionEnv } from "@/lib/env";
 
-export function GET() {
-  return NextResponse.json({
+export const dynamic = "force-dynamic";
+
+function healthPayload() {
+  const productionEnv = validateProductionEnv(env);
+
+  return {
     status: "ok",
     service: "ai-marketing-image-studio",
     environment:
@@ -9,13 +14,49 @@ export function GET() {
     region: process.env.VERCEL_REGION ?? "local",
     commit: process.env.VERCEL_GIT_COMMIT_SHA ?? "local",
     timestamp: new Date().toISOString(),
+    deployment: {
+      vercel: process.env.VERCEL === "1",
+      url: process.env.VERCEL_URL ?? env.NEXT_PUBLIC_SITE_DOMAIN ?? "local",
+      productionEnvValid: productionEnv.valid,
+      missingProductionEnv: productionEnv.missing
+    },
     diagnostics: {
-      supabase: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL),
-      redis: Boolean(process.env.UPSTASH_REDIS_REST_URL),
-      sentry: Boolean(
-        process.env.SENTRY_DSN ?? process.env.NEXT_PUBLIC_SENTRY_DSN
+      supabase: Boolean(
+        env.NEXT_PUBLIC_SUPABASE_URL && env.NEXT_PUBLIC_SUPABASE_ANON_KEY
       ),
-      openai: Boolean(process.env.OPENAI_API_KEY)
+      supabaseAdmin: Boolean(env.SUPABASE_SERVICE_ROLE_KEY),
+      redis: Boolean(
+        env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN
+      ),
+      sentry: Boolean(env.SENTRY_DSN ?? env.NEXT_PUBLIC_SENTRY_DSN),
+      openai: Boolean(env.OPENAI_API_KEY),
+      paypal: Boolean(env.PAYPAL_CLIENT_ID && env.PAYPAL_CLIENT_SECRET),
+      paypalLiveReady:
+        env.PAYPAL_ENV === "live"
+          ? Boolean(
+              env.NEXT_PUBLIC_PAYPAL_CLIENT_ID &&
+              env.PAYPAL_WEBHOOK_ID &&
+              env.PAYPAL_PRO_PLAN_ID &&
+              env.PAYPAL_AGENCY_PLAN_ID
+            )
+          : true
+    }
+  };
+}
+
+export function GET() {
+  return NextResponse.json(healthPayload(), {
+    headers: {
+      "Cache-Control": "no-store, max-age=0"
+    }
+  });
+}
+
+export function HEAD() {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      "Cache-Control": "no-store, max-age=0"
     }
   });
 }
