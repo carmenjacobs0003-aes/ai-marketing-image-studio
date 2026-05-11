@@ -30,7 +30,7 @@ function healthPayload() {
       redis: Boolean(
         env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN
       ),
-      sentry: Boolean(env.SENTRY_DSN ?? env.NEXT_PUBLIC_SENTRY_DSN),
+      sentry: false,
       openai: Boolean(env.OPENAI_API_KEY),
       paypal: Boolean(env.PAYPAL_CLIENT_ID && env.PAYPAL_CLIENT_SECRET),
       paypalLiveReady:
