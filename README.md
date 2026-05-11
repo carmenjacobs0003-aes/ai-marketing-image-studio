@@ -101,3 +101,8 @@ npm run mobile:ios
 ```
 
 Before publishing native builds, generate platform-native icon and splash assets from `public/icons/icon.svg`, then run `npx cap add android` and `npx cap add ios` if the native folders have not been created yet.
+
+
+## Production monitoring and recovery
+
+See [`docs/monitoring-recovery.md`](docs/monitoring-recovery.md) for health checks, alerting, abuse prevention, generation recovery, and database backup guidance.

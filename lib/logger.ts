@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 type LogLevel = "debug" | "info" | "warn" | "error";
 
 type LogContext = Record<string, unknown>;
@@ -33,11 +34,19 @@ export function log(
   };
 
   if (level === "error") {
+    Sentry.captureMessage(message, {
+      level: "error",
+      extra: payload
+    });
     console.error(JSON.stringify(payload));
     return;
   }
 
   if (level === "warn") {
+    Sentry.captureMessage(message, {
+      level: "warning",
+      extra: payload
+    });
     console.warn(JSON.stringify(payload));
     return;
   }

@@ -1,5 +1,7 @@
 import { env } from "@/lib/env";
 import { createOpenAIClient } from "@/lib/openai/client";
+import { logCentralizedError } from "@/lib/monitoring/errors";
+import { normalizeFailureMessage, withRetry } from "@/lib/resilience";
 import {
   marketingOutputSchema,
   type MarketingContentType,
@@ -65,9 +67,21 @@ export async function moderateMarketingInput(
   prompt: string
 ): Promise<MarketingModerationResult> {
   const openai = createOpenAIClient();
-  const response = await openai.moderations.create({
-    model: MARKETING_MODERATION_MODEL,
-    input: prompt
+  const response = await withRetry(
+    () =>
+      openai.moderations.create({
+        model: MARKETING_MODERATION_MODEL,
+        input: prompt
+      }),
+    { label: "openai.marketing_moderation" }
+  ).catch(async (error) => {
+    await logCentralizedError(error, {
+      category: "openai",
+      provider: "openai",
+      message: normalizeFailureMessage("OpenAI moderation", error),
+      severity: "critical"
+    });
+    throw new Error(normalizeFailureMessage("OpenAI moderation", error));
   });
   const result = response.results[0];
 
@@ -90,7 +104,7 @@ export async function createMarketingCopy({
   templateInstruction
 }: MarketingCopyInput) {
   const openai = createOpenAIClient();
-  const response = await openai.chat.completions.create({
+  const response = await withRetry(() => openai.chat.completions.create({
     model: MARKETING_TEXT_MODEL,
     messages: [
       {
@@ -122,6 +136,15 @@ ${brandContext}`
     ],
     response_format: { type: "json_object" },
     temperature: 0.7
+  }), { label: "openai.marketing_generation" }).catch(async (error) => {
+    await logCentralizedError(error, {
+      category: "openai",
+      provider: "openai",
+      message: normalizeFailureMessage("OpenAI marketing generation", error),
+      severity: "critical",
+      context: { model: MARKETING_TEXT_MODEL, contentType }
+    });
+    throw new Error(normalizeFailureMessage("OpenAI marketing generation", error));
   });
   const text = response.choices[0]?.message.content?.trim() ?? "";
 

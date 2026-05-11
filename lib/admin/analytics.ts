@@ -1,4 +1,5 @@
 import { env } from "@/lib/env";
+import { summarizeDiagnostics } from "@/lib/monitoring/diagnostics";
 import { billingPlans } from "@/lib/billing/plans";
 import type { TypedSupabaseClient } from "@/lib/db/helpers";
 import type {
@@ -8,7 +9,8 @@ import type {
   DailyGenerationPoint,
   GalleryAdminItem,
   GenerationHealth,
-  ModerationReport
+  ModerationReport,
+  MonitoringIncident
 } from "@/lib/admin/types";
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
@@ -110,6 +112,7 @@ export async function getPlatformAnalytics(supabase: TypedSupabaseClient): Promi
   }, 0);
 
   const generationHealth = buildGenerationHealth(marketingHealthResult.data ?? [], imageHealthResult.data ?? []);
+  const diagnostics = summarizeDiagnostics();
 
   const metrics: AdminMetric[] = [
     { label: "Total users", value: formatNumber(totalUsers), detail: `${formatNumber(activeUsers)} active in ${ACTIVE_WINDOW_DAYS} days`, tone: "cyan" },
@@ -127,7 +130,25 @@ export async function getPlatformAnalytics(supabase: TypedSupabaseClient): Promi
     { label: "Supabase", value: env.NEXT_PUBLIC_SUPABASE_URL ? "Configured" : "Missing", detail: "Database and auth connection", tone: env.NEXT_PUBLIC_SUPABASE_URL ? "green" : "rose" },
     { label: "OpenAI", value: env.OPENAI_API_KEY ? "Configured" : "Missing", detail: "Generation provider key", tone: env.OPENAI_API_KEY ? "green" : "amber" },
     { label: "PayPal", value: env.PAYPAL_CLIENT_ID ? "Configured" : "Missing", detail: "Subscription billing integration", tone: env.PAYPAL_CLIENT_ID ? "green" : "amber" },
-    { label: "24h errors", value: formatNumber(generationHealth.recentErrors.filter((error) => error.created_at >= oneDayAgo).length), detail: `${generationHealth.errorRate}% 30-day generation error rate`, tone: generationHealth.errorRate > 10 ? "rose" : "green" }
+    { label: "24h errors", value: formatNumber(generationHealth.recentErrors.filter((error) => error.created_at >= oneDayAgo).length), detail: `${generationHealth.errorRate}% 30-day generation error rate`, tone: generationHealth.errorRate > 10 ? "rose" : "green" },
+    { label: "Diagnostics", value: diagnostics.status.toUpperCase(), detail: `${diagnostics.failed} failed / ${diagnostics.warnings} warning checks`, tone: diagnostics.status === "fail" ? "rose" : diagnostics.status === "warn" ? "amber" : "green" }
+  ];
+
+  const monitoringIncidents: MonitoringIncident[] = [
+    ...diagnostics.checks
+      .filter((item) => item.status !== "pass")
+      .map((item) => ({
+        label: item.name,
+        value: item.status.toUpperCase(),
+        detail: item.recovery ?? item.detail,
+        severity: item.status === "fail" ? "critical" as const : "warning" as const
+      })),
+    ...generationHealth.recentErrors.slice(0, 5).map((error) => ({
+      label: `${error.kind} generation`,
+      value: "FAILED",
+      detail: error.error_message ?? error.prompt.slice(0, 120),
+      severity: "warning" as const
+    }))
   ];
 
   return {
@@ -138,7 +159,8 @@ export async function getPlatformAnalytics(supabase: TypedSupabaseClient): Promi
     galleryItems: (galleryResult.data ?? []) as GalleryAdminItem[],
     auditLogs: (auditResult.data ?? []) as AuditLog[],
     generationHealth,
-    systemHealth
+    systemHealth,
+    monitoringIncidents
   };
 }
 
