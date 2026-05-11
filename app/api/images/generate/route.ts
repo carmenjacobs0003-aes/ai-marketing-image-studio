@@ -47,7 +47,6 @@ const requestSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  const _startedAt = Date.now();
   const user = await getCurrentUser();
 
   if (!user) {
