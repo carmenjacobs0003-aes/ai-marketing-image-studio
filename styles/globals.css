@@ -225,3 +225,58 @@ body {
     background-position: -80% 0;
   }
 }
+
+@layer components {
+  .onboarding-grid {
+    @apply pointer-events-none absolute inset-0;
+    background-image:
+      linear-gradient(rgba(34, 211, 238, 0.09) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(34, 211, 238, 0.09) 1px, transparent 1px),
+      radial-gradient(
+        circle at 50% 50%,
+        rgba(34, 211, 238, 0.16),
+        transparent 34rem
+      );
+    background-size:
+      34px 34px,
+      34px 34px,
+      auto;
+    animation: onboarding-grid-drift 16s linear infinite;
+    mask-image: radial-gradient(circle at center, black 0%, transparent 82%);
+  }
+
+  .onboarding-core {
+    @apply relative flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl border border-cyan-300/35 bg-cyan-300/10 text-cyan-200 shadow-glow;
+  }
+
+  .onboarding-core::before,
+  .onboarding-core::after {
+    content: "";
+    @apply absolute inset-0 rounded-3xl border border-cyan-300/35;
+    animation: onboarding-core-pulse 2.4s ease-out infinite;
+  }
+
+  .onboarding-core::after {
+    animation-delay: 1.2s;
+  }
+}
+
+@keyframes onboarding-grid-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(34px, 34px, 0);
+  }
+}
+
+@keyframes onboarding-core-pulse {
+  from {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.75);
+  }
+}
