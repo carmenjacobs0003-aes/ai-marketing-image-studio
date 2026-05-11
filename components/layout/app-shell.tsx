@@ -9,7 +9,8 @@ import {
   LayoutTemplate,
   Megaphone,
   Shield,
-  Sparkles
+  Sparkles,
+  Zap
 } from "lucide-react";
 import { LogoutButton } from "@/components/auth/logout-button";
 
@@ -33,13 +34,14 @@ export function AppShell({
 }) {
   return (
     <div className="aurora-shell">
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 border-r border-white/10 bg-black/70 p-4 backdrop-blur-2xl lg:block">
-        <div className="flex h-full flex-col">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 border-r border-cyan-300/15 bg-black/60 p-4 shadow-[24px_0_80px_rgba(34,211,238,0.08)] backdrop-blur-2xl lg:block">
+        <div className="scanline" />
+        <div className="relative z-10 flex h-full flex-col">
           <Link
-            className="group flex items-center gap-3 rounded-3xl border border-cyan-300/20 bg-white/[0.04] p-4 shadow-glow transition hover:border-cyan-300/60"
+            className="group flex items-center gap-3 rounded-3xl border border-cyan-300/25 bg-white/[0.045] p-4 shadow-glow transition hover:-translate-y-0.5 hover:border-cyan-300/70 hover:bg-cyan-300/[0.08]"
             href="/dashboard"
           >
-            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-300 text-slate-950 shadow-[0_0_28px_rgba(34,211,238,0.55)]">
+            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-300 text-slate-950 shadow-[0_0_32px_rgba(34,211,238,0.68)] transition group-hover:rotate-6 group-hover:scale-105">
               <Sparkles className="h-5 w-5" />
             </span>
             <span>
@@ -52,27 +54,41 @@ export function AppShell({
             </span>
           </Link>
 
-          <nav aria-label="Protected app navigation" className="mt-6 space-y-2">
-            {navItems.map((item) => {
-              const Icon = item.icon;
+          <div className="mt-5 rounded-3xl border border-white/10 bg-black/55 p-3 backdrop-blur-xl">
+            <div className="flex items-center gap-2 rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.06] px-3 py-2 text-xs font-black uppercase tracking-[0.22em] text-cyan-100">
+              <Zap className="h-3.5 w-3.5" />
+              Command deck
+            </div>
+            <nav
+              aria-label="Protected app navigation"
+              className="mt-3 space-y-1.5"
+            >
+              {navItems.map((item) => {
+                const Icon = item.icon;
 
-              return (
-                <Link
-                  className="group flex items-center gap-3 rounded-2xl border border-transparent px-4 py-3 text-sm font-semibold text-slate-300 transition hover:border-cyan-300/40 hover:bg-cyan-300/10 hover:text-white hover:shadow-[0_0_26px_rgba(34,211,238,0.14)]"
-                  href={item.href}
-                  key={item.href}
-                >
-                  <Icon className="h-4 w-4 text-cyan-300 transition group-hover:scale-110" />
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
+                return (
+                  <Link
+                    className="group flex items-center gap-3 rounded-2xl border border-transparent px-4 py-3 text-sm font-semibold text-slate-300 transition hover:-translate-y-0.5 hover:border-cyan-300/40 hover:bg-cyan-300/10 hover:text-white hover:shadow-[0_0_26px_rgba(34,211,238,0.14)]"
+                    href={item.href}
+                    key={item.href}
+                  >
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/[0.035] transition group-hover:border-cyan-300/40 group-hover:bg-cyan-300/10">
+                      <Icon className="h-4 w-4 text-cyan-300 transition group-hover:scale-110" />
+                    </span>
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
 
-          <div className="mt-auto rounded-3xl border border-cyan-300/20 bg-cyan-300/[0.06] p-4 shadow-glow">
+          <div className="mt-auto rounded-3xl border border-cyan-300/25 bg-cyan-300/[0.06] p-4 shadow-glow backdrop-blur-xl">
+            <div className="mb-4 h-2 rounded-full bg-white/10">
+              <div className="h-2 w-2/3 rounded-full bg-cyan-300 shadow-[0_0_18px_rgba(34,211,238,0.75)]" />
+            </div>
             <p className="eyebrow">Premium ready</p>
             <p className="mt-2 text-sm leading-6 text-slate-300">
-              Upgrade for higher limits, premium templates, and cinematic brand
+              Unlock higher limits, premium templates, and cinematic brand
               systems.
             </p>
             <Link className="ghost-button mt-4 w-full py-2" href="/billing">
@@ -82,9 +98,12 @@ export function AppShell({
         </div>
       </aside>
 
-      <header className="sticky top-0 z-30 border-b border-white/10 bg-black/70 backdrop-blur-2xl lg:hidden">
+      <header className="sticky top-0 z-30 border-b border-cyan-300/15 bg-black/70 backdrop-blur-2xl lg:hidden">
         <div className="flex items-center justify-between gap-4 px-4 py-4">
-          <Link className="text-lg font-black tracking-tight text-white" href="/dashboard">
+          <Link
+            className="text-lg font-black tracking-tight text-white"
+            href="/dashboard"
+          >
             AI<span className="text-cyan-300">Studio</span>
           </Link>
           <LogoutButton className="px-3 py-2" />
@@ -95,7 +114,7 @@ export function AppShell({
         >
           {navItems.map((item) => (
             <Link
-              className="shrink-0 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-semibold text-slate-300 transition hover:border-cyan-300/70 hover:text-cyan-300"
+              className="shrink-0 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-semibold text-slate-300 transition hover:border-cyan-300/70 hover:bg-cyan-300/10 hover:text-cyan-100"
               href={item.href}
               key={item.href}
             >

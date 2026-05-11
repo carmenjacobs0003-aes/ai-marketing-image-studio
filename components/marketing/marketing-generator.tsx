@@ -275,9 +275,7 @@ export function MarketingGenerator({
       <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[400px_1fr]">
         <section className="glass-card space-y-6 p-5 sm:p-8">
           <div>
-            <p className="eyebrow">
-              Marketing
-            </p>
+            <p className="eyebrow">Marketing</p>
             <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
               Generate campaign content
             </h1>
@@ -304,7 +302,7 @@ export function MarketingGenerator({
             <label className="block space-y-2 text-sm font-medium">
               <span>Content focus</span>
               <select
-                className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 outline-none ring-cyan-300 focus:border-cyan-300/70 focus:ring-2"
+                className="field-control"
                 disabled={isLoading || limitReached}
                 onChange={(event) =>
                   setContentType(event.target.value as MarketingContentType)
@@ -324,7 +322,7 @@ export function MarketingGenerator({
             <label className="block space-y-2 text-sm font-medium">
               <span>Reusable template</span>
               <select
-                className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 outline-none ring-cyan-300 focus:border-cyan-300/70 focus:ring-2"
+                className="field-control"
                 disabled={isLoading || limitReached}
                 onChange={(event) => {
                   const selected = marketingTemplates.find(
@@ -372,7 +370,7 @@ export function MarketingGenerator({
             <label className="block space-y-2 text-sm font-medium">
               <span>Save to project</span>
               <select
-                className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 outline-none ring-cyan-300 focus:border-cyan-300/70 focus:ring-2"
+                className="field-control"
                 disabled={isLoading || limitReached}
                 onChange={(event) => setProjectId(event.target.value)}
                 value={projectId}
@@ -388,7 +386,7 @@ export function MarketingGenerator({
             <label className="block space-y-2 text-sm font-medium">
               <span>Brand kit</span>
               <select
-                className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 outline-none ring-cyan-300 focus:border-cyan-300/70 focus:ring-2"
+                className="field-control"
                 disabled={isLoading || limitReached}
                 onChange={(event) => setBrandKitId(event.target.value)}
                 value={brandKitId}
@@ -405,7 +403,7 @@ export function MarketingGenerator({
             <label className="block space-y-2 text-sm font-medium">
               <span>Brief</span>
               <textarea
-                className="min-h-44 w-full rounded-xl border border-white/10 bg-black px-4 py-3 outline-none ring-cyan-300 transition placeholder:text-slate-500 focus:border-cyan-300/70 focus:ring-2"
+                className="field-control min-h-44"
                 disabled={isLoading || limitReached}
                 onChange={(event) => setPrompt(event.target.value)}
                 placeholder="Describe your audience, offer, product, goal, keywords, and desired tone..."
@@ -479,7 +477,7 @@ export function MarketingGenerator({
                       Save content to project
                     </span>
                     <select
-                      className="w-full rounded-xl border border-white/10 bg-black px-3 py-2 text-white outline-none ring-cyan-300 transition focus:border-cyan-300/80 focus:ring-2"
+                      className="field-control py-2"
                       disabled={savingGenerationId === generation.id}
                       onChange={(event) =>
                         saveGenerationToProject(

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowRight, ImageIcon, Megaphone, Sparkles } from "lucide-react";
 import { requireUser } from "@/lib/auth/session";
 import {
   countProjects,
@@ -19,32 +20,66 @@ export default async function DashboardPage() {
       listMarketingGenerations(supabase, user.id, 5)
     ]);
 
+  const quickActions = [
+    {
+      href: "/studio",
+      title: "Generate visuals",
+      body: "Create cinematic campaign imagery with brand-aware prompts.",
+      icon: ImageIcon
+    },
+    {
+      href: "/marketing",
+      title: "Generate copy",
+      body: "Ship social, email, and SEO content from one neural brief.",
+      icon: Megaphone
+    },
+    {
+      href: "/templates",
+      title: "Browse templates",
+      body: "Start from premium reusable campaign systems.",
+      icon: Sparkles
+    }
+  ];
+
   return (
     <main className="page-shell">
-      <div className="page-container max-w-6xl">
-        <header className="flex flex-col gap-4 page-hero md:flex-row md:items-center md:justify-between md:p-8">
-          <div>
-            <p className="eyebrow">
-              Dashboard
-            </p>
-            <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
-              Welcome, {user.email}
-            </h1>
+      <div className="page-container max-w-7xl">
+        <header className="page-hero md:p-8">
+          <div className="neon-orb -right-16 top-6 h-56 w-56" />
+          <div className="relative z-10 grid gap-6 lg:grid-cols-[1fr_360px] lg:items-end">
+            <div>
+              <p className="eyebrow">Dashboard overview</p>
+              <h1 className="mt-3 max-w-4xl text-4xl font-black tracking-tight sm:text-6xl">
+                Welcome back to your black-glass AI command center.
+              </h1>
+              <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base">
+                Signed in as {user.email}. Monitor usage, launch generators, and
+                manage every visual, brand kit, template, and subscription from
+                a single futuristic workspace.
+              </p>
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <Link className="neon-button" href="/studio">
+                  Open studio <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+                <Link className="ghost-button" href="/billing">
+                  Upgrade capacity
+                </Link>
+              </div>
+            </div>
+            <div className="holo-panel">
+              <p className="eyebrow">Plan signal</p>
+              <p className="mt-3 text-5xl font-black capitalize text-cyan-300 drop-shadow-[0_0_24px_rgba(34,211,238,0.45)]">
+                {usage.plan}
+              </p>
+              <p className="mt-3 text-sm leading-6 text-slate-300">
+                Premium indicators highlight locked templates, higher daily
+                limits, and billing status without disrupting the creative flow.
+              </p>
+            </div>
           </div>
-          <Link
-            className="neon-button"
-            href="/studio"
-          >
-            Open studio
-          </Link>
         </header>
-        <section className="grid gap-4 md:grid-cols-5">
-          <article className="metric-card">
-            <p className="text-sm text-slate-300">Plan</p>
-            <p className="mt-2 text-3xl font-black capitalize text-cyan-300">
-              {usage.plan}
-            </p>
-          </article>
+
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           <article className="metric-card">
             <p className="text-sm text-slate-300">Daily images</p>
             <p className="mt-2 text-3xl font-black">
@@ -62,16 +97,42 @@ export default async function DashboardPage() {
             <p className="text-sm text-slate-300">Projects</p>
             <p className="mt-2 text-3xl font-black">{projectCount}</p>
           </article>
-          <article className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-6">
-            <p className="text-sm text-cyan-100">Billing</p>
-            <Link
-              className="mt-3 inline-flex rounded-full border border-cyan-300/40 px-3 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/10"
-              href="/billing"
-            >
-              Manage plan
-            </Link>
+          <article className="metric-card md:col-span-2">
+            <p className="text-sm text-slate-300">Premium lane</p>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <span className="premium-badge">Upgrade ready</span>
+              <Link
+                className="text-sm font-semibold text-cyan-200 hover:text-white"
+                href="/billing"
+              >
+                Manage plan →
+              </Link>
+            </div>
           </article>
         </section>
+
+        <section className="grid gap-4 lg:grid-cols-3">
+          {quickActions.map((action) => {
+            const Icon = action.icon;
+
+            return (
+              <Link
+                className="glass-card glass-hover p-5"
+                href={action.href}
+                key={action.href}
+              >
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-300/25 bg-cyan-300/10 text-cyan-200 shadow-glow">
+                  <Icon className="h-5 w-5" />
+                </span>
+                <h2 className="mt-4 text-xl font-black">{action.title}</h2>
+                <p className="mt-2 text-sm leading-6 text-slate-300">
+                  {action.body}
+                </p>
+              </Link>
+            );
+          })}
+        </section>
+
         <section className="grid gap-6 lg:grid-cols-2">
           <div className="glass-card p-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -87,7 +148,7 @@ export default async function DashboardPage() {
               {imageGenerations.length ? (
                 imageGenerations.map((generation) => (
                   <div
-                    className="rounded-xl border border-white/10 p-4"
+                    className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 transition hover:border-cyan-300/40"
                     key={generation.id}
                   >
                     <p className="font-medium">{generation.prompt}</p>
@@ -98,9 +159,15 @@ export default async function DashboardPage() {
                   </div>
                 ))
               ) : (
-                <p className="empty-state">
-                  No images generated yet. Start with the Studio to populate this cinematic gallery.
-                </p>
+                <div className="empty-state">
+                  <p className="font-semibold text-white">
+                    Your image gallery is waiting.
+                  </p>
+                  <p className="mt-2 text-sm">
+                    Generate your first asset in Studio to populate this
+                    cinematic overview.
+                  </p>
+                </div>
               )}
             </div>
           </div>
@@ -118,7 +185,7 @@ export default async function DashboardPage() {
               {marketingGenerations.length ? (
                 marketingGenerations.map((generation) => (
                   <div
-                    className="rounded-xl border border-white/10 p-4"
+                    className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 transition hover:border-cyan-300/40"
                     key={generation.id}
                   >
                     <p className="font-medium">{generation.prompt}</p>
@@ -129,9 +196,13 @@ export default async function DashboardPage() {
                   </div>
                 ))
               ) : (
-                <p className="empty-state">
-                  No marketing copy generated yet.
-                </p>
+                <div className="empty-state">
+                  <p className="font-semibold text-white">No copy yet.</p>
+                  <p className="mt-2 text-sm">
+                    Create a launch brief to fill this area with social, email,
+                    and SEO outputs.
+                  </p>
+                </div>
               )}
             </div>
           </div>
