@@ -9,6 +9,9 @@ export type Json =
 export type AppPlan = Database["public"]["Enums"]["app_plan"];
 export type GenerationStatus = Database["public"]["Enums"]["generation_status"];
 export type DailyUsageKind = "marketing_generations" | "image_generations";
+export type AdminRole = Database["public"]["Enums"]["admin_role"];
+export type ModerationStatus = Database["public"]["Enums"]["moderation_status"];
+export type AuditSeverity = Database["public"]["Enums"]["audit_severity"];
 
 export type Database = {
   public: {
@@ -33,6 +36,10 @@ export type Database = {
             | "past_due";
           subscription_current_period_end: string | null;
           subscription_cancel_at: string | null;
+          admin_role: "user" | "moderator" | "admin";
+          creator_verified: boolean;
+          moderation_status: "clean" | "flagged" | "removed";
+          last_active_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -55,6 +62,10 @@ export type Database = {
             | "past_due";
           subscription_current_period_end?: string | null;
           subscription_cancel_at?: string | null;
+          admin_role?: "user" | "moderator" | "admin";
+          creator_verified?: boolean;
+          moderation_status?: "clean" | "flagged" | "removed";
+          last_active_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -76,6 +87,10 @@ export type Database = {
             | "past_due";
           subscription_current_period_end?: string | null;
           subscription_cancel_at?: string | null;
+          admin_role?: "user" | "moderator" | "admin";
+          creator_verified?: boolean;
+          moderation_status?: "clean" | "flagged" | "removed";
+          last_active_at?: string | null;
           updated_at?: string;
         };
         Relationships: [];
@@ -291,6 +306,9 @@ export type Database = {
           copy_count: number;
           remix_count: number;
           report_count: number;
+          moderation_status: "clean" | "flagged" | "removed";
+          removed_at: string | null;
+          removed_by: string | null;
           published_at: string | null;
           created_at: string;
           updated_at: string;
@@ -318,6 +336,9 @@ export type Database = {
           copy_count?: number;
           remix_count?: number;
           report_count?: number;
+          moderation_status?: "clean" | "flagged" | "removed";
+          removed_at?: string | null;
+          removed_by?: string | null;
           published_at?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -336,6 +357,9 @@ export type Database = {
           copy_count?: number;
           remix_count?: number;
           report_count?: number;
+          moderation_status?: "clean" | "flagged" | "removed";
+          removed_at?: string | null;
+          removed_by?: string | null;
           published_at?: string | null;
           updated_at?: string;
         };
@@ -355,6 +379,9 @@ export type Database = {
           reason: string;
           details: string | null;
           status: "open" | "reviewing" | "resolved" | "dismissed";
+          handled_by: string | null;
+          handled_at: string | null;
+          resolution_note: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -365,6 +392,9 @@ export type Database = {
           reason: string;
           details?: string | null;
           status?: "open" | "reviewing" | "resolved" | "dismissed";
+          handled_by?: string | null;
+          handled_at?: string | null;
+          resolution_note?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -372,7 +402,42 @@ export type Database = {
           reason?: string;
           details?: string | null;
           status?: "open" | "reviewing" | "resolved" | "dismissed";
+          handled_by?: string | null;
+          handled_at?: string | null;
+          resolution_note?: string | null;
           updated_at?: string;
+        };
+        Relationships: [];
+      };
+
+      admin_audit_logs: {
+        Row: {
+          id: string;
+          actor_id: string | null;
+          action: string;
+          target_type: string;
+          target_id: string | null;
+          severity: "info" | "warning" | "critical";
+          metadata: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          actor_id?: string | null;
+          action: string;
+          target_type: string;
+          target_id?: string | null;
+          severity?: "info" | "warning" | "critical";
+          metadata?: Json;
+          created_at?: string;
+        };
+        Update: {
+          actor_id?: string | null;
+          action?: string;
+          target_type?: string;
+          target_id?: string | null;
+          severity?: "info" | "warning" | "critical";
+          metadata?: Json;
         };
         Relationships: [];
       };
@@ -448,6 +513,9 @@ export type Database = {
       gallery_item_kind: "image" | "marketing";
       gallery_visibility: "public" | "private";
       gallery_report_status: "open" | "reviewing" | "resolved" | "dismissed";
+      admin_role: "user" | "moderator" | "admin";
+      moderation_status: "clean" | "flagged" | "removed";
+      audit_severity: "info" | "warning" | "critical";
     };
   };
 };
