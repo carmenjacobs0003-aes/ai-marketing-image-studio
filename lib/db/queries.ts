@@ -145,10 +145,10 @@ export async function clearDefaultBrandKits(
   supabase: TypedSupabaseClient,
   userId: string,
   exceptId?: string
-) {
+) 
   let query = supabase
     .from("brand_kits")
-    .update({ is_default: false })
+    .update({})
     .eq("user_id", userId);
 
   if (exceptId) {
