@@ -253,6 +253,17 @@ export function AdminDashboard({ data, query = "", status = "all", updateUserAct
               {data.systemHealth.map((item) => <HealthPill key={item.label} label={item.label} value={item.value} detail={item.detail} danger={item.tone === "rose"} />)}
             </div>
           </Panel>
+
+          <Panel title="Production monitoring" eyebrow="Alerts & recovery" icon={<AlertTriangle className="h-6 w-6 text-cyan-300" />}>
+            <div className="space-y-3">
+              {data.monitoringIncidents.length ? data.monitoringIncidents.map((incident) => (
+                <div className={cn("rounded-2xl border p-3", incident.severity === "critical" ? "border-rose-300/25 bg-rose-300/[0.07]" : "border-amber-300/25 bg-amber-300/[0.07]")} key={`${incident.label}-${incident.value}`}>
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-white">{incident.label} · {incident.value}</p>
+                  <p className="mt-1 text-sm text-slate-300">{incident.detail}</p>
+                </div>
+              )) : <p className="empty-state text-sm">All production diagnostics are clear. Syntrix monitoring is launch-ready.</p>}
+            </div>
+          </Panel>
           <Panel title="Audit logging" eyebrow="Operator trail" icon={<BarChart3 className="h-6 w-6 text-cyan-300" />}>
             <div className="space-y-3">
               {data.auditLogs.map((log) => (

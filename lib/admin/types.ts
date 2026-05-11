@@ -97,6 +97,13 @@ export type AuditLog = {
   created_at: string;
 };
 
+export type MonitoringIncident = {
+  label: string;
+  value: string;
+  detail: string;
+  severity: "info" | "warning" | "critical";
+};
+
 export type AdminDashboardData = {
   metrics: AdminMetric[];
   dailyGenerations: DailyGenerationPoint[];
@@ -106,4 +113,5 @@ export type AdminDashboardData = {
   auditLogs: AuditLog[];
   generationHealth: GenerationHealth;
   systemHealth: AdminMetric[];
+  monitoringIncidents: MonitoringIncident[];
 };

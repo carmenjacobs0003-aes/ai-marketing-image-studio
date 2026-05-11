@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { env, validateProductionEnv } from "@/lib/env";
+import { summarizeDiagnostics } from "@/lib/monitoring/diagnostics";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,7 @@ function healthPayload() {
       missingProductionEnv: productionEnv.missing
     },
     diagnostics: {
+      summary: summarizeDiagnostics(),
       supabase: Boolean(
         env.NEXT_PUBLIC_SUPABASE_URL && env.NEXT_PUBLIC_SUPABASE_ANON_KEY
       ),

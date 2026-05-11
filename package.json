@@ -13,7 +13,9 @@
     "mobile:sync": "npm run build && npx cap sync",
     "mobile:android": "npm run mobile:sync && npx cap open android",
     "mobile:ios": "npm run mobile:sync && npx cap open ios",
-    "vercel:build": "npm run typecheck && next build"
+    "vercel:build": "npm run typecheck && next build",
+    "diagnostics": "node scripts/diagnostics.mjs",
+    "recovery:generations": "node scripts/recover-generations.mjs"
   },
   "dependencies": {
     "@sentry/nextjs": "^8.55.0",

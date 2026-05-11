@@ -19,6 +19,9 @@ import {
 } from "@/lib/usage/limits";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
+import { withTimeout } from "@/lib/api/timeout";
+import { logCentralizedError } from "@/lib/monitoring/errors";
+import { enforcePromptProtection } from "@/lib/security/abuse";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   createImageGeneration,
@@ -26,6 +29,14 @@ import {
   listProjects,
   updateImageGeneration
 } from "@/lib/db/queries";
+
+function getClientIp(request: NextRequest) {
+  return (
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    request.headers.get("x-real-ip") ??
+    undefined
+  );
+}
 
 const requestSchema = z.object({
   prompt: z.string().trim().min(10).max(2000),
@@ -57,6 +68,43 @@ export async function POST(request: NextRequest) {
   }
 
   const payload = parsed.data;
+  const abuse = await enforcePromptProtection({
+    userId: user.id,
+    prompt: payload.prompt,
+    route: request.nextUrl.pathname,
+    ip: getClientIp(request)
+  });
+
+  if (!abuse.allowed) {
+    await logCentralizedError(new Error(abuse.reason), {
+      category: "abuse",
+      message: abuse.reason ?? "Blocked suspicious image generation request",
+      userId: user.id,
+      requestId: request.headers.get("x-request-id"),
+      context: { score: abuse.score, signals: abuse.signals }
+    });
+    return NextResponse.json(
+      { error: abuse.reason, signals: abuse.signals },
+      { status: 429 }
+    );
+  }
+
+  const queueLimiter = await rateLimit(
+    `generation-queue:${user.id}`,
+    env.GENERATION_QUEUE_LIMIT,
+    env.GENERATION_QUEUE_WINDOW_SECONDS
+  );
+
+  if (!queueLimiter.success) {
+    return NextResponse.json(
+      {
+        error:
+          "Your generation queue is full. Please wait for current jobs to finish before starting another."
+      },
+      { status: 429 }
+    );
+  }
+
   const limiter = await rateLimit(
     `images:${user.id}`,
     env.IMAGE_GENERATION_RATE_LIMIT,
@@ -137,7 +185,7 @@ export async function POST(request: NextRequest) {
     brand_kit_id: brandKit?.id ?? null,
     prompt: payload.prompt,
     model: env.OPENAI_IMAGE_MODEL,
-    status: "processing",
+    status: "queued",
     metadata: {
       moderation: moderationMetadata,
       size: payload.size,
@@ -153,12 +201,18 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const brandedPrompt = injectBrandIntoImagePrompt(payload.prompt, brandKit);
-    const image = await createMarketingImage({
-      prompt: brandedPrompt,
-      size: payload.size,
-      quality: payload.quality
+    await updateImageGeneration(supabase, generation.id, user.id, {
+      status: "processing"
     });
+    const brandedPrompt = injectBrandIntoImagePrompt(payload.prompt, brandKit);
+    const image = await withTimeout(
+      createMarketingImage({
+        prompt: brandedPrompt,
+        size: payload.size,
+        quality: payload.quality
+      }),
+      env.API_TIMEOUT_SECONDS * 1000
+    );
     const base64Image = getGeneratedImageBase64(image);
     const storagePath = await uploadGeneratedImage(
       user.id,
@@ -208,12 +262,27 @@ export async function POST(request: NextRequest) {
       status: "failed",
       error_message: message
     });
-    logger.error("Image generation failed", {
+    await logCentralizedError(error, {
+      category: "generation",
+      provider: "openai",
+      message,
       userId: user.id,
-      generationId: generation.id,
-      durationMs: Date.now() - startedAt,
-      error: message
+      requestId: request.headers.get("x-request-id"),
+      severity: "critical",
+      context: {
+        generationId: generation.id,
+        durationMs: Date.now() - startedAt,
+        size: payload.size,
+        quality: payload.quality
+      }
     });
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: message,
+        fallback:
+          "Generation was safely marked failed. Your quota was not consumed; revise or retry when the provider recovers."
+      },
+      { status: 500 }
+    );
   }
 }

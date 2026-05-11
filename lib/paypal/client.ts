@@ -1,4 +1,6 @@
 import { env } from "@/lib/env";
+import { logCentralizedError } from "@/lib/monitoring/errors";
+import { normalizeFailureMessage, withRetry } from "@/lib/resilience";
 
 const PAYPAL_API_BASE =
   env.PAYPAL_ENV === "live"
@@ -42,7 +44,7 @@ export async function getPayPalAccessToken() {
   const credentials = Buffer.from(
     `${env.PAYPAL_CLIENT_ID}:${env.PAYPAL_CLIENT_SECRET}`
   ).toString("base64");
-  const response = await fetch(`${PAYPAL_API_BASE}/v1/oauth2/token`, {
+  const response = await withRetry(() => fetch(`${PAYPAL_API_BASE}/v1/oauth2/token`, {
     method: "POST",
     headers: {
       Authorization: `Basic ${credentials}`,
@@ -50,6 +52,14 @@ export async function getPayPalAccessToken() {
     },
     body: "grant_type=client_credentials",
     cache: "no-store"
+  }), { label: "paypal.oauth" }).catch(async (error) => {
+    await logCentralizedError(error, {
+      category: "paypal",
+      provider: "paypal",
+      message: normalizeFailureMessage("PayPal authentication", error),
+      severity: "critical"
+    });
+    throw error;
   });
 
   if (!response.ok) {
@@ -64,7 +74,7 @@ export async function paypalFetch<T>(
   init: RequestInit = {}
 ): Promise<T> {
   const { access_token: accessToken } = await getPayPalAccessToken();
-  const response = await fetch(`${PAYPAL_API_BASE}${path}`, {
+  const response = await withRetry(() => fetch(`${PAYPAL_API_BASE}${path}`, {
     ...init,
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -73,6 +83,15 @@ export async function paypalFetch<T>(
       ...init.headers
     },
     cache: "no-store"
+  }), { label: `paypal${path}` }).catch(async (error) => {
+    await logCentralizedError(error, {
+      category: "paypal",
+      provider: "paypal",
+      message: normalizeFailureMessage("PayPal API", error),
+      severity: "critical",
+      context: { path }
+    });
+    throw error;
   });
 
   if (!response.ok) {
@@ -101,7 +120,7 @@ export async function createPayPalSubscription(input: {
       plan_id: input.planId,
       custom_id: input.userId,
       application_context: {
-        brand_name: "AI Marketing Image Studio",
+        brand_name: "Syntrix AI Marketing Image Studio",
         locale: "en-US",
         shipping_preference: "NO_SHIPPING",
         user_action: "SUBSCRIBE_NOW",
@@ -151,6 +170,10 @@ export async function verifyPayPalWebhook(input: {
 }) {
   if (!env.PAYPAL_WEBHOOK_ID) {
     throw new Error("PayPal webhook verification is not configured.");
+  }
+
+  if (!input.transmissionId || !input.transmissionTime || !input.certUrl || !input.authAlgo || !input.transmissionSig) {
+    return false;
   }
 
   const result = await paypalFetch<{ verification_status: string }>(

@@ -15,25 +15,28 @@ function logRequest(
   response: NextResponse,
   startedAt: number
 ) {
-  if (process.env.NODE_ENV !== "production") {
+  const payload = {
+    level: response.status >= 500 ? "error" : "info",
+    message: response.status >= 500 ? "API failure" : "HTTP request",
+    service: "ai-marketing-image-studio",
+    timestamp: new Date().toISOString(),
+    environment: process.env.VERCEL_ENV ?? process.env.NODE_ENV,
+    requestId: response.headers.get("X-Request-Id"),
+    method: request.method,
+    path: request.nextUrl.pathname,
+    status: response.status,
+    durationMs: Date.now() - startedAt,
+    region: process.env.VERCEL_REGION ?? "edge"
+  };
+
+  if (response.status >= 500) {
+    console.error(JSON.stringify(payload));
     return;
   }
 
-  console.log(
-    JSON.stringify({
-      level: "info",
-      message: "HTTP request",
-      service: "ai-marketing-image-studio",
-      timestamp: new Date().toISOString(),
-      environment: process.env.VERCEL_ENV ?? process.env.NODE_ENV,
-      requestId: response.headers.get("X-Request-Id"),
-      method: request.method,
-      path: request.nextUrl.pathname,
-      status: response.status,
-      durationMs: Date.now() - startedAt,
-      region: process.env.VERCEL_REGION ?? "edge"
-    })
-  );
+  if (process.env.NODE_ENV === "production") {
+    console.log(JSON.stringify(payload));
+  }
 }
 
 function getClientIp(request: NextRequest) {

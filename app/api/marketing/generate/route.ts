@@ -7,6 +7,7 @@ import {
   getDailyUsage,
   listBrandKits,
   listProjects,
+  updateMarketingGeneration,
   type BrandKit,
   type Project
 } from "@/lib/db/queries";
@@ -21,6 +22,11 @@ import { marketingContentTypeSchema } from "@/types/marketing";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { TypedSupabaseClient } from "@/lib/db/helpers";
 import { logger } from "@/lib/logger";
+import { env } from "@/lib/env";
+import { withTimeout } from "@/lib/api/timeout";
+import { logCentralizedError } from "@/lib/monitoring/errors";
+import { rateLimit } from "@/lib/rate-limit";
+import { enforcePromptProtection } from "@/lib/security/abuse";
 import {
   assertCanGenerateMarketing,
   recordSuccessfulUsage
@@ -34,6 +40,14 @@ const requestSchema = z.object({
   templateId: z.string().trim().optional()
 });
 
+function getClientIp(request: NextRequest) {
+  return (
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    request.headers.get("x-real-ip") ??
+    undefined
+  );
+}
+
 type MarketingGenerateResponse =
   | {
       generation: Awaited<ReturnType<typeof createMarketingGeneration>>;
@@ -44,6 +58,7 @@ type MarketingGenerateResponse =
       issues?: z.typeToFlattenedError<z.infer<typeof requestSchema>>;
       usage?: Awaited<ReturnType<typeof assertCanGenerateMarketing>>["usage"];
       categories?: string[];
+      fallback?: string;
     };
 
 async function readRequestJson(request: NextRequest) {
@@ -77,6 +92,44 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const payload = parsed.data;
+  const abuse = await enforcePromptProtection({
+    userId: user.id,
+    prompt: payload.prompt,
+    route: request.nextUrl.pathname,
+    ip: getClientIp(request)
+  });
+
+  if (!abuse.allowed) {
+    await logCentralizedError(new Error(abuse.reason), {
+      category: "abuse",
+      message: abuse.reason ?? "Blocked suspicious marketing generation request",
+      userId: user.id,
+      requestId: request.headers.get("x-request-id"),
+      context: { score: abuse.score, signals: abuse.signals }
+    });
+    return NextResponse.json<MarketingGenerateResponse>(
+      { error: abuse.reason ?? "Blocked suspicious request" },
+      { status: 429 }
+    );
+  }
+
+  const queueLimiter = await rateLimit(
+    `generation-queue:${user.id}`,
+    env.GENERATION_QUEUE_LIMIT,
+    env.GENERATION_QUEUE_WINDOW_SECONDS
+  );
+
+  if (!queueLimiter.success) {
+    return NextResponse.json<MarketingGenerateResponse>(
+      {
+        error:
+          "Your generation queue is full. Please wait for current jobs to finish before starting another."
+      },
+      { status: 429 }
+    );
+  }
+
   const entitlement = await assertCanGenerateMarketing(user.id);
 
   if (!entitlement.allowed) {
@@ -86,7 +139,6 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const payload = parsed.data;
   const supabase =
     createSupabaseServerClient() as unknown as TypedSupabaseClient;
 
@@ -139,6 +191,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  let generation: Awaited<ReturnType<typeof createMarketingGeneration>> | null = null;
+
   try {
     const moderation = await moderateMarketingInput(payload.prompt);
 
@@ -153,25 +207,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const copy = await createMarketingCopy({
-      prompt: payload.prompt,
-      contentType: payload.contentType,
-      brandContext: buildBrandPromptContext(brandKit),
-      templateInstruction: template?.prompt
-    });
-
-    const generation = await createMarketingGeneration(supabase, {
+    generation = await createMarketingGeneration(supabase, {
       user_id: user.id,
       project_id: payload.projectId ?? null,
       brand_kit_id: brandKit?.id ?? null,
       prompt: payload.prompt,
       content_type: payload.contentType,
       model: getMarketingModelName(),
-      status: "completed",
-      output: copy.output,
+      status: "processing",
       metadata: {
-        openai_id: copy.raw.id,
-        model: copy.model,
         moderation_id: moderation.moderationId,
         moderation_model: moderation.model,
         template_id: template?.id ?? null,
@@ -179,31 +223,78 @@ export async function POST(request: NextRequest) {
       }
     });
 
+    const copy = await withTimeout(
+      createMarketingCopy({
+        prompt: payload.prompt,
+        contentType: payload.contentType,
+        brandContext: buildBrandPromptContext(brandKit),
+        templateInstruction: template?.prompt
+      }),
+      env.API_TIMEOUT_SECONDS * 1000
+    );
+
+    const completedGeneration = await updateMarketingGeneration(
+      supabase,
+      generation.id,
+      user.id,
+      {
+        status: "completed",
+        output: copy.output,
+        metadata: {
+          openai_id: copy.raw.id,
+          model: copy.model,
+          moderation_id: moderation.moderationId,
+          moderation_model: moderation.model,
+          template_id: template?.id ?? null,
+          template_name: template?.name ?? null
+        }
+      }
+    );
+
     await recordSuccessfulUsage(user.id, "marketing_generations");
     logger.info("Marketing generation completed", {
       userId: user.id,
-      generationId: generation.id,
+      generationId: completedGeneration.id,
       durationMs: Date.now() - startedAt,
       contentType: payload.contentType
     });
     const usage = await getDailyUsage(supabase, user.id);
 
     return NextResponse.json<MarketingGenerateResponse>(
-      { generation, usage },
+      { generation: completedGeneration, usage },
       { status: 201 }
     );
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Marketing generation failed";
 
-    logger.error("Marketing generation failed", {
+    if (generation) {
+      await updateMarketingGeneration(supabase, generation.id, user.id, {
+        status: "failed",
+        error_message: message
+      }).catch(() => null);
+    }
+
+    await logCentralizedError(error, {
+      category: "generation",
+      provider: "openai",
+      message,
       userId: user.id,
-      durationMs: Date.now() - startedAt,
-      error: message
+      requestId: request.headers.get("x-request-id"),
+      severity: "critical",
+      context: {
+        durationMs: Date.now() - startedAt,
+        generationId: generation?.id,
+        contentType: payload.contentType
+      }
     });
 
     return NextResponse.json<MarketingGenerateResponse>(
-      { error: message },
+      {
+        error: message,
+        fallback:
+          "Generation was safely marked failed. Your quota was not consumed; revise or retry when the provider recovers."
+      },
       { status: 500 }
     );
   }

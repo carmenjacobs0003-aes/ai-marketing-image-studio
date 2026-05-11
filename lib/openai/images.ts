@@ -1,6 +1,8 @@
 import type { ImagesResponse } from "openai/resources/images";
 import { env } from "@/lib/env";
 import { createOpenAIClient } from "@/lib/openai/client";
+import { normalizeFailureMessage, withRetry } from "@/lib/resilience";
+import { logCentralizedError } from "@/lib/monitoring/errors";
 
 export type ImageGenerationSize = "1024x1024" | "1024x1792" | "1792x1024";
 export type ImageGenerationQuality = "standard" | "hd";
@@ -16,9 +18,21 @@ const QUALITY_MODELS = new Set(["dall-e-3"]);
 
 export async function moderateImagePrompt(prompt: string) {
   const openai = createOpenAIClient();
-  const moderation = await openai.moderations.create({
-    model: "omni-moderation-latest",
-    input: prompt
+  const moderation = await withRetry(
+    () =>
+      openai.moderations.create({
+        model: "omni-moderation-latest",
+        input: prompt
+      }),
+    { label: "openai.image_moderation" }
+  ).catch(async (error) => {
+    await logCentralizedError(error, {
+      category: "openai",
+      provider: "openai",
+      message: normalizeFailureMessage("OpenAI moderation", error),
+      severity: "critical"
+    });
+    throw new Error(normalizeFailureMessage("OpenAI moderation", error));
   });
   const result = moderation.results[0];
 
@@ -51,7 +65,18 @@ export async function createMarketingImage({
     ...(QUALITY_MODELS.has(model) ? { quality } : {})
   };
 
-  return openai.images.generate(request);
+  return withRetry(() => openai.images.generate(request), {
+    label: "openai.image_generation"
+  }).catch(async (error) => {
+    await logCentralizedError(error, {
+      category: "openai",
+      provider: "openai",
+      message: normalizeFailureMessage("OpenAI image generation", error),
+      severity: "critical",
+      context: { model, size, quality }
+    });
+    throw new Error(normalizeFailureMessage("OpenAI image generation", error));
+  });
 }
 
 export function getGeneratedImageBase64(image: ImagesResponse) {

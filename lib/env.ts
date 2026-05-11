@@ -2,7 +2,7 @@ import { z } from "zod";
 
 const baseEnvSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3000"),
-  NEXT_PUBLIC_APP_NAME: z.string().default("AI Marketing Image Studio"),
+  NEXT_PUBLIC_APP_NAME: z.string().default("Syntrix AI Marketing Image Studio"),
   NEXT_PUBLIC_APP_DESCRIPTION: z
     .string()
     .default("Create campaign-ready marketing images and copy with AI."),
@@ -14,6 +14,13 @@ const baseEnvSchema = z.object({
   OPENAI_TEXT_MODEL: z.string().default("gpt-4o-mini"),
   OPENAI_IMAGE_MODEL: z.string().default("dall-e-3"),
   API_TIMEOUT_SECONDS: z.coerce.number().int().positive().default(60),
+  PROVIDER_RETRY_ATTEMPTS: z.coerce.number().int().positive().default(3),
+  PROVIDER_RETRY_BASE_DELAY_MS: z.coerce.number().int().positive().default(500),
+  PROVIDER_RETRY_MAX_DELAY_MS: z.coerce.number().int().positive().default(4000),
+  GENERATION_QUEUE_LIMIT: z.coerce.number().int().positive().default(3),
+  GENERATION_QUEUE_WINDOW_SECONDS: z.coerce.number().int().positive().default(120),
+  CRITICAL_ALERT_WEBHOOK_URL: z.string().url().optional(),
+  CRITICAL_ALERT_COOLDOWN_SECONDS: z.coerce.number().int().positive().default(300),
   IMAGE_GENERATION_RATE_LIMIT: z.coerce.number().int().positive().default(10),
   IMAGE_GENERATION_RATE_LIMIT_WINDOW_SECONDS: z.coerce
     .number()

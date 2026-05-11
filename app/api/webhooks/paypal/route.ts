@@ -11,6 +11,8 @@ import {
   verifyPayPalWebhook
 } from "@/lib/paypal/client";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { logCentralizedError } from "@/lib/monitoring/errors";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -80,8 +82,29 @@ async function resolveSubscriptionResource(event: PayPalWebhookEvent) {
   }
 }
 
+function getClientIp(request: NextRequest) {
+  return (
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    request.headers.get("x-real-ip") ??
+    "unknown"
+  );
+}
+
 export async function POST(request: NextRequest) {
-  const event = (await request.json()) as PayPalWebhookEvent;
+  const limiter = await rateLimit(`paypal-webhook:${getClientIp(request)}`, 60, 60);
+
+  if (!limiter.success) {
+    return NextResponse.json({ error: "Webhook rate limit exceeded" }, { status: 429 });
+  }
+
+  const event = (await request.json().catch(() => null)) as PayPalWebhookEvent | null;
+
+  if (!event || typeof event !== "object") {
+    return NextResponse.json(
+      { error: "Invalid PayPal webhook JSON" },
+      { status: 400 }
+    );
+  }
   const verified = await verifyPayPalWebhook({
     transmissionId: request.headers.get("paypal-transmission-id"),
     transmissionTime: request.headers.get("paypal-transmission-time"),
@@ -92,6 +115,14 @@ export async function POST(request: NextRequest) {
   });
 
   if (!verified) {
+    await logCentralizedError(new Error("Invalid PayPal webhook signature"), {
+      category: "paypal",
+      provider: "paypal",
+      message: "Invalid PayPal webhook signature",
+      requestId: request.headers.get("x-request-id"),
+      severity: "critical",
+      context: { eventId: event.id, eventType: event.event_type }
+    });
     return NextResponse.json(
       { error: "Invalid PayPal webhook signature" },
       { status: 401 }
