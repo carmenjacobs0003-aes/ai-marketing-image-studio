@@ -59,20 +59,26 @@ export function ImageLibraryGrid({ images, projects }: ImageLibraryGridProps) {
 
   if (!items.length) {
     return (
-      <p className="empty-state sm:col-span-2 lg:col-span-3">
-        No generated images yet.
-      </p>
+      <div className="empty-state sm:col-span-2 lg:col-span-3">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl border border-cyan-300/25 bg-cyan-300/10 shadow-glow">
+          <span className="text-2xl">✦</span>
+        </div>
+        <h2 className="mt-4 text-xl font-black text-white">
+          Your gallery is a blank canvas.
+        </h2>
+        <p className="mt-2 text-sm leading-6">
+          Generate your first campaign image in Studio and it will appear here
+          with neon previews, project routing, and download actions.
+        </p>
+      </div>
     );
   }
 
   return (
     <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {items.map((image) => (
-        <article
-          className="group glass-card glass-hover"
-          key={image.id}
-        >
-          <div className="relative flex aspect-square items-center justify-center bg-black text-sm text-slate-400">
+        <article className="group glass-card glass-hover" key={image.id}>
+          <div className="relative flex aspect-square items-center justify-center overflow-hidden bg-black text-sm text-slate-400">
             {image.signedUrl ? (
               <Image
                 alt={image.prompt}
@@ -83,14 +89,16 @@ export function ImageLibraryGrid({ images, projects }: ImageLibraryGridProps) {
                 unoptimized
               />
             ) : image.status === "processing" ? (
-              <div className="h-full w-full animate-pulse bg-cyan-300/10" />
+              <div className="skeleton-tile h-full w-full" />
             ) : (
               <span className="px-4 text-center">Preview unavailable</span>
             )}
           </div>
-          <div className="space-y-4 p-5">
+          <div className="relative z-10 space-y-4 p-5">
             <div>
-              <h2 className="line-clamp-2 font-semibold">{image.prompt}</h2>
+              <h2 className="line-clamp-2 font-semibold text-white">
+                {image.prompt}
+              </h2>
               <p className="mt-2 text-sm capitalize text-cyan-300">
                 {image.status}
               </p>
@@ -101,7 +109,7 @@ export function ImageLibraryGrid({ images, projects }: ImageLibraryGridProps) {
             <label className="block space-y-2 text-sm">
               <span className="text-slate-300">Save to project</span>
               <select
-                className="w-full rounded-xl border border-white/10 bg-black px-3 py-2 text-white outline-none ring-cyan-300 transition hover:border-cyan-300/40 focus:border-cyan-300/80 focus:ring-2"
+                className="field-control py-2"
                 disabled={savingId === image.id}
                 onChange={(event) =>
                   saveToProject(image.id, event.target.value || null)

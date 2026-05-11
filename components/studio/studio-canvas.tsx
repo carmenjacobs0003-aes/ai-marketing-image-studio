@@ -87,9 +87,7 @@ export function StudioCanvas({
     <main className="page-shell grid gap-6 lg:grid-cols-[360px_1fr]">
       <aside className="glass-card space-y-6 p-6">
         <div>
-          <p className="eyebrow">
-            Studio
-          </p>
+          <p className="eyebrow">Studio</p>
           <h1 className="mt-2 text-3xl font-black tracking-tight">
             Generate an image
           </h1>
@@ -115,7 +113,7 @@ export function StudioCanvas({
           <label className="block space-y-2 text-sm font-medium">
             <span>Prompt</span>
             <textarea
-              className="min-h-44 w-full rounded-2xl border border-white/10 bg-black px-4 py-3 outline-none ring-cyan-300 transition placeholder:text-slate-500 hover:border-cyan-300/40 hover:shadow-lg hover:shadow-cyan-500/10 focus:border-cyan-300/80 focus:ring-2"
+              className="field-control min-h-44"
               disabled={isLoading || limitReached}
               onChange={(event) => setPrompt(event.target.value)}
               placeholder="Describe a campaign-ready product image with lighting, style, layout, and background..."
@@ -125,7 +123,7 @@ export function StudioCanvas({
           <label className="block space-y-2 text-sm font-medium">
             <span>Save to project</span>
             <select
-              className="w-full rounded-2xl border border-white/10 bg-black px-4 py-3 text-white outline-none ring-cyan-300 transition hover:border-cyan-300/40 hover:shadow-lg hover:shadow-cyan-500/10 focus:border-cyan-300/80 focus:ring-2"
+              className="field-control"
               disabled={isLoading || limitReached}
               onChange={(event) => setProjectId(event.target.value)}
               value={projectId}
@@ -141,7 +139,7 @@ export function StudioCanvas({
           <label className="block space-y-2 text-sm font-medium">
             <span>Brand kit</span>
             <select
-              className="w-full rounded-2xl border border-white/10 bg-black px-4 py-3 text-white outline-none ring-cyan-300 transition hover:border-cyan-300/40 hover:shadow-lg hover:shadow-cyan-500/10 focus:border-cyan-300/80 focus:ring-2"
+              className="field-control"
               disabled={isLoading || limitReached}
               onChange={(event) => setBrandKitId(event.target.value)}
               value={brandKitId}
