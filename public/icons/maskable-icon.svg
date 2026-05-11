@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="AI Marketing Image Studio">
+  <defs>
+    <radialGradient id="g" cx="50%" cy="20%" r="80%">
+      <stop offset="0" stop-color="#67e8f9"/>
+      <stop offset="0.45" stop-color="#0891b2"/>
+      <stop offset="1" stop-color="#020617"/>
+    </radialGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="10" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#020617"/>
+  <path d="M80 356 256 64l176 292H80Z" fill="url(#g)" filter="url(#glow)" opacity=".95"/>
+  <circle cx="256" cy="250" r="76" fill="#020617" stroke="#ecfeff" stroke-width="18"/>
+  <path d="M174 384h164" stroke="#67e8f9" stroke-width="28" stroke-linecap="round"/>
+</svg>

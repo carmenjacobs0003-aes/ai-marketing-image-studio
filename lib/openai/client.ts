@@ -7,6 +7,8 @@ export function createOpenAIClient() {
   }
 
   return new OpenAI({
-    apiKey: env.OPENAI_API_KEY
+    apiKey: env.OPENAI_API_KEY,
+    timeout: env.API_TIMEOUT_SECONDS * 1000,
+    maxRetries: 2
   });
 }

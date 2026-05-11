@@ -191,7 +191,6 @@ export function StudioCanvas({
                   fill
                   sizes="(min-width: 1024px) 60vw, 100vw"
                   src={image.signedUrl}
-                  unoptimized
                 />
               </div>
               <div className="space-y-4 border-t border-white/10 p-4 text-left sm:flex sm:items-center sm:justify-between sm:gap-4 sm:space-y-0">

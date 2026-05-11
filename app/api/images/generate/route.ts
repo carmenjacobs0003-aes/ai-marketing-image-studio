@@ -18,6 +18,7 @@ import {
   recordSuccessfulUsage
 } from "@/lib/usage/limits";
 import { env } from "@/lib/env";
+import { logger } from "@/lib/logger";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   createImageGeneration,
@@ -35,6 +36,7 @@ const requestSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const startedAt = Date.now();
   const user = await getCurrentUser();
 
   if (!user) {
@@ -176,6 +178,13 @@ export async function POST(request: NextRequest) {
       }
     });
     await recordSuccessfulUsage(user.id, "image_generations");
+    logger.info("Image generation completed", {
+      userId: user.id,
+      generationId: generation.id,
+      durationMs: Date.now() - startedAt,
+      size: payload.size,
+      quality: payload.quality
+    });
     const [signedUrl, downloadUrl] = await Promise.all([
       createSignedImageUrl(storagePath),
       createSignedDownloadUrl(storagePath)
@@ -198,6 +207,12 @@ export async function POST(request: NextRequest) {
     await updateImageGeneration(supabase, generation.id, user.id, {
       status: "failed",
       error_message: message
+    });
+    logger.error("Image generation failed", {
+      userId: user.id,
+      generationId: generation.id,
+      durationMs: Date.now() - startedAt,
+      error: message
     });
     return NextResponse.json({ error: message }, { status: 500 });
   }

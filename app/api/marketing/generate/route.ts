@@ -20,6 +20,7 @@ import { isPaidPlan } from "@/lib/billing/plans";
 import { marketingContentTypeSchema } from "@/types/marketing";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { TypedSupabaseClient } from "@/lib/db/helpers";
+import { logger } from "@/lib/logger";
 import {
   assertCanGenerateMarketing,
   recordSuccessfulUsage
@@ -54,6 +55,7 @@ async function readRequestJson(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const startedAt = Date.now();
   const user = await getCurrentUser();
 
   if (!user) {
@@ -178,6 +180,12 @@ export async function POST(request: NextRequest) {
     });
 
     await recordSuccessfulUsage(user.id, "marketing_generations");
+    logger.info("Marketing generation completed", {
+      userId: user.id,
+      generationId: generation.id,
+      durationMs: Date.now() - startedAt,
+      contentType: payload.contentType
+    });
     const usage = await getDailyUsage(supabase, user.id);
 
     return NextResponse.json<MarketingGenerateResponse>(
@@ -187,6 +195,12 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Marketing generation failed";
+
+    logger.error("Marketing generation failed", {
+      userId: user.id,
+      durationMs: Date.now() - startedAt,
+      error: message
+    });
 
     return NextResponse.json<MarketingGenerateResponse>(
       { error: message },
