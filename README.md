@@ -56,3 +56,48 @@ Middleware refreshes Supabase SSR sessions and protects `/dashboard`, `/marketin
 ```
 
 The route verifies authentication, applies the per-user rate limit, checks monthly usage entitlements, creates an `image_generations` row, calls OpenAI Images, uploads the generated image to Supabase Storage, records usage, and returns a signed image URL.
+
+## Production deployment
+
+This app is configured for Vercel with `vercel.json`, production function timeouts, a `/healthz` rewrite, security headers, Sentry upload settings, optimized image formats, and immutable icon caching.
+
+### Required production environment variables
+
+Production validation in `lib/env.ts` requires these variables when `NODE_ENV=production` or `VERCEL_ENV=production`:
+
+- `NEXT_PUBLIC_APP_URL`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `OPENAI_API_KEY`
+- `UPSTASH_REDIS_REST_URL`
+- `UPSTASH_REDIS_REST_TOKEN`
+- `NEXT_PUBLIC_SENTRY_DSN`
+- `SENTRY_DSN`
+
+Set `NEXT_PUBLIC_APP_URL` to the canonical custom domain, for example `https://studio.example.com`. Add the same domain in Vercel Project Settings → Domains and configure DNS as instructed by Vercel. `NEXT_PUBLIC_SITE_DOMAIN` is available for display or operational metadata.
+
+### Monitoring, logging, and diagnostics
+
+- Sentry is initialized with release, environment, trace, and profile sampling.
+- Structured JSON logs are emitted for image and marketing generation success/failure.
+- `/api/health` and `/healthz` return deployment diagnostics for uptime checks.
+- Mutating API requests receive a shared IP/path rate limit in middleware, with per-user image generation limits still enforced in the generation route.
+
+## PWA and mobile app conversion
+
+The app includes a manifest, service worker, offline fallback page, maskable icons, Apple web app metadata, install shortcuts, robots.txt, sitemap.xml, privacy policy, and terms pages.
+
+### Capacitor packaging
+
+Capacitor is configured in `capacitor.config.json` for Android and iOS shells pointed at the production web deployment.
+
+Recommended commands after installing dependencies in an environment that can access the npm registry:
+
+```bash
+npm run mobile:sync
+npm run mobile:android
+npm run mobile:ios
+```
+
+Before publishing native builds, generate platform-native icon and splash assets from `public/icons/icon.svg`, then run `npx cap add android` and `npx cap add ios` if the native folders have not been created yet.

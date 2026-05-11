@@ -1,0 +1,28 @@
+{
+  "appId": "com.aimarketingimagestudio.app",
+  "appName": "AI Marketing Image Studio",
+  "webDir": ".next",
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "https://ai-marketing-image-studio.vercel.app",
+    "cleartext": false
+  },
+  "android": {
+    "backgroundColor": "#020617"
+  },
+  "ios": {
+    "contentInset": "always",
+    "backgroundColor": "#020617"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1800,
+      "launchAutoHide": true,
+      "backgroundColor": "#020617",
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": false,
+      "splashFullScreen": true,
+      "splashImmersive": true
+    }
+  }
+}

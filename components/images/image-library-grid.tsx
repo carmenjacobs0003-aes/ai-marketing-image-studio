@@ -87,7 +87,6 @@ export function ImageLibraryGrid({ images, projects }: ImageLibraryGridProps) {
                 fill
                 sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
                 src={image.signedUrl}
-                unoptimized
               />
             ) : image.status === "processing" ? (
               <div className="skeleton-tile h-full w-full" />
