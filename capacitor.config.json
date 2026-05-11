@@ -1,18 +1,20 @@
 {
-  "appId": "com.aimarketingimagestudio.app",
-  "appName": "AI Marketing Image Studio",
+  "appId": "co.uk.syntrixai.app",
+  "appName": "SyntrixAI",
   "webDir": ".next",
   "bundledWebRuntime": false,
   "server": {
-    "url": "https://ai-marketing-image-studio.vercel.app",
+    "url": "https://www.syntrixai.co.uk",
     "cleartext": false
   },
   "android": {
-    "backgroundColor": "#020617"
+    "backgroundColor": "#020617",
+    "allowMixedContent": false
   },
   "ios": {
     "contentInset": "always",
-    "backgroundColor": "#020617"
+    "backgroundColor": "#020617",
+    "allowsLinkPreview": false
   },
   "plugins": {
     "SplashScreen": {
