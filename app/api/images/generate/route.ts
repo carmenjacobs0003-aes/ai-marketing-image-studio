@@ -164,11 +164,13 @@ export async function POST(request: NextRequest) {
     prompt: payload.prompt,
     model: env.OPENAI_IMAGE_MODEL,
     status: "queued",
-    metadata: {
-      moderation,
-      size: payload.size,
-      quality: payload.quality
-    }
+    metadata: JSON.parse(
+  JSON.stringify({
+    moderation,
+    size: payload.size,
+    quality: payload.quality
+  })
+)
   });
 
   try {
@@ -207,16 +209,18 @@ export async function POST(request: NextRequest) {
     );
 
     await updateImageGeneration(supabase, generation.id, user.id, {
-      status: "completed",
-      storage_path: storagePath,
-      metadata: {
-        moderation,
-        size: payload.size,
-        quality: payload.quality,
-        openai_created: image.created ?? null,
-        revised_prompt: image.data?.[0]?.revised_prompt ?? null
-      }
-    });
+  status: "completed",
+  storage_path: storagePath,
+  metadata: JSON.parse(
+    JSON.stringify({
+      moderation,
+      size: payload.size,
+      quality: payload.quality,
+      openai_created: image.created ?? null,
+      revised_prompt: image.data?.[0]?.revised_prompt ?? null
+    })
+  )
+});
 
     await recordSuccessfulUsage(user.id, "image_generations");
 
