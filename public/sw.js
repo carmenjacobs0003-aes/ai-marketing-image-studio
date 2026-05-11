@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v2";
+const CACHE_VERSION = "v999";
 const STATIC_CACHE = `ai-marketing-image-studio-static-${CACHE_VERSION}`;
 const PAGE_CACHE = `ai-marketing-image-studio-pages-${CACHE_VERSION}`;
 const APP_SHELL = [
