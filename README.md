@@ -42,7 +42,7 @@ If Upstash Redis is configured, rate limiting uses Redis. Otherwise, local devel
 
 ## Protected routes
 
-Middleware refreshes Supabase SSR sessions and protects `/dashboard`, `/marketing`, `/images`, `/projects`, `/brand`, `/templates`, `/admin`, and `/studio`. Unauthenticated users are redirected to `/login` with a safe `redirectTo` value, while authenticated users are redirected away from `/login` and `/signup` to `/dashboard`.
+Middleware refreshes Supabase SSR sessions and protects `/dashboard`, `/marketing`, `/images`, `/projects`, `/brand`, `/templates`, `/billing`, `/settings`, `/admin`, and `/studio`. Unauthenticated users are redirected to `/login` with a safe `redirectTo` value, while authenticated users are redirected away from `/login` and `/signup` to `/dashboard`.
 
 ## Image generation flow
 
