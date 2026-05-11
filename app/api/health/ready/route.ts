@@ -33,7 +33,7 @@ export function GET() {
           env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN
         ),
         openai: Boolean(env.OPENAI_API_KEY),
-        sentry: Boolean(env.SENTRY_DSN && env.NEXT_PUBLIC_SENTRY_DSN),
+        sentry: false,
         paypal: paypalReady
       },
       missing: validation.missing
