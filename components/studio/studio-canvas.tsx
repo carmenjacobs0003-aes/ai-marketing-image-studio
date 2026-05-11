@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useState, type FormEvent } from "react";
+import { useSearchParams } from "next/navigation";
 import type { BrandKit, Project } from "@/lib/db/queries";
 import type { UsageSummary } from "@/lib/usage/limits";
 
@@ -25,7 +26,8 @@ export function StudioCanvas({
   brandKits,
   usage: initialUsage
 }: StudioCanvasProps) {
-  const [prompt, setPrompt] = useState("");
+  const searchParams = useSearchParams();
+  const [prompt, setPrompt] = useState(searchParams.get("prompt") ?? "");
   const [projectId, setProjectId] = useState("");
   const [brandKitId, setBrandKitId] = useState("");
   const [usage, setUsage] = useState(initialUsage);

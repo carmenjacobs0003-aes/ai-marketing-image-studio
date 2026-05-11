@@ -266,6 +266,116 @@ export type Database = {
         };
         Relationships: [];
       };
+
+      gallery_items: {
+        Row: {
+          id: string;
+          creator_id: string;
+          source_image_generation_id: string | null;
+          source_marketing_generation_id: string | null;
+          kind: "image" | "marketing";
+          visibility: "public" | "private";
+          title: string;
+          description: string | null;
+          prompt: string;
+          reusable_prompt: string;
+          category: string;
+          tags: string[];
+          image_storage_path: string | null;
+          image_signed_url: string | null;
+          marketing_output: Json;
+          metadata: Json;
+          featured: boolean;
+          view_count: number;
+          like_count: number;
+          copy_count: number;
+          remix_count: number;
+          report_count: number;
+          published_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          creator_id: string;
+          source_image_generation_id?: string | null;
+          source_marketing_generation_id?: string | null;
+          kind: "image" | "marketing";
+          visibility?: "public" | "private";
+          title: string;
+          description?: string | null;
+          prompt: string;
+          reusable_prompt: string;
+          category?: string;
+          tags?: string[];
+          image_storage_path?: string | null;
+          image_signed_url?: string | null;
+          marketing_output?: Json;
+          metadata?: Json;
+          featured?: boolean;
+          view_count?: number;
+          like_count?: number;
+          copy_count?: number;
+          remix_count?: number;
+          report_count?: number;
+          published_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          visibility?: "public" | "private";
+          title?: string;
+          description?: string | null;
+          reusable_prompt?: string;
+          category?: string;
+          tags?: string[];
+          metadata?: Json;
+          featured?: boolean;
+          view_count?: number;
+          like_count?: number;
+          copy_count?: number;
+          remix_count?: number;
+          report_count?: number;
+          published_at?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      gallery_favorites: {
+        Row: { user_id: string; gallery_item_id: string; created_at: string };
+        Insert: { user_id: string; gallery_item_id: string; created_at?: string };
+        Update: { user_id?: string; gallery_item_id?: string; created_at?: string };
+        Relationships: [];
+      };
+      gallery_reports: {
+        Row: {
+          id: string;
+          gallery_item_id: string;
+          reporter_id: string | null;
+          reason: string;
+          details: string | null;
+          status: "open" | "reviewing" | "resolved" | "dismissed";
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          gallery_item_id: string;
+          reporter_id?: string | null;
+          reason: string;
+          details?: string | null;
+          status?: "open" | "reviewing" | "resolved" | "dismissed";
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          reason?: string;
+          details?: string | null;
+          status?: "open" | "reviewing" | "resolved" | "dismissed";
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       paypal_webhook_events: {
         Row: {
           id: string;
@@ -303,6 +413,14 @@ export type Database = {
         };
         Returns: Database["public"]["Tables"]["daily_usage"]["Row"];
       };
+      increment_gallery_metric: {
+        Args: { p_gallery_item_id: string; p_metric: string; p_quantity?: number };
+        Returns: Database["public"]["Tables"]["gallery_items"]["Row"];
+      };
+      increment_gallery_like: {
+        Args: { p_gallery_item_id: string; p_quantity: number };
+        Returns: Database["public"]["Tables"]["gallery_items"]["Row"];
+      };
       sync_profile_subscription: {
         Args: {
           p_user_id: string;
@@ -327,6 +445,9 @@ export type Database = {
     Enums: {
       app_plan: "free" | "pro" | "agency";
       generation_status: "queued" | "processing" | "completed" | "failed";
+      gallery_item_kind: "image" | "marketing";
+      gallery_visibility: "public" | "private";
+      gallery_report_status: "open" | "reviewing" | "resolved" | "dismissed";
     };
   };
 };
