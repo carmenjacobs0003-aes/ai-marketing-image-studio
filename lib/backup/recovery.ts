@@ -50,6 +50,6 @@ export function getRecoveryReadinessReport() {
     backupGuidance: getDatabaseBackupGuidance(),
     launchReady:
       diagnostics.status !== "fail" &&
-      Boolean(env.UPSTASH_REDIS_REST_URL && env.SENTRY_DSN)
+      Boolean(env.UPSTASH_REDIS_REST_URL)
   };
 }
