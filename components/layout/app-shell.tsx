@@ -21,6 +21,7 @@ import type { UsageSummary } from "@/lib/usage/limits";
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
   { href: "/marketing", label: "Marketing", icon: Megaphone },
+  { href: "/studio", label: "Studio", icon: Sparkles },
   { href: "/images", label: "Images", icon: ImageIcon },
   { href: "/gallery", label: "Gallery", icon: GalleryHorizontalEnd },
   { href: "/projects", label: "Projects", icon: FolderKanban },
