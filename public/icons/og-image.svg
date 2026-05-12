@@ -1,16 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-label="SYNTRIX AI social preview">
   <defs>
-    <radialGradient id="a" cx="65%" cy="18%" r="70%">
-      <stop offset="0" stop-color="#22d3ee" stop-opacity=".65"/>
-      <stop offset=".45" stop-color="#0e7490" stop-opacity=".28"/>
+    <radialGradient id="a" cx="68%" cy="16%" r="74%">
+      <stop offset="0" stop-color="#22d3ee" stop-opacity=".72"/>
+      <stop offset=".46" stop-color="#0e7490" stop-opacity=".3"/>
       <stop offset="1" stop-color="#020617"/>
     </radialGradient>
+    <linearGradient id="word" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ecfeff"/>
+      <stop offset=".55" stop-color="#67e8f9"/>
+      <stop offset="1" stop-color="#0891b2"/>
+    </linearGradient>
   </defs>
   <rect width="1200" height="630" fill="#020617"/>
   <rect x="64" y="64" width="1072" height="502" rx="42" fill="url(#a)" stroke="#67e8f9" stroke-opacity=".35"/>
-  <text x="110" y="238" fill="#ecfeff" font-family="Inter,Arial,sans-serif" font-size="72" font-weight="900">AI Marketing</text>
-  <text x="110" y="322" fill="#67e8f9" font-family="Inter,Arial,sans-serif" font-size="72" font-weight="900">Image Studio</text>
-  <text x="112" y="398" fill="#cbd5e1" font-family="Inter,Arial,sans-serif" font-size="30">Neon creative generation for campaign-ready images and copy.</text>
-  <circle cx="940" cy="262" r="96" fill="none" stroke="#ecfeff" stroke-width="18"/>
-  <path d="M805 452h270" stroke="#67e8f9" stroke-width="22" stroke-linecap="round"/>
+  <path d="M792 410 938 144l146 266H792Z" fill="#020617" stroke="#67e8f9" stroke-width="18" opacity=".96"/>
+  <path d="M870 368 938 244l68 124H870Z" fill="#22d3ee" stroke="#ecfeff" stroke-width="8"/>
+  <circle cx="938" cy="300" r="178" fill="none" stroke="#ecfeff" stroke-opacity=".22" stroke-width="8"/>
+  <path d="M826 450h224" stroke="#67e8f9" stroke-width="22" stroke-linecap="round"/>
+  <text x="110" y="252" fill="url(#word)" font-family="Inter,Arial,sans-serif" font-size="92" font-weight="900" letter-spacing="5">SYNTRIX AI</text>
+  <text x="116" y="332" fill="#ecfeff" font-family="Inter,Arial,sans-serif" font-size="34" font-weight="800" letter-spacing="7">CREATIVE INTELLIGENCE</text>
+  <text x="116" y="405" fill="#cbd5e1" font-family="Inter,Arial,sans-serif" font-size="30">Neon creative generation for campaign-ready images and copy.</text>
 </svg>

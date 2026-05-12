@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="192" viewBox="0 0 720 192" role="img" aria-label="SYNTRIX AI logo">
+  <defs>
+    <linearGradient id="word" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ecfeff"/>
+      <stop offset="0.52" stop-color="#67e8f9"/>
+      <stop offset="1" stop-color="#0891b2"/>
+    </linearGradient>
+    <radialGradient id="core" cx="50%" cy="38%" r="70%">
+      <stop offset="0" stop-color="#ecfeff"/>
+      <stop offset="0.36" stop-color="#22d3ee"/>
+      <stop offset="1" stop-color="#0e7490"/>
+    </radialGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="7" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)">
+    <path d="M44 136 96 32l52 104H44Z" fill="#020617" stroke="#67e8f9" stroke-width="8"/>
+    <path d="M74 118 96 74l22 44H74Z" fill="url(#core)" stroke="#ecfeff" stroke-width="5"/>
+    <path d="M39 151h114" stroke="#22d3ee" stroke-width="10"/>
+    <path d="M65 151h62" stroke="#ecfeff" stroke-width="4" opacity=".9"/>
+    <circle cx="96" cy="96" r="70" stroke="#22d3ee" stroke-width="2" opacity=".28"/>
+  </g>
+  <text x="184" y="90" fill="url(#word)" font-family="Inter, Arial, sans-serif" font-size="54" font-weight="900" letter-spacing="5">SYNTRIX</text>
+  <text x="185" y="138" fill="#ecfeff" font-family="Inter, Arial, sans-serif" font-size="38" font-weight="800" letter-spacing="9">AI</text>
+  <path d="M184 154h240" stroke="#22d3ee" stroke-width="4" stroke-linecap="round" opacity=".85"/>
+</svg>

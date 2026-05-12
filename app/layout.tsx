@@ -1,14 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import { ServiceWorkerRegistration } from "@/components/pwa/service-worker-registration";
+import { BRAND_DESCRIPTION, BRAND_NAME } from "@/lib/branding";
 import "@/styles/globals.css";
 
 const appUrl =
-  process.env.NEXT_PUBLIC_APP_URL ??
-  "https://ai-marketing-image-studio.vercel.app";
-const appName = process.env.NEXT_PUBLIC_APP_NAME ?? "AI Marketing Image Studio";
+  process.env.NEXT_PUBLIC_APP_URL ?? "https://www.syntrixai.co.uk";
+const appName = process.env.NEXT_PUBLIC_APP_NAME ?? BRAND_NAME;
 const description =
-  process.env.NEXT_PUBLIC_APP_DESCRIPTION ??
-  "Create campaign-ready marketing images, ad creative, and conversion copy with AI.";
+  process.env.NEXT_PUBLIC_APP_DESCRIPTION ?? BRAND_DESCRIPTION;
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),

@@ -20,7 +20,7 @@ export function getDatabaseBackupGuidance(): RecoveryStep[] {
     },
     {
       title: "Create an encrypted logical backup before launch",
-      command: `supabase db dump --project-ref ${projectRef} --file backups/$(date +%F)-syntrix.sql`,
+      command: `supabase db dump --project-ref ${projectRef} --file backups/$(date +%F)-syntrix-ai.sql`,
       detail:
         "Run from a trusted workstation or CI job with Supabase credentials; store the dump in encrypted object storage."
     },
@@ -44,7 +44,7 @@ export function getRecoveryReadinessReport() {
   const diagnostics = summarizeDiagnostics();
 
   return {
-    service: "Syntrix AI Marketing Image Studio",
+    service: "SYNTRIX AI",
     generatedAt: new Date().toISOString(),
     diagnostics,
     backupGuidance: getDatabaseBackupGuidance(),

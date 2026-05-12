@@ -48,7 +48,7 @@ type NotificationContextValue = {
 const NotificationContext = createContext<NotificationContextValue | null>(
   null
 );
-const STORAGE_KEY = "aistudio.notifications.v1";
+const STORAGE_KEY = "syntrix-ai.notifications.v1";
 
 function makeId(prefix: string) {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -92,7 +92,7 @@ function defaultNotifications(email?: string | null): AppNotification[] {
       id: "welcome-command-deck",
       kind: "welcome",
       tone: "success",
-      title: "Welcome to AIStudio",
+      title: "Welcome to SYNTRIX AI",
       body: `Your black-glass command center is ready${email ? ` for ${email}` : ""}. Start with onboarding to unlock guided creation.`,
       href: "/dashboard?onboarding=1",
       createdAt: now,

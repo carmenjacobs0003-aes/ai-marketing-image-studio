@@ -1,6 +1,6 @@
 const CACHE_VERSION = "v999";
-const STATIC_CACHE = `ai-marketing-image-studio-static-${CACHE_VERSION}`;
-const PAGE_CACHE = `ai-marketing-image-studio-pages-${CACHE_VERSION}`;
+const STATIC_CACHE = `syntrix-ai-static-${CACHE_VERSION}`;
+const PAGE_CACHE = `syntrix-ai-pages-${CACHE_VERSION}`;
 const APP_SHELL = [
   "/",
   "/offline",

@@ -1,6 +1,6 @@
-# Syntrix Production Monitoring & Recovery Runbook
+# SYNTRIX AI Production Monitoring & Recovery Runbook
 
-Syntrix uses layered stability controls for production launch readiness: health checks, provider retries, abuse prevention, queue protection, centralized logging, critical alerts, and crash-safe generation records.
+SYNTRIX AI uses layered stability controls for production launch readiness: health checks, provider retries, abuse prevention, queue protection, centralized logging, critical alerts, and crash-safe generation records.
 
 ## Automated health monitoring
 
@@ -35,7 +35,7 @@ Syntrix uses layered stability controls for production launch readiness: health 
 2. Create an encrypted launch backup:
 
    ```bash
-   supabase db dump --project-ref <project-ref> --file backups/$(date +%F)-syntrix.sql
+   supabase db dump --project-ref <project-ref> --file backups/$(date +%F)-syntrix-ai.sql
    ```
 
 3. Store backups in encrypted storage with restricted operator access.
@@ -49,7 +49,7 @@ Syntrix uses layered stability controls for production launch readiness: health 
 
 ## Production monitoring dashboard
 
-The admin dashboard keeps the Syntrix black/white/neon-blue aesthetic and now includes:
+The admin dashboard keeps the SYNTRIX AI black/white/neon-blue aesthetic and now includes:
 
 - generation success/error/queue telemetry,
 - infrastructure diagnostics,

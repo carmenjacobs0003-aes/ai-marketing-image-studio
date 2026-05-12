@@ -1,8 +1,8 @@
 {
-  "name": "ai-marketing-image-studio",
+  "name": "syntrix-ai",
   "version": "0.1.0",
   "private": true,
-  "description": "AI Marketing & Image Content Studio SaaS",
+  "description": "SYNTRIX AI creative intelligence platform",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

@@ -6,7 +6,7 @@ export function GET() {
   return NextResponse.json(
     {
       status: "live",
-      service: "ai-marketing-image-studio",
+      service: "syntrix-ai",
       timestamp: new Date().toISOString()
     },
     { headers: { "Cache-Control": "no-store, max-age=0" } }

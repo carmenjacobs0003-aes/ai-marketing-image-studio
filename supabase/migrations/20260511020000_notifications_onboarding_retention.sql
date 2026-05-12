@@ -124,7 +124,7 @@ begin
   insert into public.notification_preferences (user_id) values (new.id) on conflict (user_id) do nothing;
   insert into public.onboarding_progress (user_id, completed_steps) values (new.id, array['welcome']) on conflict (user_id) do nothing;
   insert into public.notifications (user_id, kind, tone, title, body, href)
-  values (new.id, 'welcome', 'success', 'Welcome to AIStudio', 'Start the guided onboarding flow to create your first project and campaign asset.', '/dashboard?onboarding=1')
+  values (new.id, 'welcome', 'success', 'Welcome to SYNTRIX AI', 'Start the guided onboarding flow to create your first project and campaign asset.', '/dashboard?onboarding=1')
   on conflict do nothing;
   return new;
 end;

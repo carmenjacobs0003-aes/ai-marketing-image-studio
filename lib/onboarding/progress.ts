@@ -23,7 +23,7 @@ export const onboardingSteps: OnboardingStep[] = [
   {
     id: "profile",
     title: "Complete your creator profile",
-    body: "Add a name and notification preferences so AIStudio can personalize guidance.",
+    body: "Add a name and notification preferences so SYNTRIX AI can personalize guidance.",
     href: "/settings"
   },
   {

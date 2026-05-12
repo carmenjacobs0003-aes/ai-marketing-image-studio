@@ -32,7 +32,7 @@ export function buildWeeklyDigest(
   return {
     userId: input.userId,
     to: input.email,
-    subject: "Your AIStudio weekly creative signal",
+    subject: "Your SYNTRIX AI weekly creative signal",
     template: "weekly-digest",
     payload: {
       generatedImages: input.generatedImages,

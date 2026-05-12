@@ -18,7 +18,7 @@ function logRequest(
   const payload = {
     level: response.status >= 500 ? "error" : "info",
     message: response.status >= 500 ? "API failure" : "HTTP request",
-    service: "ai-marketing-image-studio",
+    service: "syntrix-ai",
     timestamp: new Date().toISOString(),
     environment: process.env.VERCEL_ENV ?? process.env.NODE_ENV,
     requestId: response.headers.get("X-Request-Id"),

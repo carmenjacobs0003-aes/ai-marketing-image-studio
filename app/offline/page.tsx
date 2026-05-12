@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { SyntrixLogo } from "@/components/brand/syntrix-logo";
 
 export default function OfflinePage() {
   return (
     <main className="aurora-shell flex min-h-screen items-center justify-center p-6">
       <section className="glass-card max-w-xl p-8 text-center">
-        <p className="eyebrow">Offline mode</p>
+        <SyntrixLogo className="justify-center" imageClassName="h-12" />
+        <p className="eyebrow mt-6">Offline mode</p>
         <h1 className="mt-4 text-4xl font-black tracking-tight text-white">
           You are offline
         </h1>

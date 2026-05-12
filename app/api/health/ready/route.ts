@@ -20,7 +20,7 @@ export function GET() {
   return NextResponse.json(
     {
       status: ready ? "ready" : "not_ready",
-      service: "ai-marketing-image-studio",
+      service: "syntrix-ai",
       timestamp: new Date().toISOString(),
       checks: {
         environment: validation.valid,

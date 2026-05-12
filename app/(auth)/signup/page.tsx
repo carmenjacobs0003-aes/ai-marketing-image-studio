@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SyntrixLogo } from "@/components/brand/syntrix-logo";
 import { AuthSubmitButton } from "@/components/auth/auth-submit-button";
 import { signUpWithPassword } from "@/app/(auth)/actions";
 
@@ -15,7 +16,11 @@ export default function SignupPage({
         action={signUpWithPassword}
         className="glass-card relative z-10 w-full max-w-md space-y-6 p-6 sm:p-8"
       >
-        <div className="space-y-3 text-center sm:text-left">
+        <div className="space-y-4 text-center sm:text-left">
+          <SyntrixLogo
+            className="justify-center sm:justify-start"
+            imageClassName="h-12"
+          />
           <p className="eyebrow">Start creating</p>
           <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
             Create your studio account

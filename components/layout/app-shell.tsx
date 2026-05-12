@@ -12,8 +12,10 @@ import {
   Sparkles,
   Zap
 } from "lucide-react";
+import { SyntrixLogo } from "@/components/brand/syntrix-logo";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { NotificationProvider } from "@/components/notifications/notification-center";
+import { BRAND_NAME } from "@/lib/branding";
 import type { UsageSummary } from "@/lib/usage/limits";
 
 const navItems = [
@@ -52,20 +54,11 @@ export function AppShell({
           <div className="scanline" />
           <div className="relative z-10 flex h-full flex-col">
             <Link
-              className="group flex items-center gap-3 rounded-3xl border border-cyan-300/25 bg-white/[0.045] p-4 shadow-glow transition hover:-translate-y-0.5 hover:border-cyan-300/70 hover:bg-cyan-300/[0.08]"
+              aria-label={`${BRAND_NAME} dashboard`}
+              className="group flex items-center justify-center rounded-3xl border border-cyan-300/25 bg-white/[0.045] p-4 shadow-glow transition hover:-translate-y-0.5 hover:border-cyan-300/70 hover:bg-cyan-300/[0.08]"
               href="/dashboard"
             >
-              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-300 text-slate-950 shadow-[0_0_32px_rgba(34,211,238,0.68)] transition group-hover:rotate-6 group-hover:scale-105">
-                <Sparkles className="h-5 w-5" />
-              </span>
-              <span>
-                <span className="block text-lg font-black tracking-tight text-white">
-                  AI<span className="text-cyan-300">Studio</span>
-                </span>
-                <span className="text-xs uppercase tracking-[0.24em] text-slate-400">
-                  Neural SaaS
-                </span>
-              </span>
+              <SyntrixLogo imageClassName="h-12" />
             </Link>
 
             <div className="mt-5 rounded-3xl border border-white/10 bg-black/55 p-3 backdrop-blur-xl">
@@ -114,11 +107,8 @@ export function AppShell({
 
         <header className="sticky top-0 z-30 border-b border-cyan-300/15 bg-black/70 backdrop-blur-2xl lg:hidden">
           <div className="flex items-center justify-between gap-4 px-4 py-4">
-            <Link
-              className="text-lg font-black tracking-tight text-white"
-              href="/dashboard"
-            >
-              AI<span className="text-cyan-300">Studio</span>
+            <Link aria-label={`${BRAND_NAME} dashboard`} href="/dashboard">
+              <SyntrixLogo imageClassName="h-9" />
             </Link>
             <LogoutButton className="px-3 py-2" />
           </div>

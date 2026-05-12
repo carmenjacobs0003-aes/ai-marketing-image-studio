@@ -2,7 +2,7 @@ import { z } from "zod";
 
 const baseEnvSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3000"),
-  NEXT_PUBLIC_APP_NAME: z.string().default("Syntrix AI Marketing Image Studio"),
+  NEXT_PUBLIC_APP_NAME: z.string().default("SYNTRIX AI"),
   NEXT_PUBLIC_APP_DESCRIPTION: z
     .string()
     .default("Create campaign-ready marketing images and copy with AI."),

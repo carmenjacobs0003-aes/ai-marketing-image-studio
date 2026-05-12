@@ -1,6 +1,6 @@
 export const metadata = {
   title: "Terms of Service",
-  description: "Terms for using AI Marketing Image Studio."
+  description: "Terms for using SYNTRIX AI."
 };
 
 export default function TermsPage() {
@@ -17,10 +17,10 @@ export default function TermsPage() {
           </p>
           <div className="mt-8 space-y-6 text-slate-300">
             <p>
-              By using AI Marketing Image Studio, you agree to use the platform
-              lawfully, keep your credentials secure, and ensure that prompts,
-              brand assets, and generated outputs comply with applicable laws
-              and third-party rights.
+              By using SYNTRIX AI, you agree to use the platform lawfully, keep
+              your credentials secure, and ensure that prompts, brand assets,
+              and generated outputs comply with applicable laws and third-party
+              rights.
             </p>
             <p>
               You retain ownership of your inputs and generated campaign

@@ -1,6 +1,6 @@
 export const metadata = {
   title: "Privacy Policy",
-  description: "Privacy practices for AI Marketing Image Studio."
+  description: "Privacy practices for SYNTRIX AI."
 };
 
 export default function PrivacyPolicyPage() {
@@ -17,10 +17,10 @@ export default function PrivacyPolicyPage() {
           </p>
           <div className="mt-8 space-y-6 text-slate-300">
             <p>
-              AI Marketing Image Studio collects account, billing, usage,
-              prompt, generated content, and support information needed to
-              operate the service, secure accounts, process subscriptions, and
-              improve product quality.
+              SYNTRIX AI collects account, billing, usage, prompt, generated
+              content, and support information needed to operate the service,
+              secure accounts, process subscriptions, and improve product
+              quality.
             </p>
             <p>
               We use trusted processors for hosting, authentication, payments,
