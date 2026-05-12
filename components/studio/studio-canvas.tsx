@@ -120,9 +120,7 @@ export function StudioCanvas({
   const lastSubmitAtRef = useRef(0);
   const signedUrlRefreshInFlightRef = useRef(false);
   const submitDebounceMs = 1000;
-  const limitReached =
-    usage.imageGenerationLimit !== null &&
-    usage.imageGenerations >= usage.imageGenerationLimit;
+  const limitReached = usage.totalGenerations >= usage.monthlyGenerationLimit;
 
   const refreshSignedUrls = useCallback(async (imageId: string) => {
     if (signedUrlRefreshInFlightRef.current) {
@@ -295,15 +293,15 @@ export function StudioCanvas({
         </div>
         <div className="rounded-2xl border border-cyan-300/30 bg-cyan-300/10 p-4 shadow-lg shadow-cyan-500/10">
           <p className="text-sm text-cyan-100">
-            Daily image usage · {usage.plan}
+            Monthly pooled usage · {usage.plan}
           </p>
           <p className="mt-1 text-2xl font-black">
-            {usage.imageGenerations}/{usage.imageGenerationLimit ?? "Fair use"}
+            {usage.totalGenerations}/{usage.monthlyGenerationLimit}
           </p>
           <p className="text-xs text-slate-300">
-            {usage.remainingImageGenerations === null
-              ? "Agency fair use included"
-              : `${usage.remainingImageGenerations} generations remaining today`}
+            {usage.remainingGenerations} generations remaining this month. Use
+            them in any combination up to {usage.monthlyGenerationLimit} total
+            monthly generations.
           </p>
         </div>
         <form className="space-y-4" onSubmit={onSubmit}>
@@ -357,8 +355,8 @@ export function StudioCanvas({
           ) : null}
           {limitReached ? (
             <p className="rounded-2xl border border-cyan-300/20 bg-black p-3 text-sm text-cyan-100">
-              Daily image limit reached. Unlock higher generation limits to
-              continue.
+              Monthly generation limit reached. Upgrade for more total monthly
+              generations.
             </p>
           ) : null}
           <button

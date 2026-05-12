@@ -101,16 +101,15 @@ export default async function DashboardPage() {
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           <article className="metric-card">
-            <p className="text-sm text-slate-300">Daily images</p>
+            <p className="text-sm text-slate-300">Monthly generations</p>
             <p className="mt-2 text-3xl font-black">
-              {usage.imageGenerations}/{usage.imageGenerationLimit ?? "∞"}
+              {usage.totalGenerations}/{usage.monthlyGenerationLimit}
             </p>
           </article>
           <article className="metric-card">
-            <p className="text-sm text-slate-300">Daily marketing</p>
+            <p className="text-sm text-slate-300">Remaining this month</p>
             <p className="mt-2 text-3xl font-black">
-              {usage.marketingGenerations}/
-              {usage.marketingGenerationLimit ?? "∞"}
+              {usage.remainingGenerations}
             </p>
           </article>
           <article className="metric-card">

@@ -125,37 +125,15 @@ function buildUsageNotifications(usage?: UsageSummary): AppNotification[] {
   if (!usage) return [];
   const notifications: AppNotification[] = [];
   const now = new Date().toISOString();
-  const imageLimit = usage.imageGenerationLimit;
-  const marketingLimit = usage.marketingGenerationLimit;
+  const limit = usage.monthlyGenerationLimit;
 
-  if (
-    imageLimit !== null &&
-    imageLimit > 0 &&
-    usage.imageGenerations / imageLimit >= 0.8
-  ) {
+  if (limit > 0 && usage.totalGenerations / limit >= 0.8) {
     notifications.push({
-      id: `usage-images-${usage.usageDate}`,
+      id: `usage-monthly-${usage.usageMonth}`,
       kind: "usage_warning",
-      tone: usage.imageGenerations >= imageLimit ? "error" : "warning",
-      title: "Image usage is near limit",
-      body: `${usage.imageGenerations}/${imageLimit} daily image generations used. Unlock higher generation limits to continue.`,
-      href: "/billing",
-      createdAt: now,
-      read: false
-    });
-  }
-
-  if (
-    marketingLimit !== null &&
-    marketingLimit > 0 &&
-    usage.marketingGenerations / marketingLimit >= 0.8
-  ) {
-    notifications.push({
-      id: `usage-marketing-${usage.usageDate}`,
-      kind: "usage_warning",
-      tone: usage.marketingGenerations >= marketingLimit ? "error" : "warning",
-      title: "Content usage is near limit",
-      body: `${usage.marketingGenerations}/${marketingLimit} daily content generations used. Unlock higher limits to continue.`,
+      tone: usage.totalGenerations >= limit ? "error" : "warning",
+      title: "Monthly usage is near limit",
+      body: `${usage.totalGenerations}/${limit} total monthly generations used. Use images and marketing in any combination up to your monthly limit.`,
       href: "/billing",
       createdAt: now,
       read: false
@@ -164,14 +142,14 @@ function buildUsageNotifications(usage?: UsageSummary): AppNotification[] {
 
   if (usage.plan === "free") {
     notifications.push({
-      id: `upgrade-free-${usage.usageDate}`,
+      id: `upgrade-free-${usage.usageMonth}`,
       kind: "upgrade",
       tone: "info",
       title: "Unlock higher generation limits",
-      body: "Higher limits and advanced templates are available on Pro.",
+      body: "Creator includes 50 total monthly generations across image and marketing tools.",
       href: "/billing",
       createdAt: now,
-      read: true
+      read: false
     });
   }
 
@@ -180,10 +158,13 @@ function buildUsageNotifications(usage?: UsageSummary): AppNotification[] {
 
 export function useNotifications() {
   const context = useContext(NotificationContext);
-  if (!context)
+
+  if (!context) {
     throw new Error(
       "useNotifications must be used within NotificationProvider"
     );
+  }
+
   return context;
 }
 

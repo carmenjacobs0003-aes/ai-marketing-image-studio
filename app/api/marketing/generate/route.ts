@@ -4,7 +4,6 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { buildBrandPromptContext } from "@/lib/brand/prompt";
 import {
   createMarketingGeneration,
-  getDailyUsage,
   listBrandKits,
   listProjects,
   updateMarketingGeneration,
@@ -29,6 +28,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { enforcePromptProtection } from "@/lib/security/abuse";
 import {
   assertCanGenerateMarketing,
+  getUsageSummary,
   recordSuccessfulUsage
 } from "@/lib/usage/limits";
 
@@ -51,7 +51,7 @@ function getClientIp(request: NextRequest) {
 type MarketingGenerateResponse =
   | {
       generation: Awaited<ReturnType<typeof createMarketingGeneration>>;
-      usage: Awaited<ReturnType<typeof getDailyUsage>>;
+      usage: Awaited<ReturnType<typeof getUsageSummary>>;
     }
   | {
       error: string;
@@ -327,14 +327,14 @@ export async function POST(request: NextRequest) {
       }
     );
 
-    await recordSuccessfulUsage(user.id, "marketing_generations");
+    await recordSuccessfulUsage(user.id);
     logger.info("Marketing generation completed", {
       userId: user.id,
       generationId: completedGeneration.id,
       durationMs: Date.now() - startedAt,
       contentType: payload.contentType
     });
-    const usage = await getDailyUsage(supabase, user.id);
+    const usage = await getUsageSummary(user.id);
 
     return NextResponse.json<MarketingGenerateResponse>(
       { generation: completedGeneration, usage },
