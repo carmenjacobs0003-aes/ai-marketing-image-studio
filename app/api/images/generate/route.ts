@@ -626,6 +626,7 @@ export async function POST(request: NextRequest) {
       hasSupabaseServiceRoleKey: Boolean(env.SUPABASE_SERVICE_ROLE_KEY)
     });
 
+    currentStep = "stale_generation_recovery";
     await recoverStaleGenerations(supabase, { userId: user.id })
       .then((results) => {
         logger.info("Opportunistic stale generation recovery completed", {
