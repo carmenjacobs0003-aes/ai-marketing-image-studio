@@ -11,6 +11,7 @@ import {
   moderateImagePrompt
 } from "@/lib/openai/images";
 import { rateLimit } from "@/lib/rate-limit";
+import { verifyRedisConnection } from "@/lib/redis/client";
 import {
   uploadGeneratedImage,
   createSignedImageUrl,
@@ -72,6 +73,8 @@ type ImageGenerateResponse =
   | {
       success: false;
       error: string;
+      step?: string;
+      publicError?: string;
       issues?: z.typeToFlattenedError<z.infer<typeof requestSchema>>;
       usage?: Awaited<ReturnType<typeof assertCanGenerateImage>>["usage"];
     };
@@ -112,6 +115,8 @@ function summarizeApiResponseForLog(body: ImageGenerateResponse) {
     return {
       success: false,
       error: body.error,
+      step: body.step ?? null,
+      publicError: body.publicError ?? null,
       hasIssues: Boolean(body.issues),
       hasUsage: Boolean(body.usage)
     };
@@ -144,6 +149,10 @@ function logFinalApiResponse(
   });
 }
 
+function isDevelopmentDebugResponse() {
+  return process.env.NODE_ENV !== "production";
+}
+
 function jsonError(
   request: NextRequest,
   startedAt: number,
@@ -160,16 +169,57 @@ function jsonError(
   return NextResponse.json<ImageGenerateResponse>(body, { status });
 }
 
+function jsonDebugError(
+  request: NextRequest,
+  startedAt: number,
+  step: string,
+  exactError: string,
+  status: number,
+  publicError = exactError,
+  extra: Omit<
+    Extract<ImageGenerateResponse, { success: false }>,
+    "success" | "error" | "step" | "publicError"
+  > = {},
+  logExtra: Record<string, unknown> = {}
+) {
+  return jsonError(
+    request,
+    startedAt,
+    isDevelopmentDebugResponse() ? exactError : publicError,
+    status,
+    {
+      ...extra,
+      ...(isDevelopmentDebugResponse() ? { step, publicError } : {})
+    },
+    {
+      ...logExtra,
+      step,
+      exactError,
+      publicError
+    }
+  );
+}
+
 async function readRequestJson(request: NextRequest) {
+  logger.info("Image generation request JSON parsing start", {
+    ...getRequestLogContext(request)
+  });
+
   try {
-    return { ok: true as const, data: await request.json() };
-  } catch (error) {
-    logger.warn("Invalid image generation request JSON", {
-      error:
-        error instanceof Error ? error.message : "Unable to parse request JSON",
-      requestId: request.headers.get("x-request-id")
+    const data = await request.json();
+    logger.info("Image generation request JSON parsing completed", {
+      ...getRequestLogContext(request),
+      bodyType: Array.isArray(data) ? "array" : typeof data
     });
-    return { ok: false as const };
+    return { ok: true as const, data };
+  } catch (error) {
+    const message = getInternalFailureMessage(error);
+    logger.warn("Invalid image generation request JSON", {
+      ...getRequestLogContext(request),
+      step: "json_parsing",
+      error: message
+    });
+    return { ok: false as const, error: message };
   }
 }
 
@@ -191,13 +241,16 @@ export async function POST(request: NextRequest) {
   let generation: Awaited<ReturnType<typeof createImageGeneration>> | null =
     null;
   let supabase: ReturnType<typeof createSupabaseServerClient> | null = null;
+  let currentStep = "request_start";
 
   try {
+    currentStep = "environment_detection";
     logger.info("Image generation request received", {
       ...getRequestLogContext(request),
       env: getRuntimeEnvDiagnostics()
     });
 
+    currentStep = "authentication";
     const user = await getCurrentUser();
     userId = user?.id;
 
@@ -207,23 +260,40 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      return jsonError(request, startedAt, "Unauthorized", 401);
+      return jsonDebugError(
+        request,
+        startedAt,
+        currentStep,
+        "Unauthorized",
+        401
+      );
     }
 
+    currentStep = "json_parsing";
     const requestJson = await readRequestJson(request);
 
     if (!requestJson.ok) {
-      return jsonError(request, startedAt, "Invalid JSON request body", 400);
+      return jsonDebugError(
+        request,
+        startedAt,
+        currentStep,
+        requestJson.error,
+        400,
+        "Invalid JSON request body"
+      );
     }
 
+    currentStep = "request_validation";
     const parsed = requestSchema.safeParse(requestJson.data);
 
     if (!parsed.success) {
-      return jsonError(
+      return jsonDebugError(
         request,
         startedAt,
-        "Invalid image generation request",
+        currentStep,
+        parsed.error.message,
         400,
+        "Invalid image generation request",
         {
           issues: parsed.error.flatten()
         }
@@ -232,6 +302,7 @@ export async function POST(request: NextRequest) {
 
     const payload = parsed.data;
 
+    currentStep = "openai_model_validation";
     if (!isSupportedImageModel(env.OPENAI_IMAGE_MODEL)) {
       logger.error(
         "Image generation attempted with unsupported OpenAI image model",
@@ -241,14 +312,17 @@ export async function POST(request: NextRequest) {
           model: env.OPENAI_IMAGE_MODEL
         }
       );
-      return jsonError(
+      return jsonDebugError(
         request,
         startedAt,
-        PUBLIC_IMAGE_GENERATION_UNAVAILABLE_MESSAGE,
-        503
+        currentStep,
+        `Unsupported OpenAI image model: ${env.OPENAI_IMAGE_MODEL}`,
+        503,
+        PUBLIC_IMAGE_GENERATION_UNAVAILABLE_MESSAGE
       );
     }
 
+    currentStep = "openai_environment_validation";
     if (!env.OPENAI_API_KEY) {
       logger.error("Image generation attempted without OPENAI_API_KEY", {
         ...getRequestLogContext(request),
@@ -257,16 +331,19 @@ export async function POST(request: NextRequest) {
         expectedEnvironmentVariable: OPENAI_API_KEY_ENV_VAR_NAME,
         env: getRuntimeEnvDiagnostics()
       });
-      return jsonError(
+      return jsonDebugError(
         request,
         startedAt,
-        PUBLIC_IMAGE_GENERATION_UNAVAILABLE_MESSAGE,
+        currentStep,
+        `${OPENAI_API_KEY_ENV_VAR_NAME} is missing server-side`,
         503,
+        PUBLIC_IMAGE_GENERATION_UNAVAILABLE_MESSAGE,
         {},
         { debugReason: "missing_openai_api_key" }
       );
     }
 
+    currentStep = "abuse_protection";
     const abuse = await enforcePromptProtection({
       userId: user.id,
       prompt: payload.prompt,
@@ -282,14 +359,27 @@ export async function POST(request: NextRequest) {
         requestId: request.headers.get("x-request-id"),
         context: { score: abuse.score, signals: abuse.signals }
       });
-      return jsonError(
+      return jsonDebugError(
         request,
         startedAt,
+        currentStep,
         abuse.reason ?? "Blocked suspicious image generation request",
         429
       );
     }
 
+    currentStep = "redis_connection";
+    const redisVerification = await verifyRedisConnection({
+      ...getRequestLogContext(request),
+      userId: user.id
+    });
+    logger.info("Image generation Redis verification result", {
+      ...getRequestLogContext(request),
+      userId: user.id,
+      redisVerification
+    });
+
+    currentStep = "queue_rate_limit";
     const queueLimiter = await rateLimit(
       `generation-queue:${user.id}`,
       env.GENERATION_QUEUE_LIMIT,
@@ -309,14 +399,16 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         reset: queueLimiter.reset
       });
-      return jsonError(
+      return jsonDebugError(
         request,
         startedAt,
+        currentStep,
         "Your generation queue is full. Please wait before starting another.",
         429
       );
     }
 
+    currentStep = "image_rate_limit";
     const limiter = await rateLimit(
       `images:${user.id}`,
       env.IMAGE_GENERATION_RATE_LIMIT,
@@ -336,17 +428,33 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         reset: limiter.reset
       });
-      return jsonError(request, startedAt, "Rate limit exceeded", 429);
+      return jsonDebugError(
+        request,
+        startedAt,
+        currentStep,
+        "Rate limit exceeded",
+        429
+      );
     }
 
+    currentStep = "usage_entitlement";
     const entitlement = await assertCanGenerateImage(user.id);
 
     if (!entitlement.allowed) {
-      return jsonError(request, startedAt, entitlement.reason, 402, {
-        usage: entitlement.usage
-      });
+      return jsonDebugError(
+        request,
+        startedAt,
+        currentStep,
+        entitlement.reason,
+        402,
+        entitlement.reason,
+        {
+          usage: entitlement.usage
+        }
+      );
     }
 
+    currentStep = "supabase_connection";
     supabase = createSupabaseServerClient();
     logger.info("Supabase server client ready for image generation", {
       ...getRequestLogContext(request),
@@ -356,6 +464,7 @@ export async function POST(request: NextRequest) {
       hasSupabaseServiceRoleKey: Boolean(env.SUPABASE_SERVICE_ROLE_KEY)
     });
 
+    currentStep = "supabase_prerequisites";
     const [projects, brandKits] = await Promise.all([
       listProjects(supabase, user.id),
       listBrandKits(supabase, user.id)
@@ -366,7 +475,13 @@ export async function POST(request: NextRequest) {
       : null;
 
     if (payload.projectId && !project) {
-      return jsonError(request, startedAt, "Project not found", 404);
+      return jsonDebugError(
+        request,
+        startedAt,
+        currentStep,
+        "Project not found",
+        404
+      );
     }
 
     const selectedBrandKitId =
@@ -388,7 +503,13 @@ export async function POST(request: NextRequest) {
     });
 
     if (selectedBrandKitId && !brandKit) {
-      return jsonError(request, startedAt, "Brand kit not found", 404);
+      return jsonDebugError(
+        request,
+        startedAt,
+        currentStep,
+        "Brand kit not found",
+        404
+      );
     }
 
     logger.info("OpenAI moderation start for image generation", {
@@ -396,6 +517,7 @@ export async function POST(request: NextRequest) {
       userId: user.id,
       promptLength: payload.prompt.length
     });
+    currentStep = "openai_moderation";
     const moderation = await moderateImagePrompt(payload.prompt);
     logger.info("OpenAI moderation completed for image generation", {
       ...getRequestLogContext(request),
@@ -404,9 +526,10 @@ export async function POST(request: NextRequest) {
     });
 
     if (moderation.flagged) {
-      return jsonError(
+      return jsonDebugError(
         request,
         startedAt,
+        currentStep,
         "This prompt was blocked by safety moderation. Please revise it and try again.",
         400
       );
@@ -420,6 +543,7 @@ export async function POST(request: NextRequest) {
       model: env.OPENAI_IMAGE_MODEL
     });
 
+    currentStep = "supabase_generation_insert";
     generation = await createImageGeneration(supabase, {
       user_id: user.id,
       project_id: payload.projectId ?? null,
@@ -441,6 +565,7 @@ export async function POST(request: NextRequest) {
       status: generation.status
     });
 
+    currentStep = "supabase_generation_processing_update";
     await updateImageGeneration(supabase, generation.id, user.id, {
       status: "processing"
     });
@@ -460,6 +585,7 @@ export async function POST(request: NextRequest) {
       quality: payload.quality,
       promptLength: brandedPrompt.length
     });
+    currentStep = "openai_image_generation";
     const imageResult = await withTimeout(
       createMarketingImage({
         prompt: brandedPrompt,
@@ -480,6 +606,7 @@ export async function POST(request: NextRequest) {
       responseSummary: imageResult.responseSummary
     });
 
+    currentStep = "openai_json_parsing";
     const imagePayload = await extractGeneratedImagePayload(image, {
       ...getRequestLogContext(request),
       userId: user.id,
@@ -500,6 +627,7 @@ export async function POST(request: NextRequest) {
       userId: user.id,
       generationId: generation.id
     });
+    currentStep = "supabase_upload";
     const storagePath = await uploadGeneratedImage(
       user.id,
       generation.id,
@@ -518,6 +646,7 @@ export async function POST(request: NextRequest) {
       generationId: generation.id,
       storagePath
     });
+    currentStep = "supabase_generation_completion_update";
     await updateImageGeneration(supabase, generation.id, user.id, {
       status: "completed",
       storage_path: storagePath,
@@ -546,6 +675,7 @@ export async function POST(request: NextRequest) {
       generationId: generation.id,
       kind: "image_generations"
     });
+    currentStep = "usage_recording";
     await recordSuccessfulUsage(user.id, "image_generations");
     logger.info("Usage counter increment completed", {
       ...getRequestLogContext(request),
@@ -566,6 +696,7 @@ export async function POST(request: NextRequest) {
       generationId: generation.id,
       storagePath
     });
+    currentStep = "supabase_signed_urls";
     const [signedUrl, downloadUrl] = await Promise.all([
       createSignedImageUrl(storagePath),
       createSignedDownloadUrl(storagePath)
@@ -605,6 +736,7 @@ export async function POST(request: NextRequest) {
       userId,
       generationId: generation?.id,
       durationMs: Date.now() - startedAt,
+      step: currentStep,
       error: message,
       debugReason,
       openaiDiagnostics
@@ -615,6 +747,7 @@ export async function POST(request: NextRequest) {
         ...getRequestLogContext(request),
         userId,
         generationId: generation?.id,
+        step: currentStep,
         debugReason,
         openaiDiagnostics
       });
@@ -630,6 +763,7 @@ export async function POST(request: NextRequest) {
           ...getRequestLogContext(request),
           userId,
           generationId: generation?.id,
+          step: currentStep,
           debugReason,
           openaiDiagnostics
         }
@@ -662,6 +796,7 @@ export async function POST(request: NextRequest) {
       context: {
         durationMs: Date.now() - startedAt,
         generationId: generation?.id,
+        step: currentStep,
         debugReason,
         openaiDiagnostics
       }
@@ -677,11 +812,13 @@ export async function POST(request: NextRequest) {
       });
     });
 
-    return jsonError(
+    return jsonDebugError(
       request,
       startedAt,
-      PUBLIC_IMAGE_GENERATION_UNAVAILABLE_MESSAGE,
+      currentStep,
+      message,
       500,
+      PUBLIC_IMAGE_GENERATION_UNAVAILABLE_MESSAGE,
       {},
       {
         generationId: generation?.id,

@@ -1,4 +1,4 @@
-import { redis } from "@/lib/redis/client";
+import { getRedisDiagnostics, redis } from "@/lib/redis/client";
 import { logger } from "@/lib/logger";
 
 type RateLimitResult = {
@@ -59,6 +59,14 @@ export async function rateLimit(
 ): Promise<RateLimitResult> {
   if (redis) {
     const redisKey = `rate-limit:${key}`;
+    const sanitizedKey = sanitizeRateLimitKey(key);
+
+    logger.info("Redis rate limit check start", {
+      key: sanitizedKey,
+      limit,
+      windowSeconds,
+      redis: getRedisDiagnostics()
+    });
 
     try {
       const count = await redis.incr(redisKey);
@@ -69,13 +77,22 @@ export async function rateLimit(
 
       const ttl = await redis.ttl(redisKey);
       const redisReset = Date.now() + Math.max(ttl, 0) * 1000;
-
-      return {
+      const result = {
         success: count <= limit,
         limit,
         remaining: Math.max(limit - count, 0),
         reset: redisReset
       };
+
+      logger.info("Redis rate limit check completed", {
+        key: sanitizedKey,
+        count,
+        ttl,
+        blocked: !result.success,
+        result
+      });
+
+      return result;
     } catch (error) {
       const authFailure = isRedisAuthError(error);
 
@@ -84,7 +101,7 @@ export async function rateLimit(
           ? "Upstash Redis authentication failed during rate limit check"
           : "Upstash Redis rate limit check failed",
         {
-          key: sanitizeRateLimitKey(key),
+          key: sanitizedKey,
           authFailure,
           error: getErrorMessage(error)
         }
@@ -93,7 +110,7 @@ export async function rateLimit(
       const fallbackResult = applyMemoryRateLimit(key, limit, windowSeconds);
 
       logger.warn("Using in-memory rate limit fallback after Redis failure", {
-        key: sanitizeRateLimitKey(key),
+        key: sanitizedKey,
         authFailure,
         success: fallbackResult.success,
         reset: fallbackResult.reset
@@ -103,5 +120,15 @@ export async function rateLimit(
     }
   }
 
-  return applyMemoryRateLimit(key, limit, windowSeconds);
+  const result = applyMemoryRateLimit(key, limit, windowSeconds);
+
+  logger.warn("Using in-memory rate limit because Redis is not configured", {
+    key: sanitizeRateLimitKey(key),
+    limit,
+    windowSeconds,
+    blocked: !result.success,
+    result
+  });
+
+  return result;
 }

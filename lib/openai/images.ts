@@ -86,11 +86,7 @@ export type GeneratedImagePayload = {
 };
 
 const DALL_E_MODELS = new Set(["dall-e-2", "dall-e-3"]);
-const GPT_IMAGE_MODELS = new Set([
-  "gpt-image-1",
-  "gpt-image-1-mini",
-  "gpt-image-1.5"
-]);
+const GPT_IMAGE_MODELS = new Set(["gpt-image-1"]);
 const IMAGE_API_MODELS = new Set([...DALL_E_MODELS, ...GPT_IMAGE_MODELS]);
 const DALL_E_3_QUALITIES = new Set(["standard", "hd"]);
 const GPT_IMAGE_QUALITIES = new Set(["auto", "low", "medium", "high"]);
@@ -106,7 +102,7 @@ export function normalizeImageGenerationOptions(
 ) {
   if (!isSupportedImageModel(model)) {
     throw new Error(
-      `Unsupported OpenAI image model '${model}'. Use gpt-image-1, gpt-image-1-mini, gpt-image-1.5, dall-e-2, or dall-e-3.`
+      `Unsupported OpenAI image model '${model}'. Use gpt-image-1, dall-e-2, or dall-e-3.`
     );
   }
 
@@ -350,6 +346,12 @@ export async function createMarketingImage({
         request_id: requestId
       } = await openai.images.generate(request).withResponse();
       const responseSummary = summarizeImagesResponse(data);
+      logger.info("OpenAI image generation response status", {
+        model,
+        status: response.status,
+        ok: response.ok,
+        requestId
+      });
       logger.info("OpenAI image generation raw response", {
         model,
         status: response.status,
@@ -471,6 +473,9 @@ export async function extractGeneratedImagePayload(
   image: ImagesResponse,
   logContext: ImageExtractionLogContext = {}
 ): Promise<GeneratedImagePayload> {
+  logger.info("OpenAI image JSON payload parsing start", {
+    ...logContext
+  });
   const summary = summarizeImagesResponse(image);
 
   if (!image || !Array.isArray(image.data) || !image.data[0]) {
@@ -486,6 +491,11 @@ export async function extractGeneratedImagePayload(
   const base64Image = firstImage.b64_json;
 
   if (typeof base64Image === "string" && base64Image.trim().length > 0) {
+    logger.info("OpenAI image JSON payload parsing completed", {
+      ...logContext,
+      source: "base64",
+      responseSummary: summary
+    });
     logger.info("OpenAI image base64 payload extracted", {
       ...logContext,
       base64Length: base64Image.length,
@@ -507,6 +517,12 @@ export async function extractGeneratedImagePayload(
       firstImage.url,
       logContext
     );
+
+    logger.info("OpenAI image JSON payload parsing completed", {
+      ...logContext,
+      source: "url",
+      responseSummary: summary
+    });
 
     return {
       base64,
