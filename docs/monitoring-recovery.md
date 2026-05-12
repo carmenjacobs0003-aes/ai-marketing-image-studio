@@ -27,7 +27,8 @@ SYNTRIX AI uses layered stability controls for production launch readiness: heal
 - Generation requests are recorded as `processing` before provider calls.
 - Successful responses update the record to `completed` only after OpenAI and storage work succeeds.
 - Failures update records to `failed` with a user-safe message and do not record quota usage.
-- Run `npm run recovery:generations` to mark stale queued/processing jobs as failed after `RECOVERY_CUTOFF_MINUTES` (default `20`).
+- Stale queued/processing jobs are recovered opportunistically during normal image generation requests after `RECOVERY_CUTOFF_MINUTES` (default `20`).
+- Optionally call `GET` or `POST /api/recovery/generations` with `Authorization: Bearer $RECOVERY_SECRET` (or `$CRON_SECRET`) for manual/external recovery, or run `npm run recovery:generations` locally. Do not configure a high-frequency Vercel cron on the Hobby plan.
 
 ## Database backup guidance
 
