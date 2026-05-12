@@ -46,7 +46,7 @@ export async function upsertProfile(
     .from("profiles")
     .upsert(profile, { onConflict: "id" })
     .select("*")
-    .single();
+    .maybeSingle();;
 
   return requireDatabaseData(data, error, "Unable to save profile");
 }
