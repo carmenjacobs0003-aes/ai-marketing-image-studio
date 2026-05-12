@@ -77,6 +77,7 @@ type ImageGenerateResponse =
       publicError?: string;
       issues?: z.typeToFlattenedError<z.infer<typeof requestSchema>>;
       usage?: Awaited<ReturnType<typeof assertCanGenerateImage>>["usage"];
+      diagnostics?: Record<string, unknown>;
     };
 
 function getRequestLogContext(request: NextRequest) {
@@ -185,11 +186,12 @@ function jsonDebugError(
   return jsonError(
     request,
     startedAt,
-    isDevelopmentDebugResponse() ? exactError : publicError,
+    exactError,
     status,
     {
       ...extra,
-      ...(isDevelopmentDebugResponse() ? { step, publicError } : {})
+      step,
+      publicError
     },
     {
       ...logExtra,
@@ -227,12 +229,50 @@ function toJsonMetadata(value: unknown): Json {
   return JSON.parse(JSON.stringify(value)) as Json;
 }
 
+function serializeErrorForDiagnostics(error: unknown): Record<string, unknown> {
+  if (error instanceof Error) {
+    const errorLike = error as Error & {
+      cause?: unknown;
+      status?: unknown;
+      code?: unknown;
+      type?: unknown;
+      param?: unknown;
+      request_id?: unknown;
+    };
+
+    return {
+      name: error.name,
+      message: error.message,
+      stack: error.stack ?? null,
+      cause:
+        errorLike.cause instanceof Error
+          ? {
+              name: errorLike.cause.name,
+              message: errorLike.cause.message,
+              stack: errorLike.cause.stack ?? null
+            }
+          : (errorLike.cause ?? null),
+      status: errorLike.status ?? null,
+      code: errorLike.code ?? null,
+      type: errorLike.type ?? null,
+      param: errorLike.param ?? null,
+      requestId: errorLike.request_id ?? null
+    };
+  }
+
+  return {
+    name: typeof error,
+    message: String(error),
+    stack: null
+  };
+}
+
 function getInternalFailureMessage(error: unknown) {
   if (error instanceof Error && error.message) {
     return error.message;
   }
 
-  return "Image generation failed.";
+  return String(error || "Image generation failed.");
 }
 
 export async function POST(request: NextRequest) {
@@ -380,11 +420,26 @@ export async function POST(request: NextRequest) {
     });
 
     currentStep = "queue_rate_limit";
+    logger.info("Redis queue rate limit check start", {
+      ...getRequestLogContext(request),
+      userId: user.id,
+      key: `generation-queue:${user.id}`,
+      limit: env.GENERATION_QUEUE_LIMIT,
+      windowSeconds: env.GENERATION_QUEUE_WINDOW_SECONDS
+    });
     const queueLimiter = await rateLimit(
       `generation-queue:${user.id}`,
       env.GENERATION_QUEUE_LIMIT,
       env.GENERATION_QUEUE_WINDOW_SECONDS
     );
+
+    logger.info("Redis queue rate limit check completed", {
+      ...getRequestLogContext(request),
+      userId: user.id,
+      success: queueLimiter.success,
+      degraded: queueLimiter.degraded,
+      reset: queueLimiter.reset
+    });
 
     if (queueLimiter.degraded) {
       logger.warn("Image generation queue rate limit used degraded fallback", {
@@ -409,11 +464,26 @@ export async function POST(request: NextRequest) {
     }
 
     currentStep = "image_rate_limit";
+    logger.info("Redis image rate limit check start", {
+      ...getRequestLogContext(request),
+      userId: user.id,
+      key: `images:${user.id}`,
+      limit: env.IMAGE_GENERATION_RATE_LIMIT,
+      windowSeconds: env.IMAGE_GENERATION_RATE_LIMIT_WINDOW_SECONDS
+    });
     const limiter = await rateLimit(
       `images:${user.id}`,
       env.IMAGE_GENERATION_RATE_LIMIT,
       env.IMAGE_GENERATION_RATE_LIMIT_WINDOW_SECONDS
     );
+
+    logger.info("Redis image rate limit check completed", {
+      ...getRequestLogContext(request),
+      userId: user.id,
+      success: limiter.success,
+      degraded: limiter.degraded,
+      reset: limiter.reset
+    });
 
     if (limiter.degraded) {
       logger.warn("Image generation user rate limit used degraded fallback", {
@@ -597,7 +667,7 @@ export async function POST(request: NextRequest) {
     );
     const image = imageResult.data;
 
-    logger.info("OpenAI image response parsed", {
+    logger.info("OpenAI image response received", {
       ...getRequestLogContext(request),
       userId: user.id,
       generationId: generation.id,
@@ -607,6 +677,13 @@ export async function POST(request: NextRequest) {
     });
 
     currentStep = "openai_json_parsing";
+    logger.info("OpenAI image JSON parsing start", {
+      ...getRequestLogContext(request),
+      userId: user.id,
+      generationId: generation.id,
+      requestId: imageResult.requestId,
+      responseSummary: imageResult.responseSummary
+    });
     const imagePayload = await extractGeneratedImagePayload(image, {
       ...getRequestLogContext(request),
       userId: user.id,
@@ -614,6 +691,14 @@ export async function POST(request: NextRequest) {
       openaiRequestId: imageResult.requestId
     });
     const base64Image = imagePayload.base64;
+    logger.info("OpenAI image JSON parsing completed", {
+      ...getRequestLogContext(request),
+      userId: user.id,
+      generationId: generation.id,
+      source: imagePayload.source,
+      base64Length: base64Image.length,
+      contentType: imagePayload.contentType ?? null
+    });
     logger.info("OpenAI image payload validated", {
       ...getRequestLogContext(request),
       userId: user.id,
@@ -728,6 +813,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     const message = getInternalFailureMessage(error);
+    const errorDiagnostics = serializeErrorForDiagnostics(error);
     const openaiDiagnostics = getOpenAIErrorDiagnostics(error);
     const debugReason = getOpenAIDebugReason(error);
 
@@ -738,6 +824,8 @@ export async function POST(request: NextRequest) {
       durationMs: Date.now() - startedAt,
       step: currentStep,
       error: message,
+      errorDiagnostics,
+      stack: errorDiagnostics.stack,
       debugReason,
       openaiDiagnostics
     });
@@ -748,6 +836,7 @@ export async function POST(request: NextRequest) {
         userId,
         generationId: generation?.id,
         step: currentStep,
+        errorDiagnostics,
         debugReason,
         openaiDiagnostics
       });
@@ -797,6 +886,7 @@ export async function POST(request: NextRequest) {
         durationMs: Date.now() - startedAt,
         generationId: generation?.id,
         step: currentStep,
+        errorDiagnostics,
         debugReason,
         openaiDiagnostics
       }
@@ -819,7 +909,16 @@ export async function POST(request: NextRequest) {
       message,
       500,
       PUBLIC_IMAGE_GENERATION_UNAVAILABLE_MESSAGE,
-      {},
+      {
+        diagnostics: isDevelopmentDebugResponse()
+          ? {
+              step: currentStep,
+              error: errorDiagnostics,
+              openai: openaiDiagnostics,
+              debugReason
+            }
+          : undefined
+      },
       {
         generationId: generation?.id,
         debugReason,
