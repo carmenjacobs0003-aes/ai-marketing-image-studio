@@ -80,10 +80,14 @@ export async function createMarketingImage({
 }
 
 export function getGeneratedImageBase64(image: ImagesResponse) {
-  const base64Image = image.data?.[0]?.b64_json;
+  if (!image || !Array.isArray(image.data) || !image.data[0]) {
+    throw new Error("OpenAI returned an empty image response.");
+  }
 
-  if (!base64Image) {
-    throw new Error("OpenAI did not return an image payload.");
+  const base64Image = image.data[0].b64_json;
+
+  if (typeof base64Image !== "string" || base64Image.trim().length === 0) {
+    throw new Error("OpenAI did not return a valid image payload.");
   }
 
   return base64Image;
