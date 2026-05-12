@@ -140,6 +140,11 @@ export function StudioCanvas({
 
       if (!response.ok || !payload || !payload.success) {
         const errorPayload = payload && !payload.success ? payload : null;
+        console.error("Image generation API returned an error", {
+          status: response.status,
+          statusText: response.statusText,
+          payload: errorPayload
+        });
         setError(
           getGenerationErrorMessage(
             response.status,
@@ -160,6 +165,12 @@ export function StudioCanvas({
       setPrompt("");
       await refreshUsage();
     } catch (caughtError) {
+      console.error("Image generation submit failed before API JSON response", {
+        error:
+          caughtError instanceof Error
+            ? caughtError.message
+            : String(caughtError)
+      });
       setError(PUBLIC_IMAGE_GENERATION_UNAVAILABLE_MESSAGE);
       setBackendDebugError(
         caughtError instanceof Error
