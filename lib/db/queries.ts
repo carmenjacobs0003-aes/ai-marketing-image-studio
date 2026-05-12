@@ -308,7 +308,6 @@ export async function updateImageGeneration(
     .from("image_generations")
     .update(updates)
     .eq("id", id)
-    .eq("user_id", userId)
     .select("*");
 
   if (error) {
