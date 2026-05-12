@@ -71,6 +71,8 @@ export type GenerateMarketingImageInput = {
 export type ImageGenerationResult = {
   data: ImagesResponse;
   status: number;
+  statusText: string;
+  ok: boolean;
   requestId: string | null | undefined;
   model: string;
   request: ImageGenerateParams;
@@ -361,18 +363,23 @@ export async function createMarketingImage({
       logger.info("OpenAI image generation response status", {
         model,
         status: response.status,
+        statusText: response.statusText,
         ok: response.ok,
         requestId
       });
       logger.info("OpenAI image generation raw response", {
         model,
         status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
         requestId,
         responseSummary
       });
       return {
         data,
         status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
         requestId,
         model,
         request,

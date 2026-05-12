@@ -27,7 +27,7 @@ import {
   OPENAI_API_KEY_ENV_VAR_NAME
 } from "@/lib/env";
 import { logger } from "@/lib/logger";
-import { withTimeout } from "@/lib/api/timeout";
+import { ApiTimeoutError, withTimeout } from "@/lib/api/timeout";
 import { logCentralizedError } from "@/lib/monitoring/errors";
 import { enforcePromptProtection } from "@/lib/security/abuse";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -78,6 +78,7 @@ type ImageGenerateResponse =
       issues?: z.typeToFlattenedError<z.infer<typeof requestSchema>>;
       usage?: Awaited<ReturnType<typeof assertCanGenerateImage>>["usage"];
       diagnostics?: Record<string, unknown>;
+      debugReason?: string;
     };
 
 function getRequestLogContext(request: NextRequest) {
@@ -119,7 +120,8 @@ function summarizeApiResponseForLog(body: ImageGenerateResponse) {
       step: body.step ?? null,
       publicError: body.publicError ?? null,
       hasIssues: Boolean(body.issues),
-      hasUsage: Boolean(body.usage)
+      hasUsage: Boolean(body.usage),
+      debugReason: body.debugReason ?? null
     };
   }
 
@@ -242,14 +244,16 @@ function serializeErrorForDiagnostics(error: unknown): Record<string, unknown> {
 
     return {
       name: error.name,
-      message: error.message,
-      stack: error.stack ?? null,
+      message: sanitizeErrorMessage(error.message),
+      stack: error.stack ? sanitizeErrorMessage(error.stack) : null,
       cause:
         errorLike.cause instanceof Error
           ? {
               name: errorLike.cause.name,
-              message: errorLike.cause.message,
-              stack: errorLike.cause.stack ?? null
+              message: sanitizeErrorMessage(errorLike.cause.message),
+              stack: errorLike.cause.stack
+                ? sanitizeErrorMessage(errorLike.cause.stack)
+                : null
             }
           : (errorLike.cause ?? null),
       status: errorLike.status ?? null,
@@ -262,17 +266,35 @@ function serializeErrorForDiagnostics(error: unknown): Record<string, unknown> {
 
   return {
     name: typeof error,
-    message: String(error),
+    message: sanitizeErrorMessage(String(error)),
     stack: null
   };
 }
 
+function sanitizeErrorMessage(message: string) {
+  return message
+    .replace(/sk-[A-Za-z0-9_-]+/g, "[redacted_openai_key]")
+    .replace(/Bearer\s+[A-Za-z0-9._-]+/gi, "Bearer [redacted_token]");
+}
+
 function getInternalFailureMessage(error: unknown) {
   if (error instanceof Error && error.message) {
-    return error.message;
+    return sanitizeErrorMessage(error.message);
   }
 
-  return String(error || "Image generation failed.");
+  return sanitizeErrorMessage(String(error || "Image generation failed."));
+}
+
+function getErrorStatus(error: unknown, openAIStatus?: number) {
+  if (error instanceof ApiTimeoutError) {
+    return 504;
+  }
+
+  if (typeof openAIStatus === "number" && openAIStatus >= 400) {
+    return openAIStatus;
+  }
+
+  return 500;
 }
 
 export async function POST(request: NextRequest) {
@@ -287,7 +309,9 @@ export async function POST(request: NextRequest) {
     currentStep = "environment_detection";
     logger.info("Image generation request received", {
       ...getRequestLogContext(request),
-      env: getRuntimeEnvDiagnostics()
+      env: getRuntimeEnvDiagnostics(),
+      hasOpenAIKey: Boolean(env.OPENAI_API_KEY),
+      runtimeHasOpenAIKey: Boolean(process.env[OPENAI_API_KEY_ENV_VAR_NAME])
     });
 
     currentStep = "authentication";
@@ -653,7 +677,12 @@ export async function POST(request: NextRequest) {
       model: env.OPENAI_IMAGE_MODEL,
       size: payload.size,
       quality: payload.quality,
-      promptLength: brandedPrompt.length
+      promptLength: brandedPrompt.length,
+      hasOpenAIKey: Boolean(env.OPENAI_API_KEY),
+      runtimeHasOpenAIKey: Boolean(process.env[OPENAI_API_KEY_ENV_VAR_NAME]),
+      apiTimeoutSeconds: env.API_TIMEOUT_SECONDS,
+      endpoint: "POST /v1/images/generations",
+      sdkMethod: "openai.images.generate"
     });
     currentStep = "openai_image_generation";
     const imageResult = await withTimeout(
@@ -672,8 +701,13 @@ export async function POST(request: NextRequest) {
       userId: user.id,
       generationId: generation.id,
       status: imageResult.status,
+      statusText: imageResult.statusText,
+      ok: imageResult.ok,
       requestId: imageResult.requestId,
-      responseSummary: imageResult.responseSummary
+      responseSummary: imageResult.responseSummary,
+      modelAccessDenied: false,
+      billingOrQuotaError: false,
+      timedOut: false
     });
 
     currentStep = "openai_json_parsing";
@@ -815,7 +849,10 @@ export async function POST(request: NextRequest) {
     const message = getInternalFailureMessage(error);
     const errorDiagnostics = serializeErrorForDiagnostics(error);
     const openaiDiagnostics = getOpenAIErrorDiagnostics(error);
-    const debugReason = getOpenAIDebugReason(error);
+    const debugReason =
+      error instanceof ApiTimeoutError
+        ? "openai_request_timed_out"
+        : getOpenAIDebugReason(error);
 
     logger.error("Image generation failed", {
       ...getRequestLogContext(request),
@@ -827,7 +864,15 @@ export async function POST(request: NextRequest) {
       errorDiagnostics,
       stack: errorDiagnostics.stack,
       debugReason,
-      openaiDiagnostics
+      openaiDiagnostics,
+      exactThrownErrorMessage:
+        error instanceof Error ? error.message : String(error),
+      hasOpenAIKey: Boolean(env.OPENAI_API_KEY),
+      runtimeHasOpenAIKey: Boolean(process.env[OPENAI_API_KEY_ENV_VAR_NAME]),
+      modelAccessDenied:
+        debugReason === "openai_model_access_or_permission_denied",
+      billingOrQuotaError: debugReason === "openai_billing_or_quota_failure",
+      timedOut: debugReason === "openai_request_timed_out"
     });
 
     if (debugReason === "openai_model_access_or_permission_denied") {
@@ -837,6 +882,18 @@ export async function POST(request: NextRequest) {
         generationId: generation?.id,
         step: currentStep,
         errorDiagnostics,
+        debugReason,
+        openaiDiagnostics
+      });
+    }
+
+    if (debugReason === "openai_request_timed_out") {
+      logger.error("Image generation failed due to OpenAI request timeout", {
+        ...getRequestLogContext(request),
+        userId,
+        generationId: generation?.id,
+        step: currentStep,
+        timeoutSeconds: env.API_TIMEOUT_SECONDS,
         debugReason,
         openaiDiagnostics
       });
@@ -907,14 +964,24 @@ export async function POST(request: NextRequest) {
       startedAt,
       currentStep,
       message,
-      500,
-      PUBLIC_IMAGE_GENERATION_UNAVAILABLE_MESSAGE,
+      getErrorStatus(error, openaiDiagnostics.status),
+      message,
       {
+        debugReason,
         diagnostics: isDevelopmentDebugResponse()
           ? {
               step: currentStep,
               error: errorDiagnostics,
               openai: openaiDiagnostics,
+              hasOpenAIKey: Boolean(env.OPENAI_API_KEY),
+              runtimeHasOpenAIKey: Boolean(
+                process.env[OPENAI_API_KEY_ENV_VAR_NAME]
+              ),
+              modelAccessDenied:
+                debugReason === "openai_model_access_or_permission_denied",
+              billingOrQuotaError:
+                debugReason === "openai_billing_or_quota_failure",
+              timedOut: debugReason === "openai_request_timed_out",
               debugReason
             }
           : undefined
