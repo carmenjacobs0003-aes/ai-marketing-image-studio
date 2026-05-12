@@ -86,7 +86,12 @@ export type GeneratedImagePayload = {
 };
 
 const DALL_E_MODELS = new Set(["dall-e-2", "dall-e-3"]);
-const GPT_IMAGE_MODELS = new Set(["gpt-image-1"]);
+const GPT_IMAGE_MODELS = new Set([
+  "gpt-image-1",
+  "gpt-image-1-mini",
+  "gpt-image-1.5",
+  "gpt-image-2"
+]);
 const IMAGE_API_MODELS = new Set([...DALL_E_MODELS, ...GPT_IMAGE_MODELS]);
 const DALL_E_3_QUALITIES = new Set(["standard", "hd"]);
 const GPT_IMAGE_QUALITIES = new Set(["auto", "low", "medium", "high"]);
@@ -102,7 +107,7 @@ export function normalizeImageGenerationOptions(
 ) {
   if (!isSupportedImageModel(model)) {
     throw new Error(
-      `Unsupported OpenAI image model '${model}'. Use gpt-image-1, dall-e-2, or dall-e-3.`
+      `Unsupported OpenAI image model '${model}'. Use gpt-image-2, gpt-image-1.5, gpt-image-1-mini, gpt-image-1, dall-e-2, or dall-e-3.`
     );
   }
 
@@ -293,7 +298,12 @@ export async function moderateImagePrompt(prompt: string) {
             : "Unknown centralized logging failure"
       });
     });
-    throw new Error(normalizeFailureMessage("OpenAI moderation", error));
+    logger.error("OpenAI moderation request failed with original error", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : null,
+      status: getOpenAIStatus(error)
+    });
+    throw error;
   });
   const result = moderation.results[0];
 
@@ -338,7 +348,9 @@ export async function createMarketingImage({
         userProvided: Boolean(userId),
         hasApiKey: Boolean(env.OPENAI_API_KEY),
         projectConfigured: Boolean(env.OPENAI_PROJECT_ID),
-        organizationConfigured: Boolean(env.OPENAI_ORGANIZATION)
+        organizationConfigured: Boolean(env.OPENAI_ORGANIZATION),
+        endpoint: "POST /v1/images/generations",
+        sdkMethod: "openai.images.generate"
       });
       const {
         data,
@@ -400,7 +412,9 @@ export async function createMarketingImage({
       size,
       quality,
       status,
-      error: message,
+      error: error instanceof Error ? error.message : String(error),
+      normalizedMessage: message,
+      stack: error instanceof Error ? error.stack : null,
       debugReason,
       diagnostics
     });
@@ -423,7 +437,7 @@ export async function createMarketingImage({
             : "Unknown centralized logging failure"
       });
     });
-    throw new OpenAIImageGenerationError(message, diagnostics, debugReason);
+    throw error;
   });
 }
 

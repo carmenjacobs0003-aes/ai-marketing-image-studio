@@ -26,19 +26,24 @@ type ImageGenerationApiResponse =
   | {
       success: false;
       error?: string;
+      step?: string;
       usage?: UsageSummary;
     };
 
 const PUBLIC_IMAGE_GENERATION_UNAVAILABLE_MESSAGE =
   "Image generation is temporarily unavailable. Please try again shortly.";
 
-function getGenerationErrorMessage(status: number, message?: string) {
-  if (status >= 500 || status === 503) {
-    return PUBLIC_IMAGE_GENERATION_UNAVAILABLE_MESSAGE;
+function getGenerationErrorMessage(
+  status: number,
+  message?: string,
+  step?: string
+) {
+  if (message) {
+    return step ? `${message} (failed step: ${step})` : message;
   }
 
-  if (message) {
-    return message;
+  if (status >= 500 || status === 503) {
+    return PUBLIC_IMAGE_GENERATION_UNAVAILABLE_MESSAGE;
   }
 
   if (status === 401) {
@@ -112,7 +117,8 @@ export function StudioCanvas({
         setError(
           getGenerationErrorMessage(
             response.status,
-            payload && !payload.success ? payload.error : undefined
+            payload && !payload.success ? payload.error : undefined,
+            payload && !payload.success ? payload.step : undefined
           )
         );
         if (payload && !payload.success && payload.usage) {
