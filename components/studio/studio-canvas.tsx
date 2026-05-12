@@ -30,29 +30,27 @@ type ImageGenerationApiResponse =
     };
 
 function getGenerationErrorMessage(status: number, message?: string) {
+  if (message) {
+    return message;
+  }
+
   if (status === 401) {
     return "Please sign in again before generating an image.";
   }
 
   if (status === 429) {
-    return (
-      message ??
-      "Image generation is busy right now. Please wait a moment and try again."
-    );
+    return "Image generation is busy right now. Please wait a moment and try again.";
   }
 
   if (status === 503) {
-    return message ?? "Image generation is temporarily unavailable.";
+    return "Image generation is temporarily unavailable.";
   }
 
   if (status >= 500) {
     return "We could not generate your image right now. Please try again shortly.";
   }
 
-  return (
-    message ??
-    "Unable to generate image. Please review your prompt and try again."
-  );
+  return "Unable to generate image. Please try again.";
 }
 
 async function readGenerationResponse(response: Response) {
