@@ -26,7 +26,10 @@ type ImageGenerationApiResponse =
   | {
       success: false;
       error?: string;
+      publicError?: string;
       step?: string;
+      debugReason?: string;
+      diagnostics?: Record<string, unknown>;
       usage?: UsageSummary;
     };
 
@@ -57,6 +60,24 @@ function getGenerationErrorMessage(
   return "Unable to generate image. Please try again.";
 }
 
+function getBackendDebugReason(
+  status: number,
+  payload: Extract<ImageGenerationApiResponse, { success: false }> | null
+) {
+  if (!payload) {
+    return `Backend did not return a valid JSON error body. HTTP status: ${status}.`;
+  }
+
+  const parts = [
+    payload.error ? `Error: ${payload.error}` : null,
+    payload.step ? `Step: ${payload.step}` : null,
+    payload.debugReason ? `Debug reason: ${payload.debugReason}` : null,
+    `HTTP status: ${status}`
+  ].filter(Boolean);
+
+  return parts.join(" · ");
+}
+
 async function readGenerationResponse(response: Response) {
   const text = await response.text();
 
@@ -83,6 +104,9 @@ export function StudioCanvas({
   const [usage, setUsage] = useState(initialUsage);
   const [image, setImage] = useState<GeneratedImageResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [backendDebugError, setBackendDebugError] = useState<string | null>(
+    null
+  );
   const [isLoading, setIsLoading] = useState(false);
   const limitReached =
     usage.imageGenerationLimit !== null &&
@@ -99,6 +123,7 @@ export function StudioCanvas({
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    setBackendDebugError(null);
     setIsLoading(true);
 
     try {
@@ -114,12 +139,16 @@ export function StudioCanvas({
       const payload = await readGenerationResponse(response);
 
       if (!response.ok || !payload || !payload.success) {
+        const errorPayload = payload && !payload.success ? payload : null;
         setError(
           getGenerationErrorMessage(
             response.status,
-            payload && !payload.success ? payload.error : undefined,
-            payload && !payload.success ? payload.step : undefined
+            errorPayload?.publicError ?? errorPayload?.error,
+            errorPayload?.step
           )
+        );
+        setBackendDebugError(
+          getBackendDebugReason(response.status, errorPayload)
         );
         if (payload && !payload.success && payload.usage) {
           setUsage(payload.usage);
@@ -130,8 +159,13 @@ export function StudioCanvas({
       setImage(payload);
       setPrompt("");
       await refreshUsage();
-    } catch {
+    } catch (caughtError) {
       setError(PUBLIC_IMAGE_GENERATION_UNAVAILABLE_MESSAGE);
+      setBackendDebugError(
+        caughtError instanceof Error
+          ? `Client request failed before a backend JSON response was available: ${caughtError.message}`
+          : "Client request failed before a backend JSON response was available."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -225,6 +259,12 @@ export function StudioCanvas({
             {isLoading ? "Generating..." : "Generate image"}
           </button>
         </form>
+        {backendDebugError ? (
+          <div className="rounded-2xl border border-amber-300/30 bg-amber-400/10 p-3 text-sm text-amber-100">
+            <p className="font-semibold">Backend debug reason</p>
+            <p className="mt-1 break-words">{backendDebugError}</p>
+          </div>
+        ) : null}
       </aside>
       <section className="glass-card p-4 shadow-2xl shadow-cyan-950/20 sm:p-6">
         <div className="flex h-full min-h-[460px] items-center justify-center rounded-2xl border border-dashed border-cyan-300/30 bg-black p-4 text-center text-slate-300">
