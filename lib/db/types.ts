@@ -12,6 +12,8 @@ export type DailyUsageKind = "marketing_generations" | "image_generations";
 export type AdminRole = Database["public"]["Enums"]["admin_role"];
 export type ModerationStatus = Database["public"]["Enums"]["moderation_status"];
 export type AuditSeverity = Database["public"]["Enums"]["audit_severity"];
+export type NotificationKind = Database["public"]["Enums"]["notification_kind"];
+export type NotificationTone = Database["public"]["Enums"]["notification_tone"];
 
 export type Database = {
   public: {
@@ -285,6 +287,212 @@ export type Database = {
         Relationships: [];
       };
 
+      notification_preferences: {
+        Row: {
+          user_id: string;
+          in_app: boolean;
+          email: boolean;
+          weekly_digest: boolean;
+          creator_activity: boolean;
+          gallery_interactions: boolean;
+          usage_warnings: boolean;
+          product_updates: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          in_app?: boolean;
+          email?: boolean;
+          weekly_digest?: boolean;
+          creator_activity?: boolean;
+          gallery_interactions?: boolean;
+          usage_warnings?: boolean;
+          product_updates?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          in_app?: boolean;
+          email?: boolean;
+          weekly_digest?: boolean;
+          creator_activity?: boolean;
+          gallery_interactions?: boolean;
+          usage_warnings?: boolean;
+          product_updates?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      notifications: {
+        Row: {
+          id: string;
+          user_id: string;
+          actor_id: string | null;
+          kind:
+            | "welcome"
+            | "tutorial"
+            | "upgrade"
+            | "usage_warning"
+            | "saved_generation"
+            | "creator_activity"
+            | "gallery_interaction"
+            | "profile_completion"
+            | "achievement"
+            | "weekly_digest"
+            | "system";
+          tone: "info" | "success" | "warning" | "error";
+          title: string;
+          body: string;
+          href: string | null;
+          metadata: Json;
+          read_at: string | null;
+          emailed_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          actor_id?: string | null;
+          kind:
+            | "welcome"
+            | "tutorial"
+            | "upgrade"
+            | "usage_warning"
+            | "saved_generation"
+            | "creator_activity"
+            | "gallery_interaction"
+            | "profile_completion"
+            | "achievement"
+            | "weekly_digest"
+            | "system";
+          tone?: "info" | "success" | "warning" | "error";
+          title: string;
+          body: string;
+          href?: string | null;
+          metadata?: Json;
+          read_at?: string | null;
+          emailed_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          actor_id?: string | null;
+          kind?:
+            | "welcome"
+            | "tutorial"
+            | "upgrade"
+            | "usage_warning"
+            | "saved_generation"
+            | "creator_activity"
+            | "gallery_interaction"
+            | "profile_completion"
+            | "achievement"
+            | "weekly_digest"
+            | "system";
+          tone?: "info" | "success" | "warning" | "error";
+          title?: string;
+          body?: string;
+          href?: string | null;
+          metadata?: Json;
+          read_at?: string | null;
+          emailed_at?: string | null;
+        };
+        Relationships: [];
+      };
+      onboarding_progress: {
+        Row: {
+          user_id: string;
+          completed_steps: string[];
+          dismissed_welcome_at: string | null;
+          first_project_completed_at: string | null;
+          first_generation_completed_at: string | null;
+          profile_completed_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          completed_steps?: string[];
+          dismissed_welcome_at?: string | null;
+          first_project_completed_at?: string | null;
+          first_generation_completed_at?: string | null;
+          profile_completed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          completed_steps?: string[];
+          dismissed_welcome_at?: string | null;
+          first_project_completed_at?: string | null;
+          first_generation_completed_at?: string | null;
+          profile_completed_at?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      user_achievements: {
+        Row: {
+          id: string;
+          user_id: string;
+          badge_key: string;
+          title: string;
+          description: string | null;
+          earned_at: string | null;
+          metadata: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          badge_key: string;
+          title: string;
+          description?: string | null;
+          earned_at?: string | null;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Update: {
+          badge_key?: string;
+          title?: string;
+          description?: string | null;
+          earned_at?: string | null;
+          metadata?: Json;
+        };
+        Relationships: [];
+      };
+      weekly_digest_runs: {
+        Row: {
+          id: string;
+          user_id: string;
+          digest_week: string;
+          status: "queued" | "sent" | "skipped" | "failed";
+          payload: Json;
+          sent_at: string | null;
+          error_message: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          digest_week: string;
+          status?: "queued" | "sent" | "skipped" | "failed";
+          payload?: Json;
+          sent_at?: string | null;
+          error_message?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          status?: "queued" | "sent" | "skipped" | "failed";
+          payload?: Json;
+          sent_at?: string | null;
+          error_message?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+
       gallery_items: {
         Row: {
           id: string;
@@ -370,8 +578,16 @@ export type Database = {
       };
       gallery_favorites: {
         Row: { user_id: string; gallery_item_id: string; created_at: string };
-        Insert: { user_id: string; gallery_item_id: string; created_at?: string };
-        Update: { user_id?: string; gallery_item_id?: string; created_at?: string };
+        Insert: {
+          user_id: string;
+          gallery_item_id: string;
+          created_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          gallery_item_id?: string;
+          created_at?: string;
+        };
         Relationships: [];
       };
       gallery_reports: {
@@ -482,7 +698,11 @@ export type Database = {
         Returns: Database["public"]["Tables"]["daily_usage"]["Row"];
       };
       increment_gallery_metric: {
-        Args: { p_gallery_item_id: string; p_metric: string; p_quantity?: number };
+        Args: {
+          p_gallery_item_id: string;
+          p_metric: string;
+          p_quantity?: number;
+        };
         Returns: Database["public"]["Tables"]["gallery_items"]["Row"];
       };
       increment_gallery_like: {
@@ -519,6 +739,19 @@ export type Database = {
       admin_role: "user" | "moderator" | "admin";
       moderation_status: "clean" | "flagged" | "removed";
       audit_severity: "info" | "warning" | "critical";
+      notification_kind:
+        | "welcome"
+        | "tutorial"
+        | "upgrade"
+        | "usage_warning"
+        | "saved_generation"
+        | "creator_activity"
+        | "gallery_interaction"
+        | "profile_completion"
+        | "achievement"
+        | "weekly_digest"
+        | "system";
+      notification_tone: "info" | "success" | "warning" | "error";
     };
   };
 };
