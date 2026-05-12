@@ -23,7 +23,7 @@ export default function SignupPage({
           />
           <p className="eyebrow">Start creating</p>
           <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
-            Create your studio account
+            Create your SYNTRIX AI account
           </h1>
           <p className="text-sm leading-6 text-slate-300">
             Launch a premium black-glass workspace for AI visuals, copy, brand

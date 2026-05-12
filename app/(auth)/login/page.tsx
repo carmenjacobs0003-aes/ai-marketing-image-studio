@@ -23,7 +23,7 @@ export default function LoginPage({
           />
           <p className="eyebrow">Welcome back</p>
           <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
-            Log in to your studio
+            Log in to SYNTRIX AI
           </h1>
           <p className="text-sm leading-6 text-slate-300">
             Enter the neural workspace for protected campaigns, image history,
