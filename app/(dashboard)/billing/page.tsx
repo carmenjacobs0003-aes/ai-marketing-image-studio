@@ -90,11 +90,12 @@ export default async function BillingPage({
             </p>
           </article>
           <article className="metric-card">
-            <p className="text-sm text-slate-400">Monthly limits</p>
+            <p className="text-sm text-slate-400">Monthly AI Generations</p>
             <p className="mt-2 text-sm font-semibold leading-6 text-white">
-              Images: {currentPlan.monthlyImageGenerations}
-              <br />
-              Marketing: {currentPlan.monthlyMarketingGenerations}
+              {currentPlan.monthlyAiGenerations} AI generations/month
+            </p>
+            <p className="mt-2 text-xs leading-5 text-slate-400">
+              Shared across images and marketing generations.
             </p>
           </article>
           <article className="metric-card">

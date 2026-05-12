@@ -109,6 +109,8 @@ export function StudioCanvas({
   const [projectId, setProjectId] = useState("");
   const [brandKitId, setBrandKitId] = useState("");
   const [usage, setUsage] = useState(initialUsage);
+  const totalGenerationsUsed =
+    usage.imageGenerations + usage.marketingGenerations;
   const [image, setImage] = useState<GeneratedImageResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [backendDebugError, setBackendDebugError] = useState<string | null>(
@@ -295,15 +297,13 @@ export function StudioCanvas({
         </div>
         <div className="rounded-2xl border border-cyan-300/30 bg-cyan-300/10 p-4 shadow-lg shadow-cyan-500/10">
           <p className="text-sm text-cyan-100">
-            Daily image usage · {usage.plan}
+            AI generation usage · {usage.plan}
           </p>
           <p className="mt-1 text-2xl font-black">
-            {usage.imageGenerations}/{usage.imageGenerationLimit ?? "Fair use"}
+            {totalGenerationsUsed} used today
           </p>
           <p className="text-xs text-slate-300">
-            {usage.remainingImageGenerations === null
-              ? "Agency fair use included"
-              : `${usage.remainingImageGenerations} generations remaining today`}
+            Shared across image and marketing generations.
           </p>
         </div>
         <form className="space-y-4" onSubmit={onSubmit}>
@@ -357,7 +357,7 @@ export function StudioCanvas({
           ) : null}
           {limitReached ? (
             <p className="rounded-2xl border border-cyan-300/20 bg-black p-3 text-sm text-cyan-100">
-              Daily image limit reached. Unlock higher generation limits to
+              AI generation limit reached. Unlock higher generation limits to
               continue.
             </p>
           ) : null}
