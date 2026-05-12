@@ -11,6 +11,8 @@ const baseEnvSchema = z.object({
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
   OPENAI_API_KEY: z.string().optional(),
+  OPENAI_PROJECT_ID: z.string().optional(),
+  OPENAI_ORGANIZATION: z.string().optional(),
   OPENAI_TEXT_MODEL: z.string().default("gpt-4o-mini"),
   OPENAI_IMAGE_MODEL: z.string().default("gpt-image-1"),
   API_TIMEOUT_SECONDS: z.coerce.number().int().positive().default(60),

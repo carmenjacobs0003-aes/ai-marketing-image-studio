@@ -4,7 +4,8 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { injectBrandIntoImagePrompt } from "@/lib/brand/prompt";
 import {
   createMarketingImage,
-  getGeneratedImageBase64,
+  extractGeneratedImagePayload,
+  getOpenAIErrorDiagnostics,
   isSupportedImageModel,
   moderateImagePrompt
 } from "@/lib/openai/images";
@@ -89,7 +90,30 @@ function getRuntimeEnvDiagnostics() {
     hasSupabaseServiceRoleKey: Boolean(env.SUPABASE_SERVICE_ROLE_KEY),
     openaiImageModel: env.OPENAI_IMAGE_MODEL,
     imageModelSupported: isSupportedImageModel(env.OPENAI_IMAGE_MODEL),
-    apiTimeoutSeconds: env.API_TIMEOUT_SECONDS
+    apiTimeoutSeconds: env.API_TIMEOUT_SECONDS,
+    openaiProjectConfigured: Boolean(env.OPENAI_PROJECT_ID),
+    openaiOrganizationConfigured: Boolean(env.OPENAI_ORGANIZATION)
+  };
+}
+
+function summarizeApiResponseForLog(body: ImageGenerateResponse) {
+  if (!body.success) {
+    return {
+      success: false,
+      error: body.error,
+      hasIssues: Boolean(body.issues),
+      hasUsage: Boolean(body.usage)
+    };
+  }
+
+  return {
+    success: true,
+    id: body.id,
+    projectId: body.projectId,
+    hasSignedUrl: Boolean(body.signedUrl),
+    hasDownloadUrl: Boolean(body.downloadUrl),
+    hasStoragePath: Boolean(body.storagePath),
+    promptLength: body.prompt.length
   };
 }
 
@@ -104,7 +128,7 @@ function logFinalApiResponse(
     ...getRequestLogContext(request),
     status,
     durationMs: Date.now() - startedAt,
-    responseBody: body,
+    responseBody: summarizeApiResponseForLog(body),
     ...extra
   });
 }
@@ -216,8 +240,9 @@ export async function POST(request: NextRequest) {
 
     if (!env.OPENAI_API_KEY) {
       logger.error("Image generation attempted without OPENAI_API_KEY", {
+        ...getRequestLogContext(request),
         userId: user.id,
-        requestId: request.headers.get("x-request-id")
+        env: getRuntimeEnvDiagnostics()
       });
       return jsonError(
         request,
@@ -440,12 +465,20 @@ export async function POST(request: NextRequest) {
       responseSummary: imageResult.responseSummary
     });
 
-    const base64Image = getGeneratedImageBase64(image);
-    logger.info("OpenAI image base64 payload validated", {
+    const imagePayload = await extractGeneratedImagePayload(image, {
       ...getRequestLogContext(request),
       userId: user.id,
       generationId: generation.id,
-      base64Length: base64Image.length
+      openaiRequestId: imageResult.requestId
+    });
+    const base64Image = imagePayload.base64;
+    logger.info("OpenAI image payload validated", {
+      ...getRequestLogContext(request),
+      userId: user.id,
+      generationId: generation.id,
+      source: imagePayload.source,
+      base64Length: base64Image.length,
+      contentType: imagePayload.contentType ?? null
     });
     logger.info("Supabase storage upload start", {
       ...getRequestLogContext(request),
@@ -478,7 +511,9 @@ export async function POST(request: NextRequest) {
         size: payload.size,
         quality: payload.quality,
         openai_created: image.created ?? null,
-        revised_prompt: image.data?.[0]?.revised_prompt ?? null,
+        revised_prompt: imagePayload.revisedPrompt ?? null,
+        openai_payload_source: imagePayload.source,
+        openai_payload_content_type: imagePayload.contentType ?? null,
         openai_request_id: imageResult.requestId ?? null,
         openai_status: imageResult.status,
         openai_usage: image.usage ?? null
@@ -549,11 +584,12 @@ export async function POST(request: NextRequest) {
     const message = getInternalFailureMessage(error);
 
     logger.error("Image generation failed", {
+      ...getRequestLogContext(request),
       userId,
       generationId: generation?.id,
-      requestId: request.headers.get("x-request-id"),
       durationMs: Date.now() - startedAt,
-      error: message
+      error: message,
+      openaiDiagnostics: getOpenAIErrorDiagnostics(error)
     });
 
     if (supabase && generation && userId) {
@@ -581,7 +617,8 @@ export async function POST(request: NextRequest) {
       severity: "critical",
       context: {
         durationMs: Date.now() - startedAt,
-        generationId: generation?.id
+        generationId: generation?.id,
+        openaiDiagnostics: getOpenAIErrorDiagnostics(error)
       }
     }).catch((loggingError) => {
       logger.error("Image generation centralized error logging failed", {
@@ -602,7 +639,8 @@ export async function POST(request: NextRequest) {
       500,
       {},
       {
-        generationId: generation?.id
+        generationId: generation?.id,
+        openaiDiagnostics: getOpenAIErrorDiagnostics(error)
       }
     );
   }
