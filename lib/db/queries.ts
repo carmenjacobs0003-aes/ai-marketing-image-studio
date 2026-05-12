@@ -283,11 +283,19 @@ export async function createImageGeneration(
   const { data, error } = await supabase
     .from("image_generations")
     .insert(generation)
-    .limit(1)
-    .select("*")
-    .maybeSingle();
+    .select("*");
 
-  return requireDatabaseData(data, error, "Unable to create image generation");
+  if (error) {
+    throw error;
+  }
+
+  const row = data?.[0];
+
+  if (!row) {
+    throw new Error("Unable to create image generation");
+  }
+
+  return row;
 }
 
 export async function updateImageGeneration(
@@ -301,11 +309,19 @@ export async function updateImageGeneration(
     .update(updates)
     .eq("id", id)
     .eq("user_id", userId)
-    .limit(1)
-    .select("*")
-    .maybeSingle();
+    .select("*");
 
-  return requireDatabaseData(data, error, "Unable to update image generation");
+  if (error) {
+    throw error;
+  }
+
+  const row = data?.[0];
+
+  if (!row) {
+    throw new Error("Unable to update image generation");
+  }
+
+  return row;
 }
 
 export async function listImageGenerations(
@@ -330,15 +346,19 @@ export async function createMarketingGeneration(
   const { data, error } = await supabase
     .from("marketing_generations")
     .insert(generation)
-    .limit(1)
-    .select("*")
-    .maybeSingle();
+    .select("*");
 
-  return requireDatabaseData(
-    data,
-    error,
-    "Unable to create marketing generation"
-  );
+  if (error) {
+    throw error;
+  }
+
+  const row = data?.[0];
+
+  if (!row) {
+    throw new Error("Unable to create marketing generation");
+  }
+
+  return row;
 }
 
 export async function updateMarketingGeneration(
@@ -352,15 +372,19 @@ export async function updateMarketingGeneration(
     .update(updates)
     .eq("id", id)
     .eq("user_id", userId)
-    .limit(1)
-    .select("*")
-    .maybeSingle();
+    .select("*");
 
-  return requireDatabaseData(
-    data,
-    error,
-    "Unable to update marketing generation"
-  );
+  if (error) {
+    throw error;
+  }
+
+  const row = data?.[0];
+
+  if (!row) {
+    throw new Error("Unable to update marketing generation");
+  }
+
+  return row;
 }
 
 export async function listMarketingGenerations(
