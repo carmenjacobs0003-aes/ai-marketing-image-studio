@@ -30,6 +30,20 @@ export type OpenAIErrorDiagnostics = {
   isQuotaOrBillingIssue: boolean;
 };
 
+export type ImageModerationResult = {
+  flagged: boolean;
+  categories: unknown;
+  categoryScores: unknown;
+  moderationId: string | null;
+  model: string;
+  requestCount: number;
+  latencyMs: number;
+  bypassed: boolean;
+  bypassReason?: string;
+};
+
+type OpenAIResponseHeaders = Record<string, string>;
+
 export class OpenAIImageGenerationError extends Error {
   readonly diagnostics: OpenAIErrorDiagnostics;
   readonly debugReason: string;
@@ -179,6 +193,36 @@ export function summarizeImagesResponse(
   };
 }
 
+function getOpenAIHeaders(error: unknown) {
+  if (error && typeof error === "object" && "headers" in error) {
+    const headers = (error as { headers?: unknown }).headers;
+
+    if (headers && typeof headers === "object") {
+      return Object.fromEntries(
+        Object.entries(headers as Record<string, unknown>)
+          .filter(([, value]) => typeof value === "string")
+          .filter(([key]) =>
+            /^(x-request-id|x-ratelimit|retry-after|openai-organization|openai-processing-ms)/i.test(
+              key
+            )
+          )
+      ) as OpenAIResponseHeaders;
+    }
+  }
+
+  return {};
+}
+
+function getResponseHeaders(response: Response) {
+  return Object.fromEntries(
+    Array.from(response.headers.entries()).filter(([key]) =>
+      /^(x-request-id|x-ratelimit|retry-after|openai-organization|openai-processing-ms)/i.test(
+        key
+      )
+    )
+  );
+}
+
 function getOpenAIStatus(error: unknown) {
   if (error && typeof error === "object" && "status" in error) {
     const status = (error as { status?: unknown }).status;
@@ -263,35 +307,112 @@ export function getOpenAIDebugReason(error: unknown) {
   return "openai_request_failed";
 }
 
-export async function moderateImagePrompt(prompt: string) {
+export async function moderateImagePrompt(
+  prompt: string
+): Promise<ImageModerationResult> {
   const openai = createOpenAIClient();
+  const model = "omni-moderation-latest";
+  const startedAt = Date.now();
+  let requestCount = 0;
+
   const moderation = await withRetry(
     async () => {
+      requestCount += 1;
+      const attemptStartedAt = Date.now();
+
       logger.info("OpenAI image moderation request start", {
         promptLength: prompt.length,
-        model: "omni-moderation-latest"
+        model,
+        requestCount,
+        attempt: requestCount,
+        projectConfigured: Boolean(env.OPENAI_PROJECT_ID),
+        organizationConfigured: Boolean(env.OPENAI_ORGANIZATION),
+        endpoint: "POST /v1/moderations"
       });
+
       const result = await openai.moderations
-        .create({
-          model: "omni-moderation-latest",
-          input: prompt
-        })
+        .create(
+          {
+            model,
+            input: prompt
+          },
+          { maxRetries: 0 }
+        )
         .withResponse();
+      const latencyMs = Date.now() - attemptStartedAt;
+
       logger.info("OpenAI image moderation response", {
         status: result.response.status,
+        statusText: result.response.statusText,
+        ok: result.response.ok,
         requestId: result.request_id,
-        resultCount: result.data.results.length
+        resultCount: result.data.results.length,
+        requestCount,
+        latencyMs,
+        totalLatencyMs: Date.now() - startedAt,
+        headers: getResponseHeaders(result.response)
       });
       return result.data;
     },
-    { label: "openai.image_moderation" }
+    {
+      label: "openai.image_moderation",
+      attempts: 2,
+      baseDelayMs: env.PROVIDER_RETRY_BASE_DELAY_MS,
+      maxDelayMs: env.PROVIDER_RETRY_MAX_DELAY_MS,
+      retryableStatuses: [429],
+      onRetry: (error, attempt, delayMs) => {
+        logger.warn("OpenAI image moderation 429 retry scheduled", {
+          attempt,
+          nextAttempt: attempt + 1,
+          delayMs,
+          requestCount,
+          status: getOpenAIStatus(error),
+          headers: getOpenAIHeaders(error),
+          latencyMs: Date.now() - startedAt
+        });
+      }
+    }
   ).catch(async (error) => {
+    const status = getOpenAIStatus(error);
+    const latencyMs = Date.now() - startedAt;
+
+    if (status === 429) {
+      logger.warn(
+        "OpenAI image moderation rate limited after retry; bypassing moderation for this request",
+        {
+          status,
+          requestCount,
+          latencyMs,
+          headers: getOpenAIHeaders(error),
+          model,
+          projectConfigured: Boolean(env.OPENAI_PROJECT_ID),
+          organizationConfigured: Boolean(env.OPENAI_ORGANIZATION)
+        }
+      );
+
+      return {
+        results: [
+          {
+            flagged: false,
+            categories: {},
+            category_scores: {}
+          }
+        ],
+        id: null
+      };
+    }
+
     await logCentralizedError(error, {
       category: "openai",
       provider: "openai",
       message: normalizeFailureMessage("OpenAI moderation", error),
       severity: "critical",
-      context: { status: getOpenAIStatus(error) }
+      context: {
+        status,
+        requestCount,
+        latencyMs,
+        headers: getOpenAIHeaders(error)
+      }
     }).catch((loggingError) => {
       logger.error("OpenAI moderation centralized logging failed", {
         error:
@@ -303,7 +424,10 @@ export async function moderateImagePrompt(prompt: string) {
     logger.error("OpenAI moderation request failed with original error", {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : null,
-      status: getOpenAIStatus(error)
+      status,
+      requestCount,
+      latencyMs,
+      headers: getOpenAIHeaders(error)
     });
     throw error;
   });
@@ -313,10 +437,18 @@ export async function moderateImagePrompt(prompt: string) {
     throw new Error("Prompt moderation did not return a result.");
   }
 
+  const bypassed = moderation.id === null;
+
   return {
     flagged: result.flagged,
     categories: result.categories,
-    categoryScores: result.category_scores
+    categoryScores: result.category_scores,
+    moderationId: moderation.id ?? null,
+    model,
+    requestCount,
+    latencyMs: Date.now() - startedAt,
+    bypassed,
+    bypassReason: bypassed ? "openai_moderation_rate_limited" : undefined
   };
 }
 
@@ -358,14 +490,17 @@ export async function createMarketingImage({
         data,
         response,
         request_id: requestId
-      } = await openai.images.generate(request).withResponse();
+      } = await openai.images
+        .generate(request, { maxRetries: 0 })
+        .withResponse();
       const responseSummary = summarizeImagesResponse(data);
       logger.info("OpenAI image generation response status", {
         model,
         status: response.status,
         statusText: response.statusText,
         ok: response.ok,
-        requestId
+        requestId,
+        headers: getResponseHeaders(response)
       });
       logger.info("OpenAI image generation raw response", {
         model,

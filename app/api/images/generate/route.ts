@@ -548,6 +548,38 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    logger.info("OpenAI moderation start for image generation", {
+      ...getRequestLogContext(request),
+      userId: user.id,
+      promptLength: payload.prompt.length,
+      expectedModerationCalls: 1,
+      openaiProjectConfigured: Boolean(env.OPENAI_PROJECT_ID),
+      openaiOrganizationConfigured: Boolean(env.OPENAI_ORGANIZATION)
+    });
+    currentStep = "openai_moderation";
+    const moderation = await moderateImagePrompt(payload.prompt);
+    logger.info("OpenAI moderation completed for image generation", {
+      ...getRequestLogContext(request),
+      userId: user.id,
+      flagged: moderation.flagged,
+      requestCount: moderation.requestCount,
+      latencyMs: moderation.latencyMs,
+      bypassed: moderation.bypassed,
+      bypassReason: moderation.bypassReason ?? null,
+      moderationId: moderation.moderationId,
+      model: moderation.model
+    });
+
+    if (moderation.flagged) {
+      return jsonDebugError(
+        request,
+        startedAt,
+        currentStep,
+        "This prompt was blocked by safety moderation. Please revise it and try again.",
+        400
+      );
+    }
+
     currentStep = "supabase_connection";
     supabase = createSupabaseServerClient();
     logger.info("Supabase server client ready for image generation", {
@@ -603,29 +635,6 @@ export async function POST(request: NextRequest) {
         currentStep,
         "Brand kit not found",
         404
-      );
-    }
-
-    logger.info("OpenAI moderation start for image generation", {
-      ...getRequestLogContext(request),
-      userId: user.id,
-      promptLength: payload.prompt.length
-    });
-    currentStep = "openai_moderation";
-    const moderation = await moderateImagePrompt(payload.prompt);
-    logger.info("OpenAI moderation completed for image generation", {
-      ...getRequestLogContext(request),
-      userId: user.id,
-      flagged: moderation.flagged
-    });
-
-    if (moderation.flagged) {
-      return jsonDebugError(
-        request,
-        startedAt,
-        currentStep,
-        "This prompt was blocked by safety moderation. Please revise it and try again.",
-        400
       );
     }
 
