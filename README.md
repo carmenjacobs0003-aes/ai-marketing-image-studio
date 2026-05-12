@@ -35,10 +35,12 @@ Image generation is rate limited per user. Configure:
 - `IMAGE_GENERATION_RATE_LIMIT` (defaults to `10`)
 - `IMAGE_GENERATION_RATE_LIMIT_WINDOW_SECONDS` (defaults to `3600`)
 
-If Upstash Redis is configured, rate limiting uses Redis. Otherwise, local development falls back to an in-memory limiter:
+If Upstash Redis is configured, rate limiting uses Redis. Otherwise, local development falls back to an in-memory limiter. Production should use the canonical Upstash REST variables connected in Vercel Project Settings → Environment Variables:
 
-- `UPSTASH_REDIS_REST_URL`
-- `UPSTASH_REDIS_REST_TOKEN`
+- `UPSTASH_REDIS_REST_URL` (or Vercel KV alias `KV_REST_API_URL`)
+- `UPSTASH_REDIS_REST_TOKEN` (or Vercel KV alias `KV_REST_API_TOKEN`)
+
+Vercel KV marketplace integrations that expose `KV_REST_API_URL` and `KV_REST_API_TOKEN` are also accepted as compatibility aliases, but direct Upstash Redis deployments should use the canonical `UPSTASH_*` names.
 
 ## Protected routes
 
@@ -63,15 +65,15 @@ This app is configured for Vercel with `vercel.json`, production function timeou
 
 ### Required production environment variables
 
-Production validation in `lib/env.ts` requires these variables when `NODE_ENV=production` or `VERCEL_ENV=production`:
+Production readiness validation in `lib/env.ts` checks these variables when `NODE_ENV=production` or `VERCEL_ENV=production`:
 
 - `NEXT_PUBLIC_APP_URL`
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `OPENAI_API_KEY`
-- `UPSTASH_REDIS_REST_URL`
-- `UPSTASH_REDIS_REST_TOKEN`
+- `UPSTASH_REDIS_REST_URL` (or Vercel KV alias `KV_REST_API_URL`)
+- `UPSTASH_REDIS_REST_TOKEN` (or Vercel KV alias `KV_REST_API_TOKEN`)
 - `NEXT_PUBLIC_SENTRY_DSN`
 - `SENTRY_DSN`
 

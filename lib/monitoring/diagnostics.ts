@@ -1,4 +1,4 @@
-import { env, validateProductionEnv } from "@/lib/env";
+import { env, getRedisEnv, validateProductionEnv } from "@/lib/env";
 import { isSupportedImageModel } from "@/lib/openai/images";
 
 export type DiagnosticStatus = "pass" | "warn" | "fail";
@@ -59,7 +59,7 @@ export function getApplicationDiagnostics(): DiagnosticCheck[] {
 
     check(
       "Redis throttling",
-      Boolean(env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN),
+      getRedisEnv(env).configured,
       "Distributed rate limits and queue protection use Upstash Redis in production.",
       "Set Upstash REST URL and token for multi-region throttling."
     ),

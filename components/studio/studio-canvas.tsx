@@ -29,7 +29,14 @@ type ImageGenerationApiResponse =
       usage?: UsageSummary;
     };
 
+const PUBLIC_IMAGE_GENERATION_UNAVAILABLE_MESSAGE =
+  "Image generation is temporarily unavailable. Please try again shortly.";
+
 function getGenerationErrorMessage(status: number, message?: string) {
+  if (status >= 500 || status === 503) {
+    return PUBLIC_IMAGE_GENERATION_UNAVAILABLE_MESSAGE;
+  }
+
   if (message) {
     return message;
   }
@@ -40,14 +47,6 @@ function getGenerationErrorMessage(status: number, message?: string) {
 
   if (status === 429) {
     return "Image generation is busy right now. Please wait a moment and try again.";
-  }
-
-  if (status === 503) {
-    return "Image generation is temporarily unavailable.";
-  }
-
-  if (status >= 500) {
-    return "We could not generate your image right now. Please try again shortly.";
   }
 
   return "Unable to generate image. Please try again.";
@@ -125,12 +124,8 @@ export function StudioCanvas({
       setImage(payload);
       setPrompt("");
       await refreshUsage();
-    } catch (generationError) {
-      setError(
-        generationError instanceof Error
-          ? generationError.message
-          : "Unable to generate image."
-      );
+    } catch {
+      setError(PUBLIC_IMAGE_GENERATION_UNAVAILABLE_MESSAGE);
     } finally {
       setIsLoading(false);
     }

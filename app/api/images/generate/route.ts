@@ -50,6 +50,9 @@ const requestSchema = z.object({
   quality: z.enum(["standard", "hd"]).default("standard")
 });
 
+const PUBLIC_IMAGE_GENERATION_UNAVAILABLE_MESSAGE =
+  "Image generation is temporarily unavailable. Please try again shortly.";
+
 type ImageGenerateResponse =
   | {
       success: true;
@@ -139,12 +142,12 @@ function toJsonMetadata(value: unknown): Json {
   return JSON.parse(JSON.stringify(value)) as Json;
 }
 
-function getImageGenerationFailureMessage(error: unknown) {
+function getInternalFailureMessage(error: unknown) {
   if (error instanceof Error && error.message) {
     return error.message;
   }
 
-  return "Image generation failed. Please try again.";
+  return "Image generation failed.";
 }
 
 export async function POST(request: NextRequest) {
@@ -206,7 +209,7 @@ export async function POST(request: NextRequest) {
       return jsonError(
         request,
         startedAt,
-        "Image generation is configured with an unsupported OpenAI image model. Please contact support.",
+        PUBLIC_IMAGE_GENERATION_UNAVAILABLE_MESSAGE,
         503
       );
     }
@@ -219,7 +222,7 @@ export async function POST(request: NextRequest) {
       return jsonError(
         request,
         startedAt,
-        "Image generation is not configured. Please contact support.",
+        PUBLIC_IMAGE_GENERATION_UNAVAILABLE_MESSAGE,
         503
       );
     }
@@ -253,7 +256,19 @@ export async function POST(request: NextRequest) {
       env.GENERATION_QUEUE_WINDOW_SECONDS
     );
 
+    if (queueLimiter.degraded) {
+      logger.warn("Image generation queue rate limit used degraded fallback", {
+        ...getRequestLogContext(request),
+        userId: user.id
+      });
+    }
+
     if (!queueLimiter.success) {
+      logger.warn("Image generation queue rate limit check denied request", {
+        ...getRequestLogContext(request),
+        userId: user.id,
+        reset: queueLimiter.reset
+      });
       return jsonError(
         request,
         startedAt,
@@ -268,7 +283,19 @@ export async function POST(request: NextRequest) {
       env.IMAGE_GENERATION_RATE_LIMIT_WINDOW_SECONDS
     );
 
+    if (limiter.degraded) {
+      logger.warn("Image generation user rate limit used degraded fallback", {
+        ...getRequestLogContext(request),
+        userId: user.id
+      });
+    }
+
     if (!limiter.success) {
+      logger.warn("Image generation user rate limit check denied request", {
+        ...getRequestLogContext(request),
+        userId: user.id,
+        reset: limiter.reset
+      });
       return jsonError(request, startedAt, "Rate limit exceeded", 429);
     }
 
@@ -519,7 +546,7 @@ export async function POST(request: NextRequest) {
       status: 201
     });
   } catch (error) {
-    const message = getImageGenerationFailureMessage(error);
+    const message = getInternalFailureMessage(error);
 
     logger.error("Image generation failed", {
       userId,
@@ -571,7 +598,7 @@ export async function POST(request: NextRequest) {
     return jsonError(
       request,
       startedAt,
-      message,
+      PUBLIC_IMAGE_GENERATION_UNAVAILABLE_MESSAGE,
       500,
       {},
       {
