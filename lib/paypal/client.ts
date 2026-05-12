@@ -120,7 +120,7 @@ export async function createPayPalSubscription(input: {
       plan_id: input.planId,
       custom_id: input.userId,
       application_context: {
-        brand_name: "Syntrix AI Marketing Image Studio",
+        brand_name: "SYNTRIX AI",
         locale: "en-US",
         shipping_preference: "NO_SHIPPING",
         user_action: "SUBSCRIBE_NOW",

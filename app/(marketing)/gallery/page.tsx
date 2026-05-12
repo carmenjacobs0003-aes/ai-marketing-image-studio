@@ -59,7 +59,7 @@ async function signGalleryItems(items: GalleryItem[]) {
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Community Gallery | AI Marketing Image Studio",
+  title: "Community Gallery | SYNTRIX AI",
   description:
     "Browse reusable AI images, marketing generations, prompts, and creator profiles."
 };

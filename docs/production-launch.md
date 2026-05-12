@@ -1,6 +1,6 @@
 # Production launch runbook
 
-This checklist is the final Vercel launch gate for AI Marketing Image Studio.
+This checklist is the final Vercel launch gate for SYNTRIX AI.
 
 ## Deployment checklist
 

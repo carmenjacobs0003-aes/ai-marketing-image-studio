@@ -1,6 +1,6 @@
-# ai-marketing-image-studio
+# syntrix-ai
 
-AI Marketing & Image Content Studio SaaS built with Next.js, Supabase, OpenAI, Upstash Redis, PayPal, and Sentry.
+SYNTRIX AI creative intelligence platform built with Next.js, Supabase, OpenAI, Upstash Redis, PayPal, and Sentry.
 
 ## Environment setup
 
@@ -101,7 +101,6 @@ npm run mobile:ios
 ```
 
 Before publishing native builds, generate platform-native icon and splash assets from `public/icons/icon.svg`, then run `npx cap add android` and `npx cap add ios` if the native folders have not been created yet.
-
 
 ## Production monitoring and recovery
 

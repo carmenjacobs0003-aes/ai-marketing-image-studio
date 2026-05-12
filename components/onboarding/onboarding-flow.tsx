@@ -19,7 +19,7 @@ import {
 } from "@/lib/onboarding/progress";
 import { useNotifications } from "@/components/notifications/notification-center";
 
-const STORAGE_KEY = "aistudio.onboarding.v1";
+const STORAGE_KEY = "syntrix-ai.onboarding.v1";
 
 type StoredOnboarding = {
   completed: OnboardingStepId[];
@@ -183,7 +183,7 @@ export function OnboardingFlow({
                   Build your first neon campaign in minutes.
                 </h1>
                 <p className="mt-4 text-sm leading-6 text-slate-300">
-                  AIStudio now tracks onboarding progress, nudges your first
+                  SYNTRIX AI now tracks onboarding progress, nudges your first
                   project setup, and sends realtime notifications when saves,
                   gallery interactions, usage warnings, upgrades, and badges
                   need attention.

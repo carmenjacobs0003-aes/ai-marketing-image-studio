@@ -47,7 +47,7 @@ export async function sendCriticalAlert(alert: CriticalAlert) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      service: "Syntrix AI Marketing Image Studio",
+      service: "SYNTRIX AI",
       severity,
       title: alert.title,
       message: alert.message,

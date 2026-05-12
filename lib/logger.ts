@@ -29,7 +29,7 @@ export function log(
     timestamp: new Date().toISOString(),
     environment:
       process.env.VERCEL_ENV ?? process.env.NODE_ENV ?? "development",
-    service: "ai-marketing-image-studio",
+    service: "syntrix-ai",
     ...(redact(context) as LogContext)
   };
 

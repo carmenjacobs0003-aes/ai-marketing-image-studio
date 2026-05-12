@@ -4,8 +4,7 @@ const routes = ["", "/pricing", "/gallery", "/privacy", "/terms"];
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL ??
-    "https://ai-marketing-image-studio.vercel.app";
+    process.env.NEXT_PUBLIC_APP_URL ?? "https://www.syntrixai.co.uk";
   const now = new Date();
 
   return routes.map((route) => ({

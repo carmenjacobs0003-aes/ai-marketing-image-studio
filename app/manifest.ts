@@ -1,14 +1,13 @@
 import type { MetadataRoute } from "next";
+import { BRAND_DESCRIPTION, BRAND_NAME } from "@/lib/branding";
 
 export default function manifest(): MetadataRoute.Manifest {
-  const name = process.env.NEXT_PUBLIC_APP_NAME ?? "AI Marketing Image Studio";
+  const name = process.env.NEXT_PUBLIC_APP_NAME ?? BRAND_NAME;
 
   return {
     name,
-    short_name: "AI Studio",
-    description:
-      process.env.NEXT_PUBLIC_APP_DESCRIPTION ??
-      "Create campaign-ready marketing images and conversion copy with AI.",
+    short_name: "SYNTRIX AI",
+    description: process.env.NEXT_PUBLIC_APP_DESCRIPTION ?? BRAND_DESCRIPTION,
     start_url: "/dashboard?source=pwa",
     scope: "/",
     id: "/?source=pwa",

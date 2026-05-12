@@ -17,7 +17,7 @@ import {
 } from "@/lib/notifications/types";
 import { useNotifications } from "@/components/notifications/notification-center";
 
-const STORAGE_KEY = "aistudio.notification-preferences.v1";
+const STORAGE_KEY = "syntrix-ai.notification-preferences.v1";
 
 type UserPreferencesPanelProps = {
   email?: string | null;
@@ -97,7 +97,7 @@ export function UserPreferencesPanel({
 
   function saveProfile() {
     window.localStorage.setItem(
-      "aistudio.profile-display-name.v1",
+      "syntrix-ai.profile-display-name.v1",
       displayName
     );
     notify({

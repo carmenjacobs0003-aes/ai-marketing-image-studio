@@ -9,7 +9,7 @@ function healthPayload() {
 
   return {
     status: "ok",
-    service: "ai-marketing-image-studio",
+    service: "syntrix-ai",
     environment:
       process.env.VERCEL_ENV ?? process.env.NODE_ENV ?? "development",
     region: process.env.VERCEL_REGION ?? "local",
