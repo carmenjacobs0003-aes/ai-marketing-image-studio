@@ -7,6 +7,8 @@ type RateLimitResult = {
   remaining: number;
   reset: number;
   degraded?: boolean;
+  bypassed?: boolean;
+  bypassReason?: string;
 };
 
 const memoryStore = new Map<string, { count: number; reset: number }>();
@@ -21,10 +23,38 @@ function getErrorMessage(error: unknown) {
     : "Unknown Redis rate limit failure";
 }
 
-function isRedisAuthError(error: unknown) {
+export function isRedisAuthError(error: unknown) {
   return /wrongpass|invalid or missing auth token|unauthorized|forbidden|authentication/i.test(
     getErrorMessage(error)
   );
+}
+
+function bypassRateLimitAfterRedisAuthFailure(
+  key: string,
+  limit: number,
+  windowSeconds: number,
+  error: unknown
+): RateLimitResult {
+  const reset = Date.now() + windowSeconds * 1000;
+
+  logger.warn("Bypassing rate limit after Redis authentication failure", {
+    key: sanitizeRateLimitKey(key),
+    limit,
+    windowSeconds,
+    reset,
+    bypassed: true,
+    error: getErrorMessage(error)
+  });
+
+  return {
+    success: true,
+    limit,
+    remaining: limit,
+    reset,
+    degraded: true,
+    bypassed: true,
+    bypassReason: "redis_auth_failed"
+  };
 }
 
 function applyMemoryRateLimit(
@@ -96,9 +126,9 @@ export async function rateLimit(
     } catch (error) {
       const authFailure = isRedisAuthError(error);
 
-      logger.error(
+      logger[authFailure ? "warn" : "error"](
         authFailure
-          ? "Upstash Redis authentication failed during rate limit check"
+          ? "Upstash Redis authentication failed during rate limit check; generation will continue without Redis throttling"
           : "Upstash Redis rate limit check failed",
         {
           key: sanitizedKey,
@@ -106,6 +136,15 @@ export async function rateLimit(
           error: getErrorMessage(error)
         }
       );
+
+      if (authFailure) {
+        return bypassRateLimitAfterRedisAuthFailure(
+          key,
+          limit,
+          windowSeconds,
+          error
+        );
+      }
 
       const fallbackResult = applyMemoryRateLimit(key, limit, windowSeconds);
 

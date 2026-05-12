@@ -28,6 +28,12 @@ if (!redisEnv.configured) {
     hasRedisUrl: true,
     hasRedisToken: true
   });
+} else {
+  logger.info("Upstash Redis REST environment detected", {
+    source: redisEnv.source,
+    hasRedisUrl: true,
+    hasRedisToken: true
+  });
 }
 
 export const redis = redisEnv.configured
