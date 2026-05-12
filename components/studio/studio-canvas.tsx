@@ -13,6 +13,7 @@ type StudioCanvasProps = {
 };
 
 type GeneratedImageResponse = {
+  success?: true;
   id: string;
   prompt: string;
   projectId: string | null;
@@ -20,6 +21,50 @@ type GeneratedImageResponse = {
   downloadUrl?: string;
   storagePath: string;
 };
+
+type ErrorResponse = {
+  success?: false;
+  error?: string;
+  usage?: UsageSummary;
+};
+
+async function parseJsonSafely<T>(response: Response): Promise<T | null> {
+  const text = await response.text().catch(() => "");
+
+  if (!text.trim()) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(text) as T;
+  } catch (error) {
+    console.error("Failed to parse image generation response", {
+      status: response.status,
+      bodyPreview: text.slice(0, 500),
+      error
+    });
+    return null;
+  }
+}
+
+function getGenerationErrorMessage(
+  response: Response,
+  payload: ErrorResponse | null
+) {
+  if (payload?.error) {
+    return payload.error;
+  }
+
+  if (response.status === 504) {
+    return "Image generation timed out. Please try again in a moment.";
+  }
+
+  if (response.status >= 500) {
+    return "Image generation is temporarily unavailable. Please try again soon.";
+  }
+
+  return "Unable to generate image. Please review your prompt and try again.";
+}
 
 export function StudioCanvas({
   projects,
@@ -39,10 +84,18 @@ export function StudioCanvas({
     usage.imageGenerations >= usage.imageGenerationLimit;
 
   async function refreshUsage() {
-    const response = await fetch("/api/me/usage", { cache: "no-store" });
+    try {
+      const response = await fetch("/api/me/usage", { cache: "no-store" });
 
-    if (response.ok) {
-      setUsage(await response.json());
+      if (response.ok) {
+        const payload = await parseJsonSafely<UsageSummary>(response);
+
+        if (payload) {
+          setUsage(payload);
+        }
+      }
+    } catch (usageError) {
+      console.error("Unable to refresh image generation usage", usageError);
     }
   }
 
@@ -61,13 +114,24 @@ export function StudioCanvas({
           brandKitId: brandKitId || undefined
         })
       });
-      const payload = await response.json();
+      const payload = await parseJsonSafely<
+        GeneratedImageResponse | ErrorResponse
+      >(response);
 
       if (!response.ok) {
-        setError(payload.error ?? "Unable to generate image.");
-        if (payload.usage) {
-          setUsage(payload.usage);
+        const errorPayload = payload as ErrorResponse | null;
+
+        setError(getGenerationErrorMessage(response, errorPayload));
+        if (errorPayload?.usage) {
+          setUsage(errorPayload.usage);
         }
+        return;
+      }
+
+      if (!payload || !("id" in payload) || !payload.signedUrl) {
+        setError(
+          "Image generation finished, but the server returned an incomplete response. Please try again."
+        );
         return;
       }
 
@@ -75,10 +139,9 @@ export function StudioCanvas({
       setPrompt("");
       await refreshUsage();
     } catch (generationError) {
+      console.error("Image generation request failed", generationError);
       setError(
-        generationError instanceof Error
-          ? generationError.message
-          : "Unable to generate image."
+        "We could not reach the image generation service. Please check your connection and try again."
       );
     } finally {
       setIsLoading(false);
