@@ -16,15 +16,15 @@ export default async function PricingPage() {
         <div className="mx-auto max-w-3xl text-center">
           <p className="eyebrow">Plans</p>
           <h1 className="mt-4 text-4xl font-black tracking-tight sm:text-6xl">
-            Choose the right generation limits.
+            Simple plans for AI campaign generation.
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-300">
-            Start free, then unlock advanced templates, higher daily limits,
-            faster queues, and expanded usage with secure PayPal billing.
+            Choose monthly image and marketing generation limits with secure
+            PayPal billing.
           </p>
           <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
             <Link className="neon-button" href={user ? "/billing" : "/signup"}>
-              {user ? "Open billing" : "Create account"}
+              {user ? "Open billing" : "Start free"}
             </Link>
             <Link className="ghost-button" href="/login">
               Sign in
@@ -35,25 +35,23 @@ export default async function PricingPage() {
         <section className="glass-card p-6 md:p-8">
           <div className="grid gap-6 md:grid-cols-3">
             <div>
-              <h2 className="text-xl font-black text-cyan-300">Billing sync</h2>
+              <h2 className="text-xl font-black text-cyan-300">Secure billing</h2>
               <p className="mt-2 text-sm leading-6 text-slate-300">
-                PayPal subscription status stays aligned with your account
-                profile.
+                PayPal keeps subscription status aligned with your account.
               </p>
             </div>
             <div>
-              <h2 className="text-xl font-black text-cyan-300">Plan access</h2>
+              <h2 className="text-xl font-black text-cyan-300">Clear limits</h2>
               <p className="mt-2 text-sm leading-6 text-slate-300">
-                Generation limits and advanced templates are checked before
-                requests run.
+                Image and marketing generations are shown plainly for each plan.
               </p>
             </div>
             <div>
               <h2 className="text-xl font-black text-cyan-300">
-                Responsive by default
+                Commercial plans
               </h2>
               <p className="mt-2 text-sm leading-6 text-slate-300">
-                Pricing stays clear across desktop and mobile.
+                Creator and Studio support consistent production workflows.
               </p>
             </div>
           </div>
