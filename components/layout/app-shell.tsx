@@ -20,15 +20,21 @@ import type { UsageSummary } from "@/lib/usage/limits";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
-  { href: "/marketing", label: "Marketing", icon: Megaphone },
+
   { href: "/studio", label: "Studio", icon: Sparkles },
-  { href: "/images", label: "Images", icon: ImageIcon },
-  { href: "/gallery", label: "Gallery", icon: GalleryHorizontalEnd },
+
+  { href: "/marketing", label: "Marketing", icon: Megaphone },
+
   { href: "/projects", label: "Projects", icon: FolderKanban },
-  { href: "/brand", label: "Brand", icon: Brush },
-  { href: "/templates", label: "Templates", icon: LayoutTemplate },
+
+  { href: "/gallery", label: "Gallery", icon: GalleryHorizontalEnd },
+
+  { href: "/brand", label: "Brand Kits", icon: Brush },
+
   { href: "/billing", label: "Billing", icon: CreditCard },
+
   { href: "/settings", label: "Settings", icon: Settings },
+
   { href: "/admin", label: "Admin", icon: Shield }
 ];
 
