@@ -1,5 +1,6 @@
 import type { ImageGeneration } from "@/lib/db/queries";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { logger } from "@/lib/logger";
 
 export const GENERATED_IMAGES_BUCKET = "generated-images";
 export const GENERATED_IMAGE_SIGNED_URL_SECONDS = 60 * 60;
@@ -30,6 +31,14 @@ export async function uploadGeneratedImage(
   const storagePath = getGeneratedImageStoragePath(userId, generationId);
   const imageBuffer = decodeGeneratedImage(base64Image);
 
+  logger.info("Supabase storage upload request start", {
+    bucket: GENERATED_IMAGES_BUCKET,
+    storagePath,
+    byteLength: imageBuffer.length,
+    userId,
+    generationId
+  });
+
   const { error } = await supabase.storage
     .from(GENERATED_IMAGES_BUCKET)
     .upload(storagePath, imageBuffer, {
@@ -38,14 +47,33 @@ export async function uploadGeneratedImage(
     });
 
   if (error) {
-    throw new Error(error.message);
+    logger.error("Supabase storage upload request failed", {
+      bucket: GENERATED_IMAGES_BUCKET,
+      storagePath,
+      userId,
+      generationId,
+      error: error.message
+    });
+    throw new Error(`Supabase storage upload failed: ${error.message}`);
   }
+
+  logger.info("Supabase storage upload request completed", {
+    bucket: GENERATED_IMAGES_BUCKET,
+    storagePath,
+    userId,
+    generationId
+  });
 
   return storagePath;
 }
 
 export async function createSignedImageUrl(storagePath: string) {
   const supabase = createSupabaseAdminClient();
+  logger.info("Supabase signed image URL request start", {
+    bucket: GENERATED_IMAGES_BUCKET,
+    storagePath,
+    expiresInSeconds: GENERATED_IMAGE_SIGNED_URL_SECONDS
+  });
   const { data, error } = await supabase.storage
     .from(GENERATED_IMAGES_BUCKET)
     .createSignedUrl(storagePath, GENERATED_IMAGE_SIGNED_URL_SECONDS, {
@@ -53,14 +81,38 @@ export async function createSignedImageUrl(storagePath: string) {
     });
 
   if (error) {
-    throw new Error(error.message);
+    logger.error("Supabase signed image URL request failed", {
+      bucket: GENERATED_IMAGES_BUCKET,
+      storagePath,
+      error: error.message
+    });
+    throw new Error(`Supabase signed image URL failed: ${error.message}`);
   }
+
+  if (!data?.signedUrl) {
+    logger.error("Supabase signed image URL response missing signedUrl", {
+      bucket: GENERATED_IMAGES_BUCKET,
+      storagePath
+    });
+    throw new Error("Supabase signed image URL failed: missing signedUrl");
+  }
+
+  logger.info("Supabase signed image URL request completed", {
+    bucket: GENERATED_IMAGES_BUCKET,
+    storagePath,
+    hasSignedUrl: true
+  });
 
   return data.signedUrl;
 }
 
 export async function createSignedDownloadUrl(storagePath: string) {
   const supabase = createSupabaseAdminClient();
+  logger.info("Supabase signed download URL request start", {
+    bucket: GENERATED_IMAGES_BUCKET,
+    storagePath,
+    expiresInSeconds: GENERATED_IMAGE_SIGNED_URL_SECONDS
+  });
   const { data, error } = await supabase.storage
     .from(GENERATED_IMAGES_BUCKET)
     .createSignedUrl(storagePath, GENERATED_IMAGE_SIGNED_URL_SECONDS, {
@@ -68,8 +120,27 @@ export async function createSignedDownloadUrl(storagePath: string) {
     });
 
   if (error) {
-    throw new Error(error.message);
+    logger.error("Supabase signed download URL request failed", {
+      bucket: GENERATED_IMAGES_BUCKET,
+      storagePath,
+      error: error.message
+    });
+    throw new Error(`Supabase signed download URL failed: ${error.message}`);
   }
+
+  if (!data?.signedUrl) {
+    logger.error("Supabase signed download URL response missing signedUrl", {
+      bucket: GENERATED_IMAGES_BUCKET,
+      storagePath
+    });
+    throw new Error("Supabase signed download URL failed: missing signedUrl");
+  }
+
+  logger.info("Supabase signed download URL request completed", {
+    bucket: GENERATED_IMAGES_BUCKET,
+    storagePath,
+    hasSignedUrl: true
+  });
 
   return data.signedUrl;
 }
