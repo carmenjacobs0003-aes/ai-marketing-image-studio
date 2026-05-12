@@ -1,17 +1,22 @@
-import type { AppPlan, DailyUsageKind } from "@/lib/db/types";
+import type { AppPlan } from "@/lib/db/types";
 import {
-  getDailyUsage,
+  getMonthlyUsage,
   getProfile,
-  incrementDailyUsage
+  incrementMonthlyUsage
 } from "@/lib/db/queries";
-import { toIsoDate } from "@/lib/db/helpers";
+import { getBillingPlan } from "@/lib/billing/plans";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-type UsageLimit = number | null;
+type UsageLimit = number;
 
 export type UsageSummary = {
   plan: AppPlan;
-  usageDate: string;
+  usageMonth: string;
+  totalGenerations: number;
+  monthlyGenerationLimit: UsageLimit;
+  remainingGenerations: UsageLimit;
+  includedMarketingGenerations: number;
+  includedImageGenerations: number;
   marketingGenerations: number;
   marketingGenerationLimit: UsageLimit;
   remainingMarketingGenerations: UsageLimit;
@@ -24,42 +29,19 @@ export type UsageEntitlement =
   | { allowed: true; usage: UsageSummary }
   | { allowed: false; usage: UsageSummary; reason: string };
 
-const DAILY_LIMITS: Record<
-  AppPlan,
-  { marketingGenerations: UsageLimit; imageGenerations: UsageLimit }
-> = {
-  free: {
-    marketingGenerations: 5,
-    imageGenerations: 3
-  },
-  pro: {
-    marketingGenerations: 50,
-    imageGenerations: 50
-  },
-  agency: {
-    marketingGenerations: null,
-    imageGenerations: null
-  }
-};
+export function toUsageMonth(date = new Date()) {
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+
+  return `${year}-${month}-01`;
+}
 
 function remaining(limit: UsageLimit, used: number): UsageLimit {
-  return limit === null ? null : Math.max(limit - used, 0);
+  return Math.max(limit - used, 0);
 }
 
-function usageValue(summary: UsageSummary, kind: DailyUsageKind) {
-  return kind === "marketing_generations"
-    ? summary.marketingGenerations
-    : summary.imageGenerations;
-}
-
-function usageLimit(summary: UsageSummary, kind: DailyUsageKind) {
-  return kind === "marketing_generations"
-    ? summary.marketingGenerationLimit
-    : summary.imageGenerationLimit;
-}
-
-export function getPlanDailyLimits(plan: AppPlan) {
-  return DAILY_LIMITS[plan];
+export function getPlanMonthlyLimit(plan: AppPlan) {
+  return getBillingPlan(plan).monthlyPooledGenerations;
 }
 
 export async function getUsageSummary(
@@ -67,49 +49,47 @@ export async function getUsageSummary(
   date = new Date()
 ): Promise<UsageSummary> {
   const supabase = createSupabaseServerClient();
-  const usageDate = toIsoDate(date);
+  const usageMonth = toUsageMonth(date);
   const [profile, usage] = await Promise.all([
     getProfile(supabase, userId),
-    getDailyUsage(supabase, userId, usageDate)
+    getMonthlyUsage(supabase, userId, usageMonth)
   ]);
   const plan = profile?.plan ?? "free";
-  const limits = getPlanDailyLimits(plan);
-  const marketingGenerations = usage?.marketing_generations ?? 0;
-  const imageGenerations = usage?.image_generations ?? 0;
+  const billingPlan = getBillingPlan(plan);
+  const totalGenerations = usage?.total_generations ?? 0;
+  const monthlyGenerationLimit = billingPlan.monthlyPooledGenerations;
 
   return {
     plan,
-    usageDate,
-    marketingGenerations,
-    marketingGenerationLimit: limits.marketingGenerations,
+    usageMonth,
+    totalGenerations,
+    monthlyGenerationLimit,
+    remainingGenerations: remaining(monthlyGenerationLimit, totalGenerations),
+    includedMarketingGenerations: billingPlan.monthlyMarketingGenerations,
+    includedImageGenerations: billingPlan.monthlyImageGenerations,
+    marketingGenerations: totalGenerations,
+    marketingGenerationLimit: monthlyGenerationLimit,
     remainingMarketingGenerations: remaining(
-      limits.marketingGenerations,
-      marketingGenerations
+      monthlyGenerationLimit,
+      totalGenerations
     ),
-    imageGenerations,
-    imageGenerationLimit: limits.imageGenerations,
+    imageGenerations: totalGenerations,
+    imageGenerationLimit: monthlyGenerationLimit,
     remainingImageGenerations: remaining(
-      limits.imageGenerations,
-      imageGenerations
+      monthlyGenerationLimit,
+      totalGenerations
     )
   };
 }
 
-export async function assertCanUse(
-  userId: string,
-  kind: DailyUsageKind
-): Promise<UsageEntitlement> {
+export async function assertCanUse(userId: string): Promise<UsageEntitlement> {
   const usage = await getUsageSummary(userId);
-  const limit = usageLimit(usage, kind);
 
-  if (limit !== null && usageValue(usage, kind) >= limit) {
+  if (usage.totalGenerations >= usage.monthlyGenerationLimit) {
     return {
       allowed: false,
       usage,
-      reason:
-        kind === "marketing_generations"
-          ? "Daily marketing generation limit reached"
-          : "Daily image generation limit reached"
+      reason: `Monthly generation limit reached. Your plan includes ${usage.monthlyGenerationLimit} total generations each month across images and marketing. Use them in any combination.`
     };
   }
 
@@ -117,19 +97,15 @@ export async function assertCanUse(
 }
 
 export function assertCanGenerateMarketing(userId: string) {
-  return assertCanUse(userId, "marketing_generations");
+  return assertCanUse(userId);
 }
 
 export function assertCanGenerateImage(userId: string) {
-  return assertCanUse(userId, "image_generations");
+  return assertCanUse(userId);
 }
 
-export async function recordSuccessfulUsage(
-  userId: string,
-  kind: DailyUsageKind,
-  quantity = 1
-) {
+export async function recordSuccessfulUsage(userId: string, quantity = 1) {
   const supabase = createSupabaseServerClient();
 
-  return incrementDailyUsage(supabase, userId, kind, quantity);
+  return incrementMonthlyUsage(supabase, userId, quantity);
 }

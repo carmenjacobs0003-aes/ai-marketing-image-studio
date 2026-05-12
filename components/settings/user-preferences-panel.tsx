@@ -244,8 +244,8 @@ export function UserPreferencesPanel({
           <Zap className="h-8 w-8 text-cyan-300" />
           <h2 className="mt-4 text-xl font-black">Usage alerts</h2>
           <p className="mt-2 text-sm leading-6 text-slate-300">
-            Alerts appear near daily limits and show upgrade options when Free
-            limits are exhausted.
+            Alerts appear near monthly generation limits and show upgrade
+            options when Free limits are exhausted.
           </p>
         </article>
         <article className="glass-card p-5">

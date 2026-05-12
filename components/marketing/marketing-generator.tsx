@@ -59,10 +59,10 @@ function getFriendlyMarketingError(message?: string, status?: number) {
     return "Generation is taking longer than expected. Your quota was not consumed; please retry in a moment.";
   }
 
-  if (/quota|limit reached|daily marketing limit/.test(normalized)) {
+  if (/quota|limit reached|monthly generation limit/.test(normalized)) {
     return (
       message ??
-      "Daily content limit reached. Unlock higher generation limits or retry tomorrow."
+      "Monthly generation limit reached. Upgrade for more total monthly generations."
     );
   }
 
@@ -222,9 +222,7 @@ export function MarketingGenerator({
   const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const lastSubmitAtRef = useRef(0);
-  const limitReached =
-    usage.marketingGenerationLimit !== null &&
-    usage.marketingGenerations >= usage.marketingGenerationLimit;
+  const limitReached = usage.totalGenerations >= usage.monthlyGenerationLimit;
   const canUsePremiumTemplates = isPaidPlan(usage.plan);
   const selectedContentType = useMemo(
     () => contentTypes.find((item) => item.value === contentType),
@@ -407,16 +405,15 @@ export function MarketingGenerator({
           </div>
           <div className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
             <p className="text-sm text-cyan-100">
-              Daily marketing usage · {usage.plan}
+              Monthly pooled usage · {usage.plan}
             </p>
             <p className="mt-1 text-2xl font-black">
-              {usage.marketingGenerations}/
-              {usage.marketingGenerationLimit ?? "Fair use"}
+              {usage.totalGenerations}/{usage.monthlyGenerationLimit}
             </p>
             <p className="text-xs text-slate-300">
-              {usage.remainingMarketingGenerations === null
-                ? "Agency fair use included"
-                : `${usage.remainingMarketingGenerations} generations remaining today`}
+              {usage.remainingGenerations} generations remaining this month. Use
+              them in any combination up to {usage.monthlyGenerationLimit} total
+              monthly generations.
             </p>
           </div>
           <form className="space-y-5" onSubmit={onSubmit}>
@@ -554,8 +551,8 @@ export function MarketingGenerator({
             ) : null}
             {limitReached ? (
               <p className="rounded-xl border border-cyan-300/20 bg-black p-3 text-sm text-cyan-100">
-                Daily content limit reached. Unlock higher generation limits to
-                continue.
+                Monthly generation limit reached. Upgrade for more total monthly
+                generations.
               </p>
             ) : null}
             {isLoading ? (

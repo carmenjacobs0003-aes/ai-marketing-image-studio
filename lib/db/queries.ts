@@ -19,6 +19,7 @@ export type Project = Tables<"projects">;
 export type MarketingGeneration = Tables<"marketing_generations">;
 export type ImageGeneration = Tables<"image_generations">;
 export type DailyUsage = Tables<"daily_usage">;
+export type MonthlyUsage = Tables<"monthly_usage">;
 export type PayPalWebhookEvent = Tables<"paypal_webhook_events">;
 
 export async function getProfile(
@@ -145,10 +146,7 @@ export async function clearDefaultBrandKits(
   userId: string,
   exceptId?: string
 ) {
-  let query = supabase
-    .from("brand_kits")
-    .update({})
-    .eq("user_id", userId);
+  let query = supabase.from("brand_kits").update({}).eq("user_id", userId);
 
   if (exceptId) {
     query = query.neq("id", exceptId);
@@ -498,6 +496,40 @@ export async function incrementDailyUsage(
   });
 
   return requireDatabaseData(data, error, "Unable to update daily usage");
+}
+
+export async function getMonthlyUsage(
+  supabase: TypedSupabaseClient,
+  userId: string,
+  usageMonth: string
+) {
+  const { data, error } = await supabase
+    .from("monthly_usage")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("usage_month", usageMonth)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+export async function incrementMonthlyUsage(
+  supabase: TypedSupabaseClient,
+  userId: string,
+  quantity = 1,
+  usageMonth?: string
+) {
+  const { data, error } = await supabase.rpc("increment_monthly_usage", {
+    p_user_id: userId,
+    p_usage_month: usageMonth,
+    p_quantity: quantity
+  });
+
+  return requireDatabaseData(data, error, "Unable to update monthly usage");
 }
 
 export function stringifyMarketingOutput(output: Json) {

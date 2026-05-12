@@ -10,6 +10,7 @@ export type BillingPlan = {
   paypalPlanId?: string;
   monthlyMarketingGenerations: number;
   monthlyImageGenerations: number;
+  monthlyPooledGenerations: number;
   features: string[];
   highlighted?: boolean;
 };
@@ -21,8 +22,9 @@ export const billingPlans: BillingPlan[] = [
     tagline: "Perfect for testing the platform.",
     price: "£0",
     cadence: "per month",
-    monthlyMarketingGenerations: 5,
-    monthlyImageGenerations: 5,
+    monthlyMarketingGenerations: 2,
+    monthlyImageGenerations: 2,
+    monthlyPooledGenerations: 4,
     features: [
       "Core creative tools",
       "Private workspace",
@@ -36,8 +38,9 @@ export const billingPlans: BillingPlan[] = [
     price: "£10",
     cadence: "per month",
     paypalPlanId: env.PAYPAL_PRO_PLAN_ID,
-    monthlyMarketingGenerations: 50,
-    monthlyImageGenerations: 50,
+    monthlyMarketingGenerations: 25,
+    monthlyImageGenerations: 25,
+    monthlyPooledGenerations: 50,
     highlighted: true,
     features: [
       "Advanced templates",
@@ -52,8 +55,9 @@ export const billingPlans: BillingPlan[] = [
     price: "£50",
     cadence: "per month",
     paypalPlanId: env.PAYPAL_AGENCY_PLAN_ID,
-    monthlyMarketingGenerations: 250,
-    monthlyImageGenerations: 250,
+    monthlyMarketingGenerations: 125,
+    monthlyImageGenerations: 125,
+    monthlyPooledGenerations: 250,
     features: [
       "Priority processing",
       "Business workflow support",

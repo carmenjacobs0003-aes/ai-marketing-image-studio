@@ -34,15 +34,20 @@ export function PricingCards({ currentPlan }: { currentPlan?: AppPlan }) {
             </div>
             <dl className="mt-6 rounded-2xl border border-white/10 bg-black/50 p-4 text-sm">
               <dt className="font-semibold text-slate-300">
-                Monthly Generation Limits
+                Monthly pooled allocation
               </dt>
-              <dd className="mt-3 grid grid-cols-2 gap-3">
-                <span className="font-black text-white">
-                  Images: {formatPlanLimit(plan.monthlyImageGenerations)}
-                </span>
-                <span className="font-black text-white">
-                  Marketing: {formatPlanLimit(plan.monthlyMarketingGenerations)}
-                </span>
+              <dd className="mt-3 space-y-2">
+                <p className="font-black text-white">
+                  {formatPlanLimit(plan.monthlyPooledGenerations)} total monthly
+                  generations
+                </p>
+                <p className="text-slate-300">
+                  Includes {formatPlanLimit(plan.monthlyImageGenerations)} image
+                  and {formatPlanLimit(plan.monthlyMarketingGenerations)}{" "}
+                  marketing generations. Use them in any combination up to{" "}
+                  {formatPlanLimit(plan.monthlyPooledGenerations)} total monthly
+                  generations.
+                </p>
               </dd>
             </dl>
             <ul className="mt-6 space-y-3 text-sm text-slate-200">

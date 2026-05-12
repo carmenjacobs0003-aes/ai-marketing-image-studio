@@ -286,6 +286,29 @@ export type Database = {
         };
         Relationships: [];
       };
+      monthly_usage: {
+        Row: {
+          id: string;
+          user_id: string;
+          usage_month: string;
+          total_generations: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          usage_month?: string;
+          total_generations?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          total_generations?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
 
       notification_preferences: {
         Row: {
@@ -696,6 +719,14 @@ export type Database = {
           p_quantity?: number;
         };
         Returns: Database["public"]["Tables"]["daily_usage"]["Row"];
+      };
+      increment_monthly_usage: {
+        Args: {
+          p_user_id: string;
+          p_usage_month?: string | null;
+          p_quantity?: number;
+        };
+        Returns: Database["public"]["Tables"]["monthly_usage"]["Row"];
       };
       increment_gallery_metric: {
         Args: {

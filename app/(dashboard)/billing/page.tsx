@@ -6,6 +6,7 @@ import { getProfile, updateProfileSubscription } from "@/lib/db/queries";
 import { getPayPalSubscription } from "@/lib/paypal/client";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "@/lib/auth/session";
+import { getUsageSummary } from "@/lib/usage/limits";
 
 function formatDate(value?: string | null) {
   return value ? new Date(value).toLocaleDateString() : "Not scheduled";
@@ -54,6 +55,7 @@ export default async function BillingPage({
   }
 
   const currentPlan = getBillingPlan(profile?.plan ?? "free");
+  const usage = await getUsageSummary(user.id);
 
   return (
     <main className="page-shell">
@@ -90,17 +92,21 @@ export default async function BillingPage({
             </p>
           </article>
           <article className="metric-card">
-            <p className="text-sm text-slate-400">Monthly limits</p>
+            <p className="text-sm text-slate-400">Monthly allocation</p>
             <p className="mt-2 text-sm font-semibold leading-6 text-white">
-              Images: {currentPlan.monthlyImageGenerations}
-              <br />
-              Marketing: {currentPlan.monthlyMarketingGenerations}
+              Includes {currentPlan.monthlyImageGenerations} image and{" "}
+              {currentPlan.monthlyMarketingGenerations} marketing generations.
+              Use them in any combination up to{" "}
+              {currentPlan.monthlyPooledGenerations} total monthly generations.
             </p>
           </article>
           <article className="metric-card">
-            <p className="text-sm text-slate-400">Status</p>
-            <p className="mt-2 text-2xl font-black capitalize text-white">
-              {(profile?.subscription_status ?? "free").replaceAll("_", " ")}
+            <p className="text-sm text-slate-400">Monthly usage</p>
+            <p className="mt-2 text-2xl font-black text-white">
+              {usage.totalGenerations}/{usage.monthlyGenerationLimit}
+            </p>
+            <p className="mt-1 text-xs text-slate-400">
+              {usage.remainingGenerations} remaining this month
             </p>
           </article>
           <article className="metric-card">

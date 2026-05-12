@@ -873,15 +873,15 @@ export async function POST(request: NextRequest) {
       ...getRequestLogContext(request),
       userId: user.id,
       generationId: generation.id,
-      kind: "image_generations"
+      counter: "monthly_pooled_generations"
     });
     currentStep = "usage_recording";
-    await recordSuccessfulUsage(user.id, "image_generations");
+    await recordSuccessfulUsage(user.id);
     logger.info("Usage counter increment completed", {
       ...getRequestLogContext(request),
       userId: user.id,
       generationId: generation.id,
-      kind: "image_generations"
+      counter: "monthly_pooled_generations"
     });
 
     logger.info("Image generation completed", {
