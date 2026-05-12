@@ -19,6 +19,33 @@ type OpenAIErrorLike = {
 
 type ImageExtractionLogContext = Record<string, unknown>;
 
+export type OpenAIErrorDiagnostics = {
+  status?: number;
+  code?: string;
+  type?: string;
+  param?: string;
+  requestId?: string;
+  message: string;
+  isAuthOrPermissionIssue: boolean;
+  isQuotaOrBillingIssue: boolean;
+};
+
+export class OpenAIImageGenerationError extends Error {
+  readonly diagnostics: OpenAIErrorDiagnostics;
+  readonly debugReason: string;
+
+  constructor(
+    message: string,
+    diagnostics: OpenAIErrorDiagnostics,
+    debugReason: string
+  ) {
+    super(message);
+    this.name = "OpenAIImageGenerationError";
+    this.diagnostics = diagnostics;
+    this.debugReason = debugReason;
+  }
+}
+
 export type ImageGenerationSize =
   | "1024x1024"
   | "1024x1792"
@@ -158,7 +185,13 @@ function getOpenAIStatus(error: unknown) {
   return undefined;
 }
 
-export function getOpenAIErrorDiagnostics(error: unknown) {
+export function getOpenAIErrorDiagnostics(
+  error: unknown
+): OpenAIErrorDiagnostics {
+  if (error instanceof OpenAIImageGenerationError) {
+    return error.diagnostics;
+  }
+
   const errorLike =
     error && typeof error === "object" ? (error as OpenAIErrorLike) : {};
 
@@ -184,6 +217,47 @@ export function getOpenAIErrorDiagnostics(error: unknown) {
         error instanceof Error ? error.message : String(error)
       )
   };
+}
+
+export function getOpenAIDebugReason(error: unknown) {
+  if (error instanceof OpenAIImageGenerationError) {
+    return error.debugReason;
+  }
+
+  const diagnostics = getOpenAIErrorDiagnostics(error);
+  const normalized = [diagnostics.code, diagnostics.type, diagnostics.message]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  if (
+    diagnostics.status === 401 ||
+    /api key|authentication|unauthorized/.test(normalized)
+  ) {
+    return "openai_authentication_failed";
+  }
+
+  if (
+    diagnostics.status === 403 ||
+    /forbidden|permission|project|model.*access|organization verification/.test(
+      normalized
+    )
+  ) {
+    return "openai_model_access_or_permission_denied";
+  }
+
+  if (
+    diagnostics.isQuotaOrBillingIssue ||
+    /billing|quota|insufficient_quota|credits|payment/.test(normalized)
+  ) {
+    return "openai_billing_or_quota_failure";
+  }
+
+  if (diagnostics.status === 429 || /rate limit/.test(normalized)) {
+    return "openai_rate_limited";
+  }
+
+  return "openai_request_failed";
 }
 
 export async function moderateImagePrompt(prompt: string) {
@@ -296,6 +370,28 @@ export async function createMarketingImage({
     const diagnostics = getOpenAIErrorDiagnostics(error);
     const status = diagnostics.status;
     const message = normalizeFailureMessage("OpenAI image generation", error);
+    const debugReason = getOpenAIDebugReason(error);
+
+    if (debugReason === "openai_model_access_or_permission_denied") {
+      logger.error("OpenAI image generation model access error", {
+        model,
+        status,
+        debugReason,
+        diagnostics
+      });
+    }
+
+    if (
+      debugReason === "openai_authentication_failed" ||
+      debugReason === "openai_billing_or_quota_failure"
+    ) {
+      logger.error("OpenAI image generation billing/authentication failure", {
+        model,
+        status,
+        debugReason,
+        diagnostics
+      });
+    }
 
     logger.error("OpenAI image generation request failed", {
       model,
@@ -303,6 +399,7 @@ export async function createMarketingImage({
       quality,
       status,
       error: message,
+      debugReason,
       diagnostics
     });
 
@@ -311,7 +408,7 @@ export async function createMarketingImage({
       provider: "openai",
       message,
       severity: "critical",
-      context: { model, size, quality, status, diagnostics }
+      context: { model, size, quality, status, debugReason, diagnostics }
     }).catch((loggingError) => {
       logger.error("OpenAI image generation centralized logging failed", {
         model,
@@ -324,7 +421,7 @@ export async function createMarketingImage({
             : "Unknown centralized logging failure"
       });
     });
-    throw new Error(message);
+    throw new OpenAIImageGenerationError(message, diagnostics, debugReason);
   });
 }
 
@@ -377,8 +474,9 @@ export async function extractGeneratedImagePayload(
   const summary = summarizeImagesResponse(image);
 
   if (!image || !Array.isArray(image.data) || !image.data[0]) {
-    logger.error("OpenAI image response parsing failed: empty data", {
+    logger.error("Invalid OpenAI image response: empty data", {
       ...logContext,
+      debugReason: "invalid_openai_response_empty_data",
       responseSummary: summary
     });
     throw new Error("OpenAI returned an empty image response.");
@@ -419,8 +517,9 @@ export async function extractGeneratedImagePayload(
     };
   }
 
-  logger.error("OpenAI image response parsing failed: no usable payload", {
+  logger.error("Invalid OpenAI image response: no usable payload", {
     ...logContext,
+    debugReason: "invalid_openai_response_no_usable_payload",
     responseSummary: summary
   });
   throw new Error("OpenAI did not return a valid image payload.");

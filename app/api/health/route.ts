@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { env, getRedisEnv, validateProductionEnv } from "@/lib/env";
+import {
+  env,
+  getDeploymentEnvironmentDiagnostics,
+  getRedisEnv,
+  validateProductionEnv
+} from "@/lib/env";
 import { summarizeDiagnostics } from "@/lib/monitoring/diagnostics";
 
 export const dynamic = "force-dynamic";
@@ -18,6 +23,7 @@ function healthPayload() {
     deployment: {
       vercel: process.env.VERCEL === "1",
       url: process.env.VERCEL_URL ?? env.NEXT_PUBLIC_SITE_DOMAIN ?? "local",
+      environment: getDeploymentEnvironmentDiagnostics(process.env, env),
       productionEnvValid: productionEnv.valid,
       missingProductionEnv: productionEnv.missing
     },

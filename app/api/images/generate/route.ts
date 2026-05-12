@@ -5,6 +5,7 @@ import { injectBrandIntoImagePrompt } from "@/lib/brand/prompt";
 import {
   createMarketingImage,
   extractGeneratedImagePayload,
+  getOpenAIDebugReason,
   getOpenAIErrorDiagnostics,
   isSupportedImageModel,
   moderateImagePrompt
@@ -19,7 +20,11 @@ import {
   assertCanGenerateImage,
   recordSuccessfulUsage
 } from "@/lib/usage/limits";
-import { env } from "@/lib/env";
+import {
+  env,
+  getDeploymentEnvironmentDiagnostics,
+  OPENAI_API_KEY_ENV_VAR_NAME
+} from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { withTimeout } from "@/lib/api/timeout";
 import { logCentralizedError } from "@/lib/monitoring/errors";
@@ -84,7 +89,13 @@ function getRequestLogContext(request: NextRequest) {
 
 function getRuntimeEnvDiagnostics() {
   return {
+    deploymentEnvironment: getDeploymentEnvironmentDiagnostics(
+      process.env,
+      env
+    ),
+    openaiApiKeyEnvironmentVariable: OPENAI_API_KEY_ENV_VAR_NAME,
     hasOpenAIKey: Boolean(env.OPENAI_API_KEY),
+    runtimeHasOpenAIKey: Boolean(process.env[OPENAI_API_KEY_ENV_VAR_NAME]),
     hasSupabaseUrl: Boolean(env.NEXT_PUBLIC_SUPABASE_URL),
     hasSupabaseAnonKey: Boolean(env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
     hasSupabaseServiceRoleKey: Boolean(env.SUPABASE_SERVICE_ROLE_KEY),
@@ -242,13 +253,17 @@ export async function POST(request: NextRequest) {
       logger.error("Image generation attempted without OPENAI_API_KEY", {
         ...getRequestLogContext(request),
         userId: user.id,
+        debugReason: "missing_openai_api_key",
+        expectedEnvironmentVariable: OPENAI_API_KEY_ENV_VAR_NAME,
         env: getRuntimeEnvDiagnostics()
       });
       return jsonError(
         request,
         startedAt,
         PUBLIC_IMAGE_GENERATION_UNAVAILABLE_MESSAGE,
-        503
+        503,
+        {},
+        { debugReason: "missing_openai_api_key" }
       );
     }
 
@@ -582,6 +597,8 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     const message = getInternalFailureMessage(error);
+    const openaiDiagnostics = getOpenAIErrorDiagnostics(error);
+    const debugReason = getOpenAIDebugReason(error);
 
     logger.error("Image generation failed", {
       ...getRequestLogContext(request),
@@ -589,8 +606,35 @@ export async function POST(request: NextRequest) {
       generationId: generation?.id,
       durationMs: Date.now() - startedAt,
       error: message,
-      openaiDiagnostics: getOpenAIErrorDiagnostics(error)
+      debugReason,
+      openaiDiagnostics
     });
+
+    if (debugReason === "openai_model_access_or_permission_denied") {
+      logger.error("Image generation failed due to OpenAI model access", {
+        ...getRequestLogContext(request),
+        userId,
+        generationId: generation?.id,
+        debugReason,
+        openaiDiagnostics
+      });
+    }
+
+    if (
+      debugReason === "openai_authentication_failed" ||
+      debugReason === "openai_billing_or_quota_failure"
+    ) {
+      logger.error(
+        "Image generation failed due to OpenAI billing/authentication",
+        {
+          ...getRequestLogContext(request),
+          userId,
+          generationId: generation?.id,
+          debugReason,
+          openaiDiagnostics
+        }
+      );
+    }
 
     if (supabase && generation && userId) {
       await updateImageGeneration(supabase, generation.id, userId, {
@@ -618,7 +662,8 @@ export async function POST(request: NextRequest) {
       context: {
         durationMs: Date.now() - startedAt,
         generationId: generation?.id,
-        openaiDiagnostics: getOpenAIErrorDiagnostics(error)
+        debugReason,
+        openaiDiagnostics
       }
     }).catch((loggingError) => {
       logger.error("Image generation centralized error logging failed", {
@@ -640,7 +685,8 @@ export async function POST(request: NextRequest) {
       {},
       {
         generationId: generation?.id,
-        openaiDiagnostics: getOpenAIErrorDiagnostics(error)
+        debugReason,
+        openaiDiagnostics
       }
     );
   }

@@ -1,4 +1,10 @@
-import { env, getRedisEnv, validateProductionEnv } from "@/lib/env";
+import {
+  env,
+  getDeploymentEnvironmentDiagnostics,
+  getRedisEnv,
+  OPENAI_API_KEY_ENV_VAR_NAME,
+  validateProductionEnv
+} from "@/lib/env";
 import { isSupportedImageModel } from "@/lib/openai/images";
 
 export type DiagnosticStatus = "pass" | "warn" | "fail";
@@ -35,7 +41,7 @@ export function getApplicationDiagnostics(): DiagnosticCheck[] {
     check(
       "OpenAI provider",
       Boolean(env.OPENAI_API_KEY),
-      `Image and marketing generation require an OpenAI API key. Project configured: ${Boolean(env.OPENAI_PROJECT_ID)}. Organization configured: ${Boolean(env.OPENAI_ORGANIZATION)}.`,
+      `Image and marketing generation require ${OPENAI_API_KEY_ENV_VAR_NAME}. Runtime detected: ${Boolean(process.env[OPENAI_API_KEY_ENV_VAR_NAME])}. Parsed env detected: ${Boolean(env.OPENAI_API_KEY)}. Project configured: ${Boolean(env.OPENAI_PROJECT_ID)}. Organization configured: ${Boolean(env.OPENAI_ORGANIZATION)}.`,
       "Set OPENAI_API_KEY and verify account quota, billing, project access, model permissions, and organization verification."
     ),
 
@@ -93,6 +99,10 @@ export function summarizeDiagnostics(checks = getApplicationDiagnostics()) {
 
   return {
     status: failed > 0 ? "fail" : warnings > 0 ? "warn" : "pass",
+    deploymentEnvironment: getDeploymentEnvironmentDiagnostics(
+      process.env,
+      env
+    ),
     failed,
     warnings,
     passed: checks.filter((item) => item.status === "pass").length,
