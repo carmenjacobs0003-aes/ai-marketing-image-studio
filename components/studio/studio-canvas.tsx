@@ -1,7 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState, type FormEvent, type MouseEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type MouseEvent
+} from "react";
 import { useSearchParams } from "next/navigation";
 import type { BrandKit, Project } from "@/lib/db/queries";
 import type { UsageSummary } from "@/lib/usage/limits";
@@ -16,8 +23,8 @@ type GeneratedImageResponse = {
   id: string;
   prompt: string;
   projectId: string | null;
-  signedUrl?: string;
-  downloadUrl?: string;
+  signedUrl?: string | null;
+  downloadUrl?: string | null;
   storagePath: string;
 };
 
@@ -111,10 +118,54 @@ export function StudioCanvas({
   const [submissionQueued, setSubmissionQueued] = useState(false);
   const submitInFlightRef = useRef(false);
   const lastSubmitAtRef = useRef(0);
+  const signedUrlRefreshInFlightRef = useRef(false);
   const submitDebounceMs = 1000;
   const limitReached =
     usage.imageGenerationLimit !== null &&
     usage.imageGenerations >= usage.imageGenerationLimit;
+
+  const refreshSignedUrls = useCallback(async (imageId: string) => {
+    if (signedUrlRefreshInFlightRef.current) {
+      return;
+    }
+
+    signedUrlRefreshInFlightRef.current = true;
+
+    try {
+      const response = await fetch(`/api/images/${imageId}/signed-url`, {
+        method: "POST"
+      });
+      const payload = (await response.json()) as {
+        signedUrl?: string | null;
+        downloadUrl?: string | null;
+      };
+
+      if (!response.ok || !payload.signedUrl) {
+        return;
+      }
+
+      setImage((current) =>
+        current?.id === imageId
+          ? {
+              ...current,
+              signedUrl: payload.signedUrl ?? current.signedUrl,
+              downloadUrl: payload.downloadUrl ?? current.downloadUrl
+            }
+          : current
+      );
+    } catch {
+      // Keep the completed generation recoverable by retrying when state changes
+      // or when the user reloads the library/studio view.
+    } finally {
+      signedUrlRefreshInFlightRef.current = false;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (image?.storagePath && !image.signedUrl) {
+      void refreshSignedUrls(image.id);
+    }
+  }, [image, refreshSignedUrls]);
 
   async function refreshUsage() {
     const response = await fetch("/api/me/usage", { cache: "no-store" });
@@ -342,6 +393,7 @@ export function StudioCanvas({
                   className="object-contain"
                   fill
                   sizes="(min-width: 1024px) 60vw, 100vw"
+                  onError={() => refreshSignedUrls(image.id)}
                   src={image.signedUrl}
                 />
               </div>
@@ -365,6 +417,8 @@ export function StudioCanvas({
                 ) : null}
               </div>
             </article>
+          ) : image?.storagePath ? (
+            <p>Restoring saved preview...</p>
           ) : (
             <p>
               Generated images appear here after successful creation with a

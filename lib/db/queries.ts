@@ -298,6 +298,25 @@ export async function createImageGeneration(
   return row;
 }
 
+export async function getImageGeneration(
+  supabase: TypedSupabaseClient,
+  id: string,
+  userId: string
+): Promise<ImageGeneration | null> {
+  const { data, error } = await supabase
+    .from("image_generations")
+    .select("*")
+    .eq("id", id)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
 export async function updateImageGeneration(
   supabase: TypedSupabaseClient,
   id: string,

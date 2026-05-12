@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ImageGeneration, Project } from "@/lib/db/queries";
 import type { ImageWithSignedUrl } from "@/lib/storage/images";
 import { PublishGalleryButton } from "@/components/gallery/publish-gallery-button";
@@ -17,6 +17,69 @@ export function ImageLibraryGrid({ images, projects }: ImageLibraryGridProps) {
   const [items, setItems] = useState(images);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
+  const refreshInFlightRef = useRef<Set<string>>(new Set());
+
+  const refreshSignedUrls = useCallback(async (imageId: string) => {
+    if (refreshInFlightRef.current.has(imageId)) {
+      return;
+    }
+
+    refreshInFlightRef.current.add(imageId);
+    setErrors((current) => ({ ...current, [imageId]: "" }));
+
+    try {
+      const response = await fetch(`/api/images/${imageId}/signed-url`, {
+        method: "POST"
+      });
+      const payload = (await response.json()) as {
+        signedUrl?: string | null;
+        downloadUrl?: string | null;
+        error?: string;
+      };
+
+      if (!response.ok || !payload.signedUrl) {
+        setErrors((current) => ({
+          ...current,
+          [imageId]: payload.error ?? "Unable to refresh image preview."
+        }));
+        return;
+      }
+
+      setItems((current) =>
+        current.map((item) =>
+          item.id === imageId
+            ? {
+                ...item,
+                signedUrl: payload.signedUrl ?? item.signedUrl,
+                downloadUrl: payload.downloadUrl ?? item.downloadUrl
+              }
+            : item
+        )
+      );
+    } catch (error) {
+      setErrors((current) => ({
+        ...current,
+        [imageId]:
+          error instanceof Error
+            ? error.message
+            : "Unable to refresh image preview."
+      }));
+    } finally {
+      refreshInFlightRef.current.delete(imageId);
+    }
+  }, []);
+
+  useEffect(() => {
+    items.forEach((image) => {
+      if (
+        image.status === "completed" &&
+        image.storage_path &&
+        !image.signedUrl
+      ) {
+        void refreshSignedUrls(image.id);
+      }
+    });
+  }, [items, refreshSignedUrls]);
 
   async function saveToProject(imageId: string, projectId: string | null) {
     setSavingId(imageId);
@@ -86,10 +149,13 @@ export function ImageLibraryGrid({ images, projects }: ImageLibraryGridProps) {
                 className="object-cover transition duration-500 group-hover:scale-105"
                 fill
                 sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                onError={() => refreshSignedUrls(image.id)}
                 src={image.signedUrl}
               />
             ) : image.status === "processing" ? (
               <div className="skeleton-tile h-full w-full" />
+            ) : image.storage_path ? (
+              <span className="px-4 text-center">Restoring preview...</span>
             ) : (
               <span className="px-4 text-center">Preview unavailable</span>
             )}
