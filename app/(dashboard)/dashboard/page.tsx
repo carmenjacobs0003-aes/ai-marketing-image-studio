@@ -70,7 +70,7 @@ export default async function DashboardPage() {
               </p>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 <Link className="neon-button" href="/studio">
-                  Open studio <ArrowRight className="ml-2 h-4 w-4" />
+                  Open SYNTRIX AI <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
                 <Link className="ghost-button" href="/billing">
                   Upgrade capacity

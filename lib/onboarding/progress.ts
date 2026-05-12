@@ -41,7 +41,7 @@ export const onboardingSteps: OnboardingStep[] = [
   {
     id: "generate",
     title: "Generate your first asset",
-    body: "Use Studio or Marketing to produce a campaign-ready output.",
+    body: "Use SYNTRIX AI Studio or Marketing to produce a campaign-ready output.",
     href: "/studio"
   },
   {
