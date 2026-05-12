@@ -164,20 +164,21 @@ export function OnboardingFlow({
       </section>
 
       {open ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-xl">
-          <section className="relative max-h-[92vh] w-full max-w-5xl overflow-hidden rounded-[2rem] border border-cyan-300/25 bg-black shadow-[0_0_90px_rgba(34,211,238,0.22)]">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/80 px-3 pb-4 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur-xl sm:px-4 sm:pb-6 sm:pt-[clamp(2rem,8vh,5rem)]">
+          <section className="relative max-h-[calc(100svh-2rem)] w-full max-w-5xl overflow-hidden rounded-[2rem] border border-cyan-300/25 bg-black shadow-[0_0_90px_rgba(34,211,238,0.22)] sm:max-h-[calc(100svh-4rem)]">
+            <button
+              aria-label="Close onboarding tutorial"
+              className="absolute right-3 top-3 z-30 rounded-full border border-white/10 bg-black/80 p-2 text-slate-200 shadow-[0_0_22px_rgba(34,211,238,0.18)] backdrop-blur-xl hover:border-cyan-300/70 hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-300 sm:right-5 sm:top-5"
+              onClick={dismiss}
+              type="button"
+            >
+              <X className="h-4 w-4" />
+            </button>
             <div className="scanline" />
             <div className="onboarding-grid absolute inset-0 opacity-70" />
             <div className="neon-orb -right-16 top-0 h-56 w-56" />
-            <div className="relative z-10 grid max-h-[92vh] overflow-y-auto lg:grid-cols-[0.9fr_1.1fr]">
-              <div className="border-b border-white/10 p-6 lg:border-b-0 lg:border-r lg:p-8">
-                <button
-                  className="absolute right-5 top-5 rounded-full border border-white/10 bg-white/5 p-2 text-slate-300 hover:border-cyan-300/70 hover:text-white"
-                  onClick={dismiss}
-                  type="button"
-                >
-                  <X className="h-4 w-4" />
-                </button>
+            <div className="relative z-10 grid max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-h-[calc(100svh-4rem)] lg:grid-cols-[0.9fr_1.1fr]">
+              <div className="border-b border-white/10 p-6 pr-14 lg:border-b-0 lg:border-r lg:p-8 lg:pr-16">
                 <p className="eyebrow">Welcome tutorial</p>
                 <h1 className="mt-4 text-4xl font-black tracking-tight sm:text-5xl">
                   Build your first neon campaign in minutes.
