@@ -19,7 +19,7 @@ const emptyForm: BrandForm = {
   name: "",
   colors: "#00E5FF, #FFFFFF",
   fonts: "Inter, Space Grotesk",
-  tone: "Futuristic, confident, clear",
+  tone: "Precise, cinematic, confident",
   voice: "",
   logoUrl: "",
   guidelines: "",
@@ -100,7 +100,7 @@ export function BrandKitManager({ brandKits }: BrandKitManagerProps) {
       });
       setEditingId(null);
       setForm(emptyForm);
-      setStatus("Brand kit saved and ready for prompt injection.");
+      setStatus("Brand kit saved for future generations.");
     } catch (saveError) {
       setError(
         saveError instanceof Error
@@ -189,7 +189,7 @@ export function BrandKitManager({ brandKits }: BrandKitManagerProps) {
             }
             type="checkbox"
           />
-          Use as default brand kit for automatic prompt injection
+          Use as default brand kit for future generations
         </label>
         {error ? (
           <p className="rounded-2xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
@@ -223,7 +223,7 @@ export function BrandKitManager({ brandKits }: BrandKitManagerProps) {
                     {brandKit.name}
                   </h2>
                   <p className="mt-2 text-sm text-slate-300">
-                    {brandKit.tone ?? brandKit.voice ?? "No tone saved yet."}
+                    {brandKit.tone ?? brandKit.voice ?? "No tone saved."}
                   </p>
                 </div>
                 {brandKit.is_default ? (
@@ -274,11 +274,11 @@ export function BrandKitManager({ brandKits }: BrandKitManagerProps) {
         ) : (
           <div className="empty-state md:col-span-2">
             <h2 className="text-xl font-black text-white">
-              No brand kits yet.
+              No brand kits available.
             </h2>
             <p className="mt-2 text-sm leading-6">
-              Create a default brand kit to give image and marketing generators
-              a consistent voice, palette, typography, and AI-ready guidelines.
+              Create a brand kit to keep visuals and campaign content
+              consistent.
             </p>
           </div>
         )}

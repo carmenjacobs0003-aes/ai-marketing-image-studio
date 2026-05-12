@@ -128,11 +128,11 @@ export function ImageLibraryGrid({ images, projects }: ImageLibraryGridProps) {
           <span className="text-2xl">✦</span>
         </div>
         <h2 className="mt-4 text-xl font-black text-white">
-          Your gallery is a blank canvas.
+          No generated images available.
         </h2>
         <p className="mt-2 text-sm leading-6">
-          Generate your first campaign image in Studio and it will appear here
-          with neon previews, project routing, and download actions.
+          Generate your first visual in Studio to enable previews, downloads,
+          and project saves.
         </p>
       </div>
     );

@@ -67,8 +67,7 @@ function getPublicMarketingError(message: string) {
 
   if (/429|rate limit|too many requests|too many/.test(normalized)) {
     return {
-      error:
-        "Generation capacity is temporarily busy. Please retry in a moment.",
+      error: "Generation queue is temporarily busy. Please retry in a moment.",
       status: 429,
       cooldownSeconds: 8
     };
@@ -198,7 +197,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json<MarketingGenerateResponse>(
       {
         error:
-          "Generation capacity is temporarily busy. Please retry in a moment.",
+          "Generation queue is temporarily busy. Please retry in a moment.",
         cooldownSeconds: 8
       },
       { status: 429 }
@@ -259,7 +258,7 @@ export async function POST(request: NextRequest) {
   if (template?.premium && !isPaidPlan(entitlement.usage.plan)) {
     return NextResponse.json<MarketingGenerateResponse>(
       {
-        error: "Premium templates are available on Pro and Agency plans.",
+        error: "Advanced templates are available on Pro and Agency plans.",
         usage: entitlement.usage
       },
       { status: 402 }

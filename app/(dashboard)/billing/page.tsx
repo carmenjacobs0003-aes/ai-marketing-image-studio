@@ -59,23 +59,18 @@ export default async function BillingPage({
     <main className="page-shell">
       <div className="page-container">
         <header className="page-hero md:p-8">
-          <p className="eyebrow">
-            Billing dashboard
-          </p>
+          <p className="eyebrow">Billing</p>
           <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <h1 className="text-3xl font-black tracking-tight sm:text-5xl">
                 {currentPlan.name} plan
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
-                Manage PayPal subscription status, monitor synced Supabase plan
-                fields, and upgrade when your campaign volume grows.
+                Manage your plan, billing status, renewal timing, and generation
+                limits.
               </p>
             </div>
-            <Link
-              className="neon-button"
-              href="/pricing"
-            >
+            <Link className="neon-button" href="/pricing">
               Compare plans
             </Link>
           </div>
@@ -83,9 +78,8 @@ export default async function BillingPage({
 
         {searchParams?.paypal === "approved" ? (
           <p className="rounded-2xl border border-cyan-300/30 bg-cyan-300/10 p-4 text-sm text-cyan-100">
-            PayPal approval received. Your plan updates as soon as PayPal marks
-            the subscription active; webhook sync will keep this dashboard
-            current.
+            PayPal approval received. Your plan updates when the subscription
+            becomes active.
           </p>
         ) : null}
 
@@ -119,24 +113,18 @@ export default async function BillingPage({
         <section className="rounded-3xl border border-cyan-300/20 bg-black/80 p-6 ring-1 ring-white/10 md:p-8">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <h2 className="text-2xl font-black">
-                PayPal subscription controls
-              </h2>
+              <h2 className="text-2xl font-black">Subscription controls</h2>
               <p className="mt-2 text-sm leading-6 text-slate-300">
-                Upgrades use PayPal hosted approval. Cancellations call PayPal
-                and immediately return the profile to Free while webhooks
-                confirm status.
+                Plan changes are processed through PayPal. Cancellations return
+                the account to Free after confirmation.
               </p>
             </div>
             {profile?.paypal_subscription_id &&
             profile.subscription_status === "active" ? (
               <CancelSubscriptionButton />
             ) : (
-              <Link
-                className="ghost-button"
-                href="/pricing"
-              >
-                Upgrade plan
+              <Link className="ghost-button" href="/pricing">
+                Unlock higher limits
               </Link>
             )}
           </div>

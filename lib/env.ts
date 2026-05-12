@@ -9,7 +9,7 @@ const baseEnvSchema = z.object({
   NEXT_PUBLIC_APP_NAME: z.string().default("SYNTRIX AI"),
   NEXT_PUBLIC_APP_DESCRIPTION: z
     .string()
-    .default("Create campaign-ready marketing images and copy with AI."),
+    .default("Generate cinematic visual assets and campaign copy with AI."),
   NEXT_PUBLIC_SITE_DOMAIN: z.string().optional(),
   NEXT_PUBLIC_SUPABASE_URL: z.string().url().optional(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional(),

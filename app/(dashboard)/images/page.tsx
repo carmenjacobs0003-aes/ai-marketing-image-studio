@@ -17,15 +17,13 @@ export default async function ImagesPage() {
     <main className="page-shell">
       <div className="mx-auto max-w-6xl space-y-6">
         <header className="page-hero">
-          <p className="eyebrow">
-            Images
-          </p>
+          <p className="eyebrow">Images</p>
           <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
             Generated image library
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
-            Preview permanently stored Supabase assets, download campaign files,
-            and attach finished concepts to active projects.
+            Preview generated visuals, download files, and attach finished
+            concepts to active projects.
           </p>
         </header>
         <ImageLibraryGrid images={imagesWithPreviews} projects={projects} />

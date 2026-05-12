@@ -105,8 +105,8 @@ export function OnboardingFlow({
     notify({
       kind: "achievement",
       tone: "success",
-      title: "Onboarding step complete",
-      body: `${onboardingSteps.find((step) => step.id === id)?.title ?? "Step"} is now tracked in your launch progress.`,
+      title: "Setup step complete",
+      body: `${onboardingSteps.find((step) => step.id === id)?.title ?? "Step"} is now marked in your setup progress.`,
       href: "/dashboard"
     });
   }
@@ -131,14 +131,13 @@ export function OnboardingFlow({
               <Sparkles className="h-6 w-6" />
             </span>
             <div>
-              <p className="eyebrow">Onboarding signal</p>
+              <p className="eyebrow">System setup</p>
               <h2 className="mt-2 text-2xl font-black">
-                {progress.percent}% launch ready
+                {progress.percent}% complete
               </h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-                Follow the guided setup to complete your profile, create a brand
-                kit, launch a first project, and generate your first campaign
-                asset.
+                Complete your profile, create a brand kit, set up a project, and
+                generate your first asset.
               </p>
             </div>
           </div>
@@ -148,7 +147,7 @@ export function OnboardingFlow({
               onClick={() => setOpen(true)}
               type="button"
             >
-              <Play className="mr-2 h-4 w-4" /> Tutorial
+              <Play className="mr-2 h-4 w-4" /> Setup guide
             </button>
             <Link className="neon-button" href={nextStep.href}>
               Next: {nextStep.title} <ArrowRight className="ml-2 h-4 w-4" />
@@ -179,23 +178,21 @@ export function OnboardingFlow({
             <div className="neon-orb -right-16 top-0 h-56 w-56" />
             <div className="relative z-10 grid max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-h-[calc(100svh-4rem)] lg:grid-cols-[0.9fr_1.1fr]">
               <div className="border-b border-white/10 p-6 pr-14 lg:border-b-0 lg:border-r lg:p-8 lg:pr-16">
-                <p className="eyebrow">Welcome tutorial</p>
+                <p className="eyebrow">Setup guide</p>
                 <h1 className="mt-4 text-4xl font-black tracking-tight sm:text-5xl">
-                  Build your first neon campaign in minutes.
+                  Set up your creative system in minutes.
                 </h1>
                 <p className="mt-4 text-sm leading-6 text-slate-300">
-                  SYNTRIX AI now tracks onboarding progress, nudges your first
-                  project setup, and sends realtime notifications when saves,
-                  gallery interactions, usage warnings, upgrades, and badges
-                  need attention.
+                  SYNTRIX AI tracks setup progress, project readiness, saves,
+                  gallery activity, usage warnings, and plan updates.
                 </p>
                 <div className="mt-8 rounded-3xl border border-cyan-300/20 bg-cyan-300/[0.06] p-5">
                   <div className="flex items-center gap-3">
                     <Rocket className="h-8 w-8 text-cyan-300" />
                     <div>
-                      <p className="font-black">First-project guided setup</p>
+                      <p className="font-black">Guided setup</p>
                       <p className="text-sm text-slate-300">
-                        Next recommended action: {nextStep.title}
+                        Next action: {nextStep.title}
                       </p>
                     </div>
                   </div>
@@ -204,7 +201,7 @@ export function OnboardingFlow({
                     href={nextStep.href}
                     onClick={dismiss}
                   >
-                    Start next step <ArrowRight className="ml-2 h-4 w-4" />
+                    Continue setup <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </div>
               </div>
@@ -247,7 +244,7 @@ export function OnboardingFlow({
                               onClick={() => markComplete(step.id)}
                               type="button"
                             >
-                              Mark done
+                              Mark complete
                             </button>
                           </div>
                         </div>

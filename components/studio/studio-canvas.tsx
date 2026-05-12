@@ -289,8 +289,8 @@ export function StudioCanvas({
             Generate an image
           </h1>
           <p className="mt-2 text-sm leading-6 text-slate-300">
-            Moderated DALL·E generations are stored permanently in your private
-            Supabase image library after successful creation.
+            Generate cinematic visual assets from a single prompt. Completed
+            images are stored in your private library.
           </p>
         </div>
         <div className="rounded-2xl border border-cyan-300/30 bg-cyan-300/10 p-4 shadow-lg shadow-cyan-500/10">
@@ -313,7 +313,7 @@ export function StudioCanvas({
               className="field-control min-h-44"
               disabled={isLoading || limitReached}
               onChange={(event) => setPrompt(event.target.value)}
-              placeholder="Describe a campaign-ready product image with lighting, style, layout, and background..."
+              placeholder="Describe the product, lighting, camera style, composition, and background..."
               value={prompt}
             />
           </label>
@@ -357,7 +357,8 @@ export function StudioCanvas({
           ) : null}
           {limitReached ? (
             <p className="rounded-2xl border border-cyan-300/20 bg-black p-3 text-sm text-cyan-100">
-              Daily image limit reached. Upgrade your plan for more capacity.
+              Daily image limit reached. Unlock higher generation limits to
+              continue.
             </p>
           ) : null}
           <button
@@ -389,7 +390,7 @@ export function StudioCanvas({
             <article className="w-full max-w-3xl overflow-hidden rounded-3xl border border-cyan-300/20 bg-black shadow-2xl shadow-cyan-500/20">
               <div className="relative aspect-square max-h-[640px] w-full">
                 <Image
-                  alt="Generated marketing asset"
+                  alt="Generated visual asset"
                   className="object-contain"
                   fill
                   sizes="(min-width: 1024px) 60vw, 100vw"
@@ -421,8 +422,8 @@ export function StudioCanvas({
             <p>Restoring saved preview...</p>
           ) : (
             <p>
-              Generated images appear here after successful creation with a
-              preview card, download link, and project save state.
+              Generated visuals appear here with preview, download, and project
+              save options.
             </p>
           )}
         </div>

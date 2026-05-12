@@ -23,16 +23,13 @@ export default async function ProjectsPage() {
     <main className="page-shell">
       <div className="page-container">
         <header className="page-hero">
-          <p className="eyebrow">
-            Projects
-          </p>
+          <p className="eyebrow">Projects</p>
           <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
-            Saved campaign workspaces
+            Saved campaign projects
           </h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">
-            Save generated marketing content and images into reusable projects,
-            edit campaign details, link brand kits, and review project history
-            from a single futuristic dashboard.
+            Save generated content and visuals into reusable projects, link
+            brand kits, and review project history.
           </p>
         </header>
         <ProjectDashboard

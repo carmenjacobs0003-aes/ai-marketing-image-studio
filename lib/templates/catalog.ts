@@ -17,13 +17,13 @@ export const marketingTemplates: MarketingTemplate[] = [
   {
     id: "social-launch-sprint",
     category: "social",
-    name: "Social launch sprint",
+    name: "Social launch sequence",
     description:
-      "A high-velocity product launch set for LinkedIn, X, and Instagram.",
+      "A concise product announcement set for LinkedIn, X, and Instagram.",
     contentType: "social_media_posts",
     channels: ["LinkedIn", "X", "Instagram"],
     prompt:
-      "Create a punchy multi-platform launch sequence with teaser, launch-day, and proof-point angles. Include scroll-stopping hooks and strong CTA variants."
+      "Create a concise multi-platform announcement sequence with teaser, release-day, and proof-point angles. Include strong hooks and CTA variants."
   },
   {
     id: "social-founder-led",
@@ -85,13 +85,13 @@ export const marketingTemplates: MarketingTemplate[] = [
     id: "industry-saas",
     premium: true,
     category: "industry",
-    name: "B2B SaaS preset",
+    name: "B2B software preset",
     description:
-      "Pipeline-focused SaaS messaging for demos, trials, and expansion.",
+      "Pipeline-focused software messaging for demos, trials, and expansion.",
     contentType: "complete_marketing_pack",
-    channels: ["SaaS", "Demand gen"],
+    channels: ["Software", "Demand gen"],
     prompt:
-      "Use B2B SaaS positioning. Emphasize pipeline impact, onboarding speed, integrations, measurable ROI, and buyer objections from revenue teams."
+      "Use B2B Software positioning. Emphasize pipeline impact, onboarding speed, integrations, measurable ROI, and buyer objections from revenue teams."
   },
   {
     id: "industry-ecommerce",

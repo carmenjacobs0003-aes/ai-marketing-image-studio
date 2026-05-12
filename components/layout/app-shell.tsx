@@ -64,7 +64,7 @@ export function AppShell({
             <div className="mt-5 rounded-3xl border border-white/10 bg-black/55 p-3 backdrop-blur-xl">
               <div className="flex items-center gap-2 rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.06] px-3 py-2 text-xs font-black uppercase tracking-[0.22em] text-cyan-100">
                 <Zap className="h-3.5 w-3.5" />
-                Command deck
+                Workspace
               </div>
               <nav
                 aria-label="Protected app navigation"
@@ -93,10 +93,10 @@ export function AppShell({
               <div className="mb-4 h-2 rounded-full bg-white/10">
                 <div className="h-2 w-2/3 rounded-full bg-cyan-300 shadow-[0_0_18px_rgba(34,211,238,0.75)]" />
               </div>
-              <p className="eyebrow">Premium ready</p>
+              <p className="eyebrow">Higher limits</p>
               <p className="mt-2 text-sm leading-6 text-slate-300">
-                Unlock higher limits, premium templates, and cinematic brand
-                systems.
+                Unlock higher limits, advanced templates, and brand-aware
+                generation.
               </p>
               <Link className="ghost-button mt-4 w-full py-2" href="/billing">
                 Manage plan

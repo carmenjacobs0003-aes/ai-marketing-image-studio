@@ -6,7 +6,7 @@ import { BRAND_NAME, BRAND_TAGLINE } from "@/lib/branding";
 const stats = [
   "Cinematic AI visuals",
   "Brand-safe copy",
-  "Premium SaaS workspace"
+  "Private creative operating system"
 ];
 
 export function MarketingHero() {
@@ -30,7 +30,7 @@ export function MarketingHero() {
             Sign in
           </Link>
           <Link className="neon-button px-4 py-2 text-sm" href="/signup">
-            Launch
+            Enter
           </Link>
         </nav>
       </header>
@@ -41,16 +41,16 @@ export function MarketingHero() {
             {BRAND_TAGLINE}
           </p>
           <h1 className="text-balance text-4xl font-black tracking-tight sm:text-6xl lg:text-7xl xl:text-8xl">
-            Generate campaign-ready visuals in{" "}
+            Generate cinematic visual assets in{" "}
             <span className="text-cyan-300 drop-shadow-[0_0_28px_rgba(34,211,238,0.6)]">
               minutes
             </span>
             .
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-base leading-8 text-slate-300 sm:text-lg lg:mx-0 lg:text-xl">
-            {BRAND_NAME} is a premium black-glass command center for AI image
-            generation, marketing copy, brand kits, templates, projects,
-            billing, and protected SaaS workflows.
+            {BRAND_NAME} is a private creative operating system for cinematic
+            image generation, campaign copy, brand systems, projects, and
+            billing.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center lg:justify-start">
             <Link className="neon-button" href="/signup">
@@ -60,7 +60,7 @@ export function MarketingHero() {
               View pricing
             </Link>
             <Link className="ghost-button" href="/gallery">
-              Explore gallery
+              View gallery
             </Link>
           </div>
         </div>
@@ -69,9 +69,9 @@ export function MarketingHero() {
           <div className="rounded-[2rem] border border-cyan-300/20 bg-black/70 p-5 shadow-glow">
             <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-4">
               <div>
-                <p className="eyebrow">Live generation</p>
+                <p className="eyebrow">Generation workspace</p>
                 <h2 className="mt-2 text-2xl font-black">
-                  Neon campaign board
+                  Cinematic asset board
                 </h2>
               </div>
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-cyan-300 text-black shadow-glow">
@@ -96,7 +96,7 @@ export function MarketingHero() {
       <footer className="relative z-10 mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-3 border-t border-white/10 py-6 text-sm text-slate-400 sm:flex-row">
         <SyntrixLogo imageClassName="h-8" />
         <p>
-          © {new Date().getFullYear()} {BRAND_NAME}. All systems online.
+          © {new Date().getFullYear()} {BRAND_NAME}. Creative system online.
         </p>
       </footer>
     </main>

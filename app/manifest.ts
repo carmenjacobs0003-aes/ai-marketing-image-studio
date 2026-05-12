@@ -35,7 +35,7 @@ export default function manifest(): MetadataRoute.Manifest {
       {
         name: "Generate image",
         short_name: "Image",
-        description: "Open SYNTRIX AI",
+        description: "Open Studio",
         url: "/studio?source=pwa-shortcut",
         icons: [
           {
@@ -46,9 +46,9 @@ export default function manifest(): MetadataRoute.Manifest {
         ]
       },
       {
-        name: "Marketing copy",
+        name: "Campaign content",
         short_name: "Copy",
-        description: "Generate campaign copy",
+        description: "Generate campaign content",
         url: "/marketing?source=pwa-shortcut",
         icons: [
           {

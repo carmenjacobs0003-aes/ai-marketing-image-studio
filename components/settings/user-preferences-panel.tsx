@@ -26,11 +26,11 @@ type UserPreferencesPanelProps = {
 };
 
 const badgePlaceholders = [
-  { title: "First Project", body: "Create a project workspace.", ready: false },
-  { title: "Signal Saver", body: "Save your first generation.", ready: false },
+  { title: "First Project", body: "Create a project.", ready: false },
+  { title: "First Save", body: "Save your first generation.", ready: false },
   {
     title: "Gallery Pulse",
-    body: "Receive a like, copy, or remix.",
+    body: "Receive a like, save, or remix.",
     ready: false
   },
   {
@@ -91,7 +91,7 @@ export function UserPreferencesPanel({
     toast({
       tone: "success",
       title: "Preference saved",
-      body: "Notification routing was updated on this device."
+      body: "Notifications was updated on this device."
     });
   }
 
@@ -104,7 +104,7 @@ export function UserPreferencesPanel({
       kind: "profile_completion",
       tone: "success",
       title: "Profile preferences saved",
-      body: "Your profile completion prompt has been refreshed.",
+      body: "Your profile preferences have been updated.",
       href: "/settings"
     });
   }
@@ -117,17 +117,15 @@ export function UserPreferencesPanel({
           <div>
             <p className="eyebrow">User settings</p>
             <h1 className="mt-3 max-w-4xl text-4xl font-black tracking-tight sm:text-6xl">
-              Preference controls for retention, digest, and creator
-              notifications.
+              Control your profile and notifications.
             </h1>
             <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-300 sm:text-base">
-              Manage in-app alerts, email notification readiness, weekly digest
-              framework, gallery interactions, creator activity, profile
-              prompts, and placeholder achievement badges.
+              Manage in-app alerts, email preferences, weekly digests, gallery
+              activity, and profile details.
             </p>
           </div>
           <div className="holo-panel">
-            <p className="eyebrow">Profile signal</p>
+            <p className="eyebrow">Profile setup</p>
             <p className="mt-3 text-5xl font-black text-cyan-300">
               {profileCompletion}%
             </p>
@@ -196,7 +194,7 @@ export function UserPreferencesPanel({
               <Bell className="h-5 w-5" />
             </span>
             <div>
-              <p className="eyebrow">Notification routing</p>
+              <p className="eyebrow">Notifications</p>
               <h2 className="mt-1 text-2xl font-black">
                 In-app + email support
               </h2>
@@ -225,7 +223,7 @@ export function UserPreferencesPanel({
                   </span>
                 </div>
                 <p className="mt-2 text-sm leading-5 text-slate-300">
-                  {enabled ? "Enabled" : "Paused"} for retention workflows.
+                  {enabled ? "On" : "Off"} for this device.
                 </p>
               </button>
             ))}
@@ -236,26 +234,25 @@ export function UserPreferencesPanel({
       <section className="grid gap-6 lg:grid-cols-3">
         <article className="glass-card p-5">
           <Mail className="h-8 w-8 text-cyan-300" />
-          <h2 className="mt-4 text-xl font-black">Weekly digest framework</h2>
+          <h2 className="mt-4 text-xl font-black">Weekly digest</h2>
           <p className="mt-2 text-sm leading-6 text-slate-300">
-            Digest jobs can summarize generation counts, saved assets, gallery
-            likes, new badges, and creator activity highlights.
+            Weekly summaries can include generation counts, saved assets,
+            gallery likes, and creator activity.
           </p>
         </article>
         <article className="glass-card p-5">
           <Zap className="h-8 w-8 text-cyan-300" />
-          <h2 className="mt-4 text-xl font-black">Usage warnings</h2>
+          <h2 className="mt-4 text-xl font-black">Usage alerts</h2>
           <p className="mt-2 text-sm leading-6 text-slate-300">
-            Realtime alerts appear near 80% of daily limits and convert into
-            upgrade prompts when free capacity is exhausted.
+            Alerts appear near daily limits and show upgrade options when Free
+            limits are exhausted.
           </p>
         </article>
         <article className="glass-card p-5">
           <Crown className="h-8 w-8 text-cyan-300" />
           <h2 className="mt-4 text-xl font-black">Upgrade prompts</h2>
           <p className="mt-2 text-sm leading-6 text-slate-300">
-            Plan-aware prompts keep monetization visible without blocking the
-            creative flow.
+            Plan prompts stay visible without interrupting generation.
           </p>
         </article>
       </section>
@@ -264,9 +261,9 @@ export function UserPreferencesPanel({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="eyebrow">Achievements</p>
-            <h2 className="mt-2 text-2xl font-black">Badge placeholders</h2>
+            <h2 className="mt-2 text-2xl font-black">Achievement badges</h2>
           </div>
-          <span className="premium-badge">Framework ready</span>
+          <span className="premium-badge">Coming soon</span>
         </div>
         <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           {badgePlaceholders.map((badge) => (
@@ -278,7 +275,7 @@ export function UserPreferencesPanel({
               <h3 className="mt-3 font-black">{badge.title}</h3>
               <p className="mt-2 text-sm text-slate-300">{badge.body}</p>
               <p className="mt-4 flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-slate-400">
-                <ShieldCheck className="h-4 w-4" /> Placeholder
+                <ShieldCheck className="h-4 w-4" /> Coming soon
               </p>
             </article>
           ))}
@@ -287,10 +284,9 @@ export function UserPreferencesPanel({
 
       <section className="empty-state flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="font-black text-white">Test a realtime notification</p>
+          <p className="font-black text-white">Preview a notification</p>
           <p className="mt-1 text-sm">
-            Trigger a sample creator activity notification without changing
-            account data.
+            Send a sample activity notification without changing account data.
           </p>
         </div>
         <button
@@ -299,8 +295,8 @@ export function UserPreferencesPanel({
             notify({
               kind: "creator_activity",
               tone: "info",
-              title: "Creator activity preview",
-              body: "Someone remixed a gallery prompt. This is how creator retention nudges will appear.",
+              title: "Activity preview",
+              body: "Someone remixed a gallery prompt. This is how activity alerts will appear.",
               href: "/gallery"
             })
           }
