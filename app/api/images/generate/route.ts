@@ -35,7 +35,9 @@ import {
   createImageGeneration,
   listBrandKits,
   listProjects,
-  updateImageGeneration
+  updateImageGeneration,
+  type BrandKit,
+  type Project
 } from "@/lib/db/queries";
 import type { Json } from "@/lib/db/types";
 
@@ -47,6 +49,39 @@ function getClientIp(request: NextRequest) {
     request.headers.get("x-real-ip") ??
     undefined
   );
+}
+
+function resolveImageBrandKit({
+  explicitBrandKitId,
+  project,
+  brandKits
+}: {
+  explicitBrandKitId?: string;
+  project: Project | null;
+  brandKits: BrandKit[];
+}) {
+  const brandKitById = new Map(
+    brandKits.map((brandKit) => [brandKit.id, brandKit])
+  );
+
+  if (explicitBrandKitId) {
+    return {
+      brandKit: brandKitById.get(explicitBrandKitId) ?? null,
+      missingBrandKitId: explicitBrandKitId,
+      source: "request" as const
+    };
+  }
+
+  const fallbackBrandKitId =
+    project?.brand_kit_id ?? brandKits.find((item) => item.is_default)?.id;
+
+  return {
+    brandKit: fallbackBrandKitId
+      ? (brandKitById.get(fallbackBrandKitId) ?? null)
+      : null,
+    missingBrandKitId: fallbackBrandKitId ?? null,
+    source: project?.brand_kit_id ? ("project" as const) : ("default" as const)
+  };
 }
 
 const requestSchema = z.object({
@@ -597,7 +632,7 @@ export async function POST(request: NextRequest) {
     ]);
 
     const project = payload.projectId
-      ? projects.find((item) => item.id === payload.projectId)
+      ? (projects.find((item) => item.id === payload.projectId) ?? null)
       : null;
 
     if (payload.projectId && !project) {
@@ -610,14 +645,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const selectedBrandKitId =
-      payload.brandKitId ??
-      project?.brand_kit_id ??
-      brandKits.find((item) => item.is_default)?.id;
-
-    const brandKit = selectedBrandKitId
-      ? brandKits.find((item) => item.id === selectedBrandKitId)
-      : null;
+    const {
+      brandKit,
+      missingBrandKitId,
+      source: brandKitSource
+    } = resolveImageBrandKit({
+      explicitBrandKitId: payload.brandKitId,
+      project,
+      brandKits
+    });
 
     logger.info("Supabase generation prerequisites loaded", {
       ...getRequestLogContext(request),
@@ -625,16 +661,31 @@ export async function POST(request: NextRequest) {
       projectCount: projects.length,
       brandKitCount: brandKits.length,
       selectedProjectId: project?.id ?? null,
-      selectedBrandKitId: brandKit?.id ?? null
+      selectedBrandKitId: brandKit?.id ?? null,
+      brandKitSource,
+      missingBrandKitId: brandKit ? null : missingBrandKitId
     });
 
-    if (selectedBrandKitId && !brandKit) {
+    if (payload.brandKitId && !brandKit) {
       return jsonDebugError(
         request,
         startedAt,
         currentStep,
         "Brand kit not found",
         404
+      );
+    }
+
+    if (!payload.brandKitId && missingBrandKitId && !brandKit) {
+      logger.warn(
+        "Image generation continuing without missing fallback brand kit",
+        {
+          ...getRequestLogContext(request),
+          userId: user.id,
+          projectId: project?.id ?? null,
+          missingBrandKitId,
+          brandKitSource
+        }
       );
     }
 
@@ -650,7 +701,7 @@ export async function POST(request: NextRequest) {
     generation = await createImageGeneration(supabase, {
       user_id: user.id,
       project_id: payload.projectId ?? null,
-      brand_kit_id: brandKit?.id ?? null,
+      ...(brandKit ? { brand_kit_id: brandKit.id } : {}),
       prompt: payload.prompt,
       model: env.OPENAI_IMAGE_MODEL,
       status: "queued",
