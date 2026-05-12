@@ -8,6 +8,17 @@ import { normalizeFailureMessage, withRetry } from "@/lib/resilience";
 import { logCentralizedError } from "@/lib/monitoring/errors";
 import { logger } from "@/lib/logger";
 
+type OpenAIErrorLike = {
+  status?: unknown;
+  code?: unknown;
+  type?: unknown;
+  param?: unknown;
+  request_id?: unknown;
+  headers?: unknown;
+};
+
+type ImageExtractionLogContext = Record<string, unknown>;
+
 export type ImageGenerationSize =
   | "1024x1024"
   | "1024x1792"
@@ -37,6 +48,14 @@ export type ImageGenerationResult = {
   model: string;
   request: ImageGenerateParams;
   responseSummary: ReturnType<typeof summarizeImagesResponse>;
+};
+
+export type GeneratedImagePayload = {
+  base64: string;
+  source: "base64" | "url";
+  sourceUrl?: string;
+  contentType?: string | null;
+  revisedPrompt?: string | null;
 };
 
 const DALL_E_MODELS = new Set(["dall-e-2", "dall-e-3"]);
@@ -139,6 +158,34 @@ function getOpenAIStatus(error: unknown) {
   return undefined;
 }
 
+export function getOpenAIErrorDiagnostics(error: unknown) {
+  const errorLike =
+    error && typeof error === "object" ? (error as OpenAIErrorLike) : {};
+
+  return {
+    status: typeof errorLike.status === "number" ? errorLike.status : undefined,
+    code: typeof errorLike.code === "string" ? errorLike.code : undefined,
+    type: typeof errorLike.type === "string" ? errorLike.type : undefined,
+    param: typeof errorLike.param === "string" ? errorLike.param : undefined,
+    requestId:
+      typeof errorLike.request_id === "string"
+        ? errorLike.request_id
+        : undefined,
+    message: error instanceof Error ? error.message : String(error),
+    isAuthOrPermissionIssue:
+      getOpenAIStatus(error) === 401 ||
+      getOpenAIStatus(error) === 403 ||
+      /api key|authorization|unauthorized|forbidden|permission|project|billing|quota|organization verification/i.test(
+        error instanceof Error ? error.message : String(error)
+      ),
+    isQuotaOrBillingIssue:
+      getOpenAIStatus(error) === 429 ||
+      /billing|quota|insufficient_quota|rate limit/i.test(
+        error instanceof Error ? error.message : String(error)
+      )
+  };
+}
+
 export async function moderateImagePrompt(prompt: string) {
   const openai = createOpenAIClient();
   const moderation = await withRetry(
@@ -217,7 +264,11 @@ export async function createMarketingImage({
         size: request.size,
         quality: request.quality,
         promptLength: prompt.length,
-        responseFormat: request.response_format ?? "model-default"
+        responseFormat: request.response_format ?? "model-default",
+        userProvided: Boolean(userId),
+        hasApiKey: Boolean(env.OPENAI_API_KEY),
+        projectConfigured: Boolean(env.OPENAI_PROJECT_ID),
+        organizationConfigured: Boolean(env.OPENAI_ORGANIZATION)
       });
       const {
         data,
@@ -242,7 +293,8 @@ export async function createMarketingImage({
     },
     { label: "openai.image_generation" }
   ).catch(async (error) => {
-    const status = getOpenAIStatus(error);
+    const diagnostics = getOpenAIErrorDiagnostics(error);
+    const status = diagnostics.status;
     const message = normalizeFailureMessage("OpenAI image generation", error);
 
     logger.error("OpenAI image generation request failed", {
@@ -250,7 +302,8 @@ export async function createMarketingImage({
       size,
       quality,
       status,
-      error: message
+      error: message,
+      diagnostics
     });
 
     await logCentralizedError(error, {
@@ -258,7 +311,7 @@ export async function createMarketingImage({
       provider: "openai",
       message,
       severity: "critical",
-      context: { model, size, quality, status }
+      context: { model, size, quality, status, diagnostics }
     }).catch((loggingError) => {
       logger.error("OpenAI image generation centralized logging failed", {
         model,
@@ -275,16 +328,104 @@ export async function createMarketingImage({
   });
 }
 
-export function getGeneratedImageBase64(image: ImagesResponse) {
+async function fetchImageUrlAsBase64(
+  url: string,
+  logContext: ImageExtractionLogContext
+) {
+  logger.info("OpenAI image URL payload fetch start", {
+    ...logContext,
+    sourceUrlHost: new URL(url).host
+  });
+
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    logger.error("OpenAI image URL payload fetch failed", {
+      ...logContext,
+      status: response.status,
+      statusText: response.statusText
+    });
+    throw new Error(
+      "OpenAI returned an image URL that could not be downloaded."
+    );
+  }
+
+  const contentType = response.headers.get("content-type");
+  const buffer = Buffer.from(await response.arrayBuffer());
+
+  if (buffer.length === 0) {
+    logger.error("OpenAI image URL payload was empty", {
+      ...logContext,
+      contentType
+    });
+    throw new Error("OpenAI returned an empty image URL payload.");
+  }
+
+  logger.info("OpenAI image URL payload fetched", {
+    ...logContext,
+    contentType,
+    byteLength: buffer.length
+  });
+
+  return { base64: buffer.toString("base64"), contentType };
+}
+
+export async function extractGeneratedImagePayload(
+  image: ImagesResponse,
+  logContext: ImageExtractionLogContext = {}
+): Promise<GeneratedImagePayload> {
+  const summary = summarizeImagesResponse(image);
+
   if (!image || !Array.isArray(image.data) || !image.data[0]) {
+    logger.error("OpenAI image response parsing failed: empty data", {
+      ...logContext,
+      responseSummary: summary
+    });
     throw new Error("OpenAI returned an empty image response.");
   }
 
-  const base64Image = image.data[0].b64_json;
+  const firstImage = image.data[0];
+  const base64Image = firstImage.b64_json;
 
-  if (typeof base64Image !== "string" || base64Image.trim().length === 0) {
-    throw new Error("OpenAI did not return a valid base64 image payload.");
+  if (typeof base64Image === "string" && base64Image.trim().length > 0) {
+    logger.info("OpenAI image base64 payload extracted", {
+      ...logContext,
+      base64Length: base64Image.length,
+      revisedPromptLength:
+        typeof firstImage.revised_prompt === "string"
+          ? firstImage.revised_prompt.length
+          : 0
+    });
+
+    return {
+      base64: base64Image,
+      source: "base64",
+      revisedPrompt: firstImage.revised_prompt ?? null
+    };
   }
 
-  return base64Image;
+  if (typeof firstImage.url === "string" && firstImage.url.trim().length > 0) {
+    const { base64, contentType } = await fetchImageUrlAsBase64(
+      firstImage.url,
+      logContext
+    );
+
+    return {
+      base64,
+      source: "url",
+      sourceUrl: firstImage.url,
+      contentType,
+      revisedPrompt: firstImage.revised_prompt ?? null
+    };
+  }
+
+  logger.error("OpenAI image response parsing failed: no usable payload", {
+    ...logContext,
+    responseSummary: summary
+  });
+  throw new Error("OpenAI did not return a valid image payload.");
+}
+
+export async function getGeneratedImageBase64(image: ImagesResponse) {
+  return (await extractGeneratedImagePayload(image)).base64;
 }

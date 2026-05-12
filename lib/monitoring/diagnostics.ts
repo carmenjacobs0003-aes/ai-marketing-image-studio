@@ -35,8 +35,8 @@ export function getApplicationDiagnostics(): DiagnosticCheck[] {
     check(
       "OpenAI provider",
       Boolean(env.OPENAI_API_KEY),
-      "Image and marketing generation require an OpenAI API key.",
-      "Set OPENAI_API_KEY and verify account quota, billing, and organization verification."
+      `Image and marketing generation require an OpenAI API key. Project configured: ${Boolean(env.OPENAI_PROJECT_ID)}. Organization configured: ${Boolean(env.OPENAI_ORGANIZATION)}.`,
+      "Set OPENAI_API_KEY and verify account quota, billing, project access, model permissions, and organization verification."
     ),
 
     check(
