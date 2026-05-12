@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+export const OPENAI_API_KEY_ENV_VAR_NAME = "OPENAI_API_KEY" as const;
+export const OPENAI_IMAGE_MODEL_ENV_VAR_NAME = "OPENAI_IMAGE_MODEL" as const;
+export const envLoadedAt = new Date().toISOString();
+
 const baseEnvSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3000"),
   NEXT_PUBLIC_APP_NAME: z.string().default("SYNTRIX AI"),
@@ -10,11 +14,11 @@ const baseEnvSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.string().url().optional(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
-  OPENAI_API_KEY: z.string().optional(),
+  [OPENAI_API_KEY_ENV_VAR_NAME]: z.string().optional(),
   OPENAI_PROJECT_ID: z.string().optional(),
   OPENAI_ORGANIZATION: z.string().optional(),
   OPENAI_TEXT_MODEL: z.string().default("gpt-4o-mini"),
-  OPENAI_IMAGE_MODEL: z.string().default("gpt-image-1"),
+  [OPENAI_IMAGE_MODEL_ENV_VAR_NAME]: z.string().default("gpt-image-1"),
   API_TIMEOUT_SECONDS: z.coerce.number().int().positive().default(60),
   PROVIDER_RETRY_ATTEMPTS: z.coerce.number().int().positive().default(3),
   PROVIDER_RETRY_BASE_DELAY_MS: z.coerce.number().int().positive().default(500),
@@ -97,6 +101,49 @@ export function shouldEnforceProductionEnv(values = process.env) {
     values.ENFORCE_PRODUCTION_ENV === "true" ||
     (values.VERCEL === "1" && values.VERCEL_ENV === "production")
   );
+}
+
+export function getDeploymentEnvironmentDiagnostics(
+  values = process.env,
+  parsedEnv?: Pick<
+    AppEnv,
+    | "OPENAI_API_KEY"
+    | "OPENAI_IMAGE_MODEL"
+    | "OPENAI_PROJECT_ID"
+    | "OPENAI_ORGANIZATION"
+  >
+) {
+  return {
+    envLoadedAt,
+    source: "server process.env",
+    nodeEnv: values.NODE_ENV ?? null,
+    vercel: values.VERCEL === "1",
+    vercelEnv: values.VERCEL_ENV ?? null,
+    vercelRegion: values.VERCEL_REGION ?? null,
+    vercelUrl: values.VERCEL_URL ?? null,
+    vercelGitCommitSha: values.VERCEL_GIT_COMMIT_SHA ?? null,
+    productionEnvEnforced: shouldEnforceProductionEnv(values),
+    exactEnvironmentVariables: {
+      openaiApiKey: OPENAI_API_KEY_ENV_VAR_NAME,
+      openaiImageModel: OPENAI_IMAGE_MODEL_ENV_VAR_NAME,
+      openaiProject: "OPENAI_PROJECT_ID",
+      openaiOrganization: "OPENAI_ORGANIZATION"
+    },
+    runtimeEnvironmentVariables: {
+      openaiApiKeyDetected: Boolean(values[OPENAI_API_KEY_ENV_VAR_NAME]),
+      openaiImageModel: values[OPENAI_IMAGE_MODEL_ENV_VAR_NAME] ?? null,
+      openaiProjectConfigured: Boolean(values.OPENAI_PROJECT_ID),
+      openaiOrganizationConfigured: Boolean(values.OPENAI_ORGANIZATION)
+    },
+    parsedEnvironmentVariables: parsedEnv
+      ? {
+          openaiApiKeyDetected: Boolean(parsedEnv.OPENAI_API_KEY),
+          openaiImageModel: parsedEnv.OPENAI_IMAGE_MODEL,
+          openaiProjectConfigured: Boolean(parsedEnv.OPENAI_PROJECT_ID),
+          openaiOrganizationConfigured: Boolean(parsedEnv.OPENAI_ORGANIZATION)
+        }
+      : undefined
+  };
 }
 
 export function getRedisEnv(

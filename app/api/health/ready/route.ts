@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { env, getRedisEnv, validateProductionEnv } from "@/lib/env";
+import {
+  env,
+  getDeploymentEnvironmentDiagnostics,
+  getRedisEnv,
+  validateProductionEnv
+} from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +39,10 @@ export function GET() {
         sentry: false,
         paypal: paypalReady
       },
+      deploymentEnvironment: getDeploymentEnvironmentDiagnostics(
+        process.env,
+        env
+      ),
       missing: validation.missing
     },
     {
