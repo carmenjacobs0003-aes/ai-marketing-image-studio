@@ -16,14 +16,14 @@ export type OnboardingStep = {
 export const onboardingSteps: OnboardingStep[] = [
   {
     id: "welcome",
-    title: "Enter the command deck",
-    body: "Tour your neon workspace and learn where projects, brand kits, and generators live.",
+    title: "Open your workspace",
+    body: "Learn where projects, brand kits, and generators live.",
     href: "/dashboard"
   },
   {
     id: "profile",
-    title: "Complete your creator profile",
-    body: "Add a name and notification preferences so SYNTRIX AI can personalize guidance.",
+    title: "Complete your profile",
+    body: "Add your name and notification preferences.",
     href: "/settings"
   },
   {
@@ -34,20 +34,20 @@ export const onboardingSteps: OnboardingStep[] = [
   },
   {
     id: "project",
-    title: "Launch your first project",
-    body: "Create a reusable campaign workspace that connects copy, visuals, and saves.",
+    title: "Create your first project",
+    body: "Create a reusable project for content, visuals, and saved assets.",
     href: "/projects"
   },
   {
     id: "generate",
     title: "Generate your first asset",
-    body: "Use SYNTRIX AI Studio or Marketing to produce a campaign-ready output.",
+    body: "Use Studio or Marketing to generate your first finished asset.",
     href: "/studio"
   },
   {
     id: "publish",
-    title: "Share with the gallery",
-    body: "Publish a reusable prompt and start earning creator activity signals.",
+    title: "Publish to the gallery",
+    body: "Publish a reusable prompt for community discovery.",
     href: "/gallery"
   }
 ];

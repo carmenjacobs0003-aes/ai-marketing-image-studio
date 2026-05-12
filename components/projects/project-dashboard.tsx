@@ -110,14 +110,9 @@ export function ProjectDashboard({
   return (
     <div className="space-y-8">
       <section className="grid gap-6 lg:grid-cols-[420px_1fr]">
-        <form
-          className="space-y-4 glass-card p-5"
-          onSubmit={onSubmit}
-        >
+        <form className="space-y-4 glass-card p-5" onSubmit={onSubmit}>
           <div>
-            <p className="eyebrow">
-              Saved projects
-            </p>
+            <p className="eyebrow">Saved projects</p>
             <h2 className="mt-2 text-2xl font-black">
               {editingId ? "Edit project" : "Create project"}
             </h2>
@@ -208,10 +203,7 @@ export function ProjectDashboard({
         <div className="grid gap-4 md:grid-cols-2">
           {items.length ? (
             items.map((project) => (
-              <article
-                className="glass-card glass-hover p-5"
-                key={project.id}
-              >
+              <article className="glass-card glass-hover p-5" key={project.id}>
                 <div className="flex items-start justify-between gap-3">
                   <h2 className="text-xl font-black">{project.name}</h2>
                   <span className="rounded-full border border-cyan-300/30 px-3 py-1 text-xs font-semibold capitalize text-cyan-100">
@@ -219,7 +211,7 @@ export function ProjectDashboard({
                   </span>
                 </div>
                 <p className="mt-3 text-sm leading-6 text-slate-300">
-                  {project.description ?? "No description yet."}
+                  {project.description ?? "No description added."}
                 </p>
                 <p className="mt-3 text-xs text-cyan-200">
                   Brand:{" "}
@@ -259,16 +251,14 @@ export function ProjectDashboard({
             ))
           ) : (
             <p className="glass-card p-6 text-slate-300 md:col-span-2">
-              No projects yet. Save your first campaign workspace.
+              No projects available. Create one to organize generated assets.
             </p>
           )}
         </div>
       </section>
       <section className="glass-card p-5">
-        <p className="eyebrow">
-          Project history
-        </p>
-        <h2 className="mt-2 text-2xl font-black">Saved content timeline</h2>
+        <p className="eyebrow">Project history</p>
+        <h2 className="mt-2 text-2xl font-black">Saved asset history</h2>
         <div className="mt-5 grid gap-4 lg:grid-cols-2">
           <div className="space-y-3">
             <h3 className="font-black text-cyan-200">Marketing content</h3>
@@ -281,7 +271,7 @@ export function ProjectDashboard({
                 />
               ))
             ) : (
-              <EmptyHistory label="No saved marketing content yet." />
+              <EmptyHistory label="No saved campaign content available." />
             )}
           </div>
           <div className="space-y-3">
@@ -295,7 +285,7 @@ export function ProjectDashboard({
                 />
               ))
             ) : (
-              <EmptyHistory label="No saved images yet." />
+              <EmptyHistory label="No saved images available." />
             )}
           </div>
         </div>

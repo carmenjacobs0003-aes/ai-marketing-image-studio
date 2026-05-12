@@ -40,14 +40,14 @@ export default async function DashboardPage() {
     },
     {
       href: "/marketing",
-      title: "Generate copy",
-      body: "Ship social, email, and SEO content from one neural brief.",
+      title: "Generate content",
+      body: "Generate social, email, and SEO content from one focused brief.",
       icon: Megaphone
     },
     {
       href: "/templates",
       title: "Browse templates",
-      body: "Start from premium reusable campaign systems.",
+      body: "Start from reusable campaign frameworks.",
       icon: Sparkles
     }
   ];
@@ -59,32 +59,32 @@ export default async function DashboardPage() {
           <div className="neon-orb -right-16 top-6 h-56 w-56" />
           <div className="relative z-10 grid gap-6 lg:grid-cols-[1fr_360px] lg:items-end">
             <div>
-              <p className="eyebrow">Dashboard overview</p>
+              <p className="eyebrow">Workspace overview</p>
               <h1 className="mt-3 max-w-4xl text-4xl font-black tracking-tight sm:text-6xl">
-                Welcome back to your black-glass AI command center.
+                Your generation workspace is online.
               </h1>
               <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base">
-                Signed in as {user.email}. Monitor usage, launch generators, and
-                manage every visual, brand kit, template, and subscription from
-                a single futuristic workspace.
+                Signed in as {user.email}. Monitor usage, open generators, and
+                manage visuals, brand kits, templates, and billing from one
+                private workspace.
               </p>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 <Link className="neon-button" href="/studio">
-                  Open SYNTRIX AI <ArrowRight className="ml-2 h-4 w-4" />
+                  Open Studio <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
                 <Link className="ghost-button" href="/billing">
-                  Upgrade capacity
+                  Unlock higher limits
                 </Link>
               </div>
             </div>
             <div className="holo-panel">
-              <p className="eyebrow">Plan signal</p>
+              <p className="eyebrow">Plan status</p>
               <p className="mt-3 text-5xl font-black capitalize text-cyan-300 drop-shadow-[0_0_24px_rgba(34,211,238,0.45)]">
                 {usage.plan}
               </p>
               <p className="mt-3 text-sm leading-6 text-slate-300">
-                Premium indicators highlight locked templates, higher daily
-                limits, and billing status without disrupting the creative flow.
+                Your plan controls generation limits, template access, and
+                billing status.
               </p>
             </div>
           </div>
@@ -118,9 +118,9 @@ export default async function DashboardPage() {
             <p className="mt-2 text-3xl font-black">{projectCount}</p>
           </article>
           <article className="metric-card md:col-span-2">
-            <p className="text-sm text-slate-300">Premium lane</p>
+            <p className="text-sm text-slate-300">Plan access</p>
             <div className="mt-3 flex flex-wrap items-center gap-3">
-              <span className="premium-badge">Upgrade ready</span>
+              <span className="premium-badge">Higher limits available</span>
               <Link
                 className="text-sm font-semibold text-cyan-200 hover:text-white"
                 href="/billing"
@@ -181,11 +181,10 @@ export default async function DashboardPage() {
               ) : (
                 <div className="empty-state">
                   <p className="font-semibold text-white">
-                    Your image gallery is waiting.
+                    No generated images available.
                   </p>
                   <p className="mt-2 text-sm">
-                    Generate your first asset in Studio to populate this
-                    cinematic overview.
+                    Generate a visual in Studio to start your image library.
                   </p>
                 </div>
               )}
@@ -198,7 +197,7 @@ export default async function DashboardPage() {
                 className="text-sm font-semibold text-cyan-300 hover:text-cyan-200"
                 href="/marketing"
               >
-                Generate copy
+                Generate content
               </Link>
             </div>
             <div className="mt-4 space-y-3">
@@ -217,10 +216,11 @@ export default async function DashboardPage() {
                 ))
               ) : (
                 <div className="empty-state">
-                  <p className="font-semibold text-white">No copy yet.</p>
+                  <p className="font-semibold text-white">
+                    No generated campaigns available.
+                  </p>
                   <p className="mt-2 text-sm">
-                    Create a launch brief to fill this area with social, email,
-                    and SEO outputs.
+                    Add a brief to generate social, email, and SEO outputs.
                   </p>
                 </div>
               )}

@@ -20,9 +20,7 @@ export function PricingCards({ currentPlan }: { currentPlan?: AppPlan }) {
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300 to-transparent" />
             <div className="absolute -right-20 -top-24 h-44 w-44 rounded-full bg-cyan-300/20 blur-3xl" />
             {plan.highlighted ? (
-              <span className="premium-badge">
-                Best value
-              </span>
+              <span className="premium-badge">Most popular</span>
             ) : null}
             <h2 className="mt-5 text-3xl font-black text-white">{plan.name}</h2>
             <p className="mt-2 min-h-12 text-sm leading-6 text-slate-300">
@@ -58,10 +56,7 @@ export function PricingCards({ currentPlan }: { currentPlan?: AppPlan }) {
             </ul>
             <div className="mt-8">
               {plan.id === "free" ? (
-                <Link
-                  className="ghost-button w-full"
-                  href="/signup"
-                >
+                <Link className="ghost-button w-full" href="/signup">
                   Start free
                 </Link>
               ) : isCurrent ? (
@@ -72,11 +67,8 @@ export function PricingCards({ currentPlan }: { currentPlan?: AppPlan }) {
                   Current plan
                 </Link>
               ) : (
-                <UpgradeButton
-                  className="neon-button w-full"
-                  plan={plan.id}
-                >
-                  Upgrade with PayPal
+                <UpgradeButton className="neon-button w-full" plan={plan.id}>
+                  Unlock with PayPal
                 </UpgradeButton>
               )}
             </div>

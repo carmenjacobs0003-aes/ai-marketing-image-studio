@@ -26,8 +26,8 @@ export default function LoginPage({
             Log in to SYNTRIX AI
           </h1>
           <p className="text-sm leading-6 text-slate-300">
-            Enter the neural workspace for protected campaigns, image history,
-            brand assets, and admin tools.
+            Access your private workspace for campaigns, image history, brand
+            assets, and billing.
           </p>
         </div>
         {searchParams.message ? (

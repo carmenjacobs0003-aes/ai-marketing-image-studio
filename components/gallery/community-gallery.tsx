@@ -41,7 +41,7 @@ function outputPreview(output: GalleryItem["marketing_output"]) {
     if ("text" in output && typeof output.text === "string") return output.text;
     return JSON.stringify(output, null, 2);
   }
-  return "Reusable marketing generation";
+  return "Reusable campaign generation";
 }
 
 function buildQuery(params: Record<string, string | number | undefined>) {
@@ -120,7 +120,7 @@ function GalleryCard({ item }: { item: GalleryItem }) {
         payload.favorited ? "Added to favorites." : "Removed from favorites."
       );
     } else {
-      setStatus("Sign in to favorite community assets.");
+      setStatus("Sign in to save favorites.");
     }
   }
 
@@ -139,7 +139,7 @@ function GalleryCard({ item }: { item: GalleryItem }) {
   }
 
   async function report() {
-    const reason = window.prompt("Why should moderators review this item?");
+    const reason = window.prompt("What should moderators review?");
     if (!reason) return;
     const response = await fetch(`/api/gallery/items/${item.id}/report`, {
       method: "POST",
@@ -176,7 +176,7 @@ function GalleryCard({ item }: { item: GalleryItem }) {
         </div>
       ) : (
         <div className="min-h-56 border-b border-white/10 bg-black/70 p-5">
-          <p className="eyebrow">Marketing generation</p>
+          <p className="eyebrow">Campaign generation</p>
           <pre className="mt-3 line-clamp-[8] whitespace-pre-wrap text-sm leading-6 text-slate-200">
             {outputPreview(item.marketing_output)}
           </pre>
@@ -295,19 +295,18 @@ export function CommunityGallery(props: CommunityGalleryProps) {
               Sign in
             </Link>
             <Link className="neon-button px-4 py-2 text-sm" href="/signup">
-              Publish yours
+              Publish work
             </Link>
           </div>
         </nav>
         <header className="page-hero">
-          <p className="eyebrow">Community marketplace</p>
+          <p className="eyebrow">Gallery</p>
           <h1 className="mt-3 max-w-4xl text-4xl font-black tracking-tight sm:text-6xl">
-            Reusable AI content gallery for futuristic campaign teams.
+            Reusable prompts and generated assets for campaign teams.
           </h1>
           <p className="mt-4 max-w-3xl text-slate-300">
-            Discover public images, marketing generations, reusable prompts,
-            creator profiles, remix-ready ideas, favorites, reports, and project
-            saves backed by Supabase gallery metadata.
+            Discover public visuals, campaign generations, reusable prompts,
+            creator profiles, and remix-ready ideas.
           </p>
         </header>
         <form
@@ -359,11 +358,12 @@ export function CommunityGallery(props: CommunityGalleryProps) {
             className="empty-state border-amber-300/35 bg-amber-300/[0.06] text-amber-100"
             role="status"
           >
-            <p className="font-black">Community gallery fallback is active.</p>
+            <p className="font-black">
+              Gallery data is temporarily unavailable.
+            </p>
             <p className="mt-2 text-sm leading-6">
-              Live Supabase gallery data could not be loaded quickly, so the
-              page is showing a safe empty state instead of blocking the
-              storefront. Details: {props.loadError}
+              Live gallery data could not be loaded quickly. Details:{" "}
+              {props.loadError}
             </p>
           </div>
         ) : null}
@@ -379,12 +379,12 @@ export function CommunityGallery(props: CommunityGalleryProps) {
           <p className="empty-state">
             {props.loadError
               ? "Gallery content is temporarily unavailable. Please refresh in a moment or try again from the dashboard."
-              : "No public gallery items match this search yet."}
+              : "No public gallery items match this search."}
           </p>
         ) : null}
         <div className="flex flex-col items-center gap-3 pb-10 text-sm text-slate-400">
           <p>
-            Showing {props.items.length} of {props.total} community assets.
+            Showing {props.items.length} of {props.total} gallery items.
           </p>
           {props.hasMore ? (
             <Link

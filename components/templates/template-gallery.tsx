@@ -9,10 +9,10 @@ import {
 import { isPaidPlan } from "@/lib/billing/plans";
 
 const labels: Record<TemplateCategory, string> = {
-  social: "Social templates",
-  email: "Email templates",
-  seo: "SEO templates",
-  industry: "Industry presets"
+  social: "Social",
+  email: "Email",
+  seo: "SEO",
+  industry: "Industry"
 };
 
 export function TemplateGallery({ plan = "free" }: { plan?: AppPlan }) {
@@ -21,10 +21,7 @@ export function TemplateGallery({ plan = "free" }: { plan?: AppPlan }) {
   return (
     <section className="grid gap-5 lg:grid-cols-2">
       {(Object.keys(labels) as TemplateCategory[]).map((category) => (
-        <div
-          className="glass-card p-5"
-          key={category}
-        >
+        <div className="glass-card p-5" key={category}>
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-cyan-300">
             {labels[category]}
           </p>
@@ -52,9 +49,7 @@ export function TemplateGallery({ plan = "free" }: { plan?: AppPlan }) {
                             {template.name}
                           </h2>
                           {template.premium ? (
-                            <span className="premium-badge">
-                              Pro
-                            </span>
+                            <span className="premium-badge">Pro</span>
                           ) : null}
                         </div>
                         <p className="mt-2 text-sm leading-6 text-slate-300">
@@ -80,7 +75,7 @@ export function TemplateGallery({ plan = "free" }: { plan?: AppPlan }) {
                         className="mt-4 inline-flex rounded-full border border-cyan-300/40 px-3 py-2 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/10"
                         href="/pricing"
                       >
-                        Upgrade to unlock premium template
+                        Unlock advanced template
                       </Link>
                     ) : null}
                   </article>

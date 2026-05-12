@@ -18,22 +18,22 @@ export const billingPlans: BillingPlan[] = [
   {
     id: "free",
     name: "Free",
-    tagline: "Validate campaigns before you scale.",
+    tagline: "Start with essential daily generations.",
     price: "$0",
     cadence: "forever",
     dailyMarketingGenerations: 5,
     dailyImageGenerations: 3,
     features: [
-      "5 marketing generations/day",
+      "5 content generations/day",
       "3 image generations/day",
-      "Core campaign workspace",
+      "Private creative workspace",
       "Standard generation queue"
     ]
   },
   {
     id: "pro",
     name: "Pro",
-    tagline: "High-output content engine for growing teams.",
+    tagline: "Higher limits for active production.",
     price: "$29",
     cadence: "per month",
     paypalPlanId: env.PAYPAL_PRO_PLAN_ID,
@@ -41,25 +41,25 @@ export const billingPlans: BillingPlan[] = [
     dailyImageGenerations: 50,
     highlighted: true,
     features: [
-      "50 marketing generations/day",
+      "50 content generations/day",
       "50 image generations/day",
-      "Premium templates",
-      "Faster generations"
+      "Advanced templates",
+      "Faster generation queue"
     ]
   },
   {
     id: "agency",
     name: "Agency",
-    tagline: "Production-ready limits for client delivery.",
+    tagline: "Expanded usage for client work.",
     price: "$99",
     cadence: "per month",
     paypalPlanId: env.PAYPAL_AGENCY_PLAN_ID,
     dailyMarketingGenerations: null,
     dailyImageGenerations: null,
     features: [
-      "Fair-use marketing generations",
+      "Fair-use content generations",
       "Fair-use image generations",
-      "Team-ready limits",
+      "Client-ready limits",
       "Priority processing"
     ]
   }

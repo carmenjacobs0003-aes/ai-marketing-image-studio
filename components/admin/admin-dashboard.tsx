@@ -261,10 +261,10 @@ export function AdminDashboard({ data, query = "", status = "all", updateUserAct
                   <p className="text-xs font-black uppercase tracking-[0.18em] text-white">{incident.label} · {incident.value}</p>
                   <p className="mt-1 text-sm text-slate-300">{incident.detail}</p>
                 </div>
-              )) : <p className="empty-state text-sm">All production diagnostics are clear. SYNTRIX AI monitoring is launch-ready.</p>}
+              )) : <p className="empty-state text-sm">All production diagnostics are clear. SYNTRIX AI monitoring is ready.</p>}
             </div>
           </Panel>
-          <Panel title="Audit logging" eyebrow="Operator trail" icon={<BarChart3 className="h-6 w-6 text-cyan-300" />}>
+          <Panel title="Audit logging" eyebrow="Audit trail" icon={<BarChart3 className="h-6 w-6 text-cyan-300" />}>
             <div className="space-y-3">
               {data.auditLogs.map((log) => (
                 <div className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/[0.035] p-3 sm:flex-row sm:items-center sm:justify-between" key={log.id}>
@@ -275,7 +275,7 @@ export function AdminDashboard({ data, query = "", status = "all", updateUserAct
                   <Badge>{log.severity} · {dateTime(log.created_at)}</Badge>
                 </div>
               ))}
-              {!data.auditLogs.length ? <p className="empty-state text-sm">No audit events yet. Admin actions will appear here.</p> : null}
+              {!data.auditLogs.length ? <p className="empty-state text-sm">No audit events available. Admin actions will appear here.</p> : null}
             </div>
           </Panel>
         </section>

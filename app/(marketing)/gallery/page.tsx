@@ -59,9 +59,9 @@ async function signGalleryItems(items: GalleryItem[]) {
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Community Gallery | SYNTRIX AI",
+  title: "Gallery | SYNTRIX AI",
   description:
-    "Browse reusable AI images, marketing generations, prompts, and creator profiles."
+    "Browse reusable AI visuals, campaign generations, prompts, and creator profiles."
 };
 
 export default async function GalleryPage({ searchParams }: GalleryPageProps) {

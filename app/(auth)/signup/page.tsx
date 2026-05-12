@@ -21,12 +21,12 @@ export default function SignupPage({
             className="justify-center sm:justify-start"
             imageClassName="h-12"
           />
-          <p className="eyebrow">Start creating</p>
+          <p className="eyebrow">Create account</p>
           <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
             Create your SYNTRIX AI account
           </h1>
           <p className="text-sm leading-6 text-slate-300">
-            Launch a premium black-glass workspace for AI visuals, copy, brand
+            Create a private workspace for AI visuals, campaign content, brand
             systems, projects, and billing.
           </p>
         </div>

@@ -44,7 +44,7 @@ function getFriendlyMarketingError(message?: string, status?: number) {
     status === 429 ||
     /429|rate limit|too many requests|too many/i.test(message ?? "")
   ) {
-    return "Generation capacity is temporarily busy. Please retry in a moment.";
+    return "Generation queue is temporarily busy. Please retry in a moment.";
   }
 
   if (
@@ -62,7 +62,7 @@ function getFriendlyMarketingError(message?: string, status?: number) {
   if (/quota|limit reached|daily marketing limit/.test(normalized)) {
     return (
       message ??
-      "Daily marketing capacity is reached. Upgrade your plan or retry tomorrow."
+      "Daily content limit reached. Unlock higher generation limits or retry tomorrow."
     );
   }
 
@@ -94,7 +94,7 @@ const contentTypes: Array<{
 }> = [
   {
     value: "complete_marketing_pack",
-    label: "Complete marketing pack",
+    label: "Complete campaign pack",
     description: "Social posts, email outreach, and SEO blog content."
   },
   {
@@ -296,7 +296,7 @@ export function MarketingGenerator({
             : item
         )
       );
-      setSuccessMessage("Marketing content project updated.");
+      setSuccessMessage("Campaign content project updated.");
     } catch (saveError) {
       setError(
         getFriendlyMarketingError(
@@ -370,7 +370,7 @@ export function MarketingGenerator({
         );
         setPrompt("");
         setSuccessMessage(
-          "Marketing content generated and saved to your project history."
+          "Campaign content generated and saved to your library."
         );
         if (payload.usage) {
           setUsage(payload.usage);
@@ -398,11 +398,11 @@ export function MarketingGenerator({
           <div>
             <p className="eyebrow">Marketing</p>
             <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
-              Generate campaign content
+              Generate campaign assets
             </h1>
             <p className="mt-3 text-sm leading-6 text-slate-300">
-              Create social posts, email outreach, and SEO blog content with
-              plan checks, safety moderation, and usage tracking.
+              Create social posts, email outreach, and SEO content from a
+              focused brief.
             </p>
           </div>
           <div className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
@@ -472,7 +472,7 @@ export function MarketingGenerator({
                       value={template.id}
                     >
                       {template.name} · {template.category}
-                      {template.premium ? " · premium" : ""}
+                      {template.premium ? " · advanced" : ""}
                       {locked ? " · upgrade required" : ""}
                     </option>
                   );
@@ -481,9 +481,9 @@ export function MarketingGenerator({
             </label>
             {!canUsePremiumTemplates ? (
               <p className="rounded-xl border border-cyan-300/20 bg-black p-3 text-xs text-cyan-100">
-                Premium templates are locked on Free.{" "}
+                Advanced templates are locked on Free.{" "}
                 <Link className="font-semibold underline" href="/pricing">
-                  Upgrade to Pro or Agency
+                  Unlock Pro or Agency
                 </Link>
                 .
               </p>
@@ -554,8 +554,8 @@ export function MarketingGenerator({
             ) : null}
             {limitReached ? (
               <p className="rounded-xl border border-cyan-300/20 bg-black p-3 text-sm text-cyan-100">
-                Daily marketing limit reached. Upgrade your plan for more
-                capacity.
+                Daily content limit reached. Unlock higher generation limits to
+                continue.
               </p>
             ) : null}
             {isLoading ? (
@@ -566,12 +566,12 @@ export function MarketingGenerator({
                 <div className="flex items-center gap-3">
                   <span className="h-3 w-3 animate-ping rounded-full bg-cyan-300 shadow-[0_0_18px_rgba(34,211,238,0.9)]" />
                   <span className="font-semibold">
-                    Building your campaign pack…
+                    Generating your campaign pack…
                   </span>
                 </div>
                 <p className="mt-2 text-xs leading-5 text-slate-300">
-                  We’re checking the brief, matching brand context, and saving
-                  the finished copy to your library.
+                  SYNTRIX AI is checking the brief, applying brand context, and
+                  saving the finished content.
                 </p>
               </div>
             ) : null}
@@ -589,7 +589,7 @@ export function MarketingGenerator({
                 ) : cooldownRemainingSeconds > 0 ? (
                   `Retry in ${cooldownRemainingSeconds}s`
                 ) : (
-                  "Generate marketing"
+                  "Generate content"
                 )}
               </button>
             </div>
@@ -602,7 +602,7 @@ export function MarketingGenerator({
                 Library
               </p>
               <h2 className="text-2xl font-black sm:text-3xl">
-                Recent marketing generations
+                Recent campaign generations
               </h2>
             </div>
             {isLoading ? (
@@ -676,8 +676,8 @@ export function MarketingGenerator({
             })
           ) : (
             <p className="empty-state">
-              No marketing generations yet. Add a brief to create your first
-              social, email, and SEO pack.
+              No generated campaigns available. Add a brief to create a social,
+              email, and SEO pack.
             </p>
           )}
         </section>

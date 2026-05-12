@@ -93,7 +93,7 @@ function defaultNotifications(email?: string | null): AppNotification[] {
       kind: "welcome",
       tone: "success",
       title: "Welcome to SYNTRIX AI",
-      body: `Your black-glass command center is ready${email ? ` for ${email}` : ""}. Start with onboarding to unlock guided creation.`,
+      body: `Your generation workspace is online${email ? ` for ${email}` : ""}. Start setup to prepare your first generation.`,
       href: "/dashboard?onboarding=1",
       createdAt: now,
       read: false
@@ -103,7 +103,7 @@ function defaultNotifications(email?: string | null): AppNotification[] {
       kind: "profile_completion",
       tone: "info",
       title: "Complete your profile",
-      body: "Tune notifications, email digest settings, and creator preferences.",
+      body: "Set notifications, email digests, and creator preferences.",
       href: "/settings",
       createdAt: now,
       read: false
@@ -112,8 +112,8 @@ function defaultNotifications(email?: string | null): AppNotification[] {
       id: "achievement-placeholders",
       kind: "achievement",
       tone: "info",
-      title: "Badges are warming up",
-      body: "First project, first save, and first gallery interaction badges are ready to activate.",
+      title: "Achievements are being prepared",
+      body: "First project, first save, and gallery activity achievements will appear here.",
       href: "/settings#achievements",
       createdAt: now,
       read: true
@@ -137,8 +137,8 @@ function buildUsageNotifications(usage?: UsageSummary): AppNotification[] {
       id: `usage-images-${usage.usageDate}`,
       kind: "usage_warning",
       tone: usage.imageGenerations >= imageLimit ? "error" : "warning",
-      title: "Image usage is near capacity",
-      body: `${usage.imageGenerations}/${imageLimit} daily image generations used. Upgrade for more creative bandwidth.`,
+      title: "Image usage is near limit",
+      body: `${usage.imageGenerations}/${imageLimit} daily image generations used. Unlock higher generation limits to continue.`,
       href: "/billing",
       createdAt: now,
       read: false
@@ -154,8 +154,8 @@ function buildUsageNotifications(usage?: UsageSummary): AppNotification[] {
       id: `usage-marketing-${usage.usageDate}`,
       kind: "usage_warning",
       tone: usage.marketingGenerations >= marketingLimit ? "error" : "warning",
-      title: "Marketing usage is near capacity",
-      body: `${usage.marketingGenerations}/${marketingLimit} daily marketing generations used. Upgrade to keep campaigns moving.`,
+      title: "Content usage is near limit",
+      body: `${usage.marketingGenerations}/${marketingLimit} daily content generations used. Unlock higher limits to continue.`,
       href: "/billing",
       createdAt: now,
       read: false
@@ -167,8 +167,8 @@ function buildUsageNotifications(usage?: UsageSummary): AppNotification[] {
       id: `upgrade-free-${usage.usageDate}`,
       kind: "upgrade",
       tone: "info",
-      title: "Unlock the Pro creation lane",
-      body: "Higher limits, premium templates, and team-ready campaign workflows are available on Pro.",
+      title: "Unlock higher generation limits",
+      body: "Higher limits and advanced templates are available on Pro.",
       href: "/billing",
       createdAt: now,
       read: true
@@ -300,7 +300,7 @@ export function NotificationProvider({
             notify({
               kind: "gallery_interaction",
               tone: "success",
-              title: "Gallery signal recorded",
+              title: "Gallery activity recorded",
               body: "Interaction notifications keep creators informed in real time.",
               href: "/gallery"
             });
