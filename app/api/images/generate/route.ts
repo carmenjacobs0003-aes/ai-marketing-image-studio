@@ -32,9 +32,11 @@ import { logCentralizedError } from "@/lib/monitoring/errors";
 import { enforcePromptProtection } from "@/lib/security/abuse";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
+  DEFAULT_STALE_IMAGE_GENERATION_TIMEOUT_MS,
   createImageGeneration,
   listBrandKits,
   listProjects,
+  recoverStaleImageGenerations,
   updateImageGeneration,
   type BrandKit,
   type Project
@@ -318,6 +320,41 @@ function getInternalFailureMessage(error: unknown) {
   }
 
   return sanitizeErrorMessage(String(error || "Image generation failed."));
+}
+
+function getStaleImageGenerationRecoveryTimeoutMs() {
+  return Math.max(
+    DEFAULT_STALE_IMAGE_GENERATION_TIMEOUT_MS,
+    env.API_TIMEOUT_SECONDS * 2 * 1000
+  );
+}
+
+async function recoverStaleImageGenerationsForRequest(
+  supabase: ReturnType<typeof createSupabaseServerClient>,
+  request: NextRequest,
+  userId: string
+) {
+  try {
+    const result = await recoverStaleImageGenerations(supabase, {
+      userId,
+      staleAfterMs: getStaleImageGenerationRecoveryTimeoutMs()
+    });
+
+    if (result.recovered > 0) {
+      logger.warn("Recovered stale image generations before new request", {
+        ...getRequestLogContext(request),
+        userId,
+        recovered: result.recovered,
+        cutoff: result.cutoff
+      });
+    }
+  } catch (error) {
+    logger.error("Stale image generation recovery failed before new request", {
+      ...getRequestLogContext(request),
+      userId,
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
 }
 
 function getErrorStatus(error: unknown, openAIStatus?: number) {
@@ -624,6 +661,9 @@ export async function POST(request: NextRequest) {
       hasSupabaseAnonKey: Boolean(env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
       hasSupabaseServiceRoleKey: Boolean(env.SUPABASE_SERVICE_ROLE_KEY)
     });
+
+    currentStep = "stale_generation_recovery";
+    await recoverStaleImageGenerationsForRequest(supabase, request, user.id);
 
     currentStep = "supabase_prerequisites";
     const [projects, brandKits] = await Promise.all([
