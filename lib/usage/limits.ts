@@ -106,10 +106,7 @@ export async function assertCanUse(
     return {
       allowed: false,
       usage,
-      reason:
-        kind === "marketing_generations"
-          ? "Daily marketing generation limit reached"
-          : "Daily image generation limit reached"
+      reason: "AI generation limit reached"
     };
   }
 

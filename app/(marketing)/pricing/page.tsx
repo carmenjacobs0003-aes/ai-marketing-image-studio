@@ -19,8 +19,8 @@ export default async function PricingPage() {
             Simple plans for AI campaign generation.
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-300">
-            Choose monthly image and marketing generation limits with secure
-            PayPal billing.
+            Choose a shared monthly AI generation allowance with secure PayPal
+            billing.
           </p>
           <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
             <Link className="neon-button" href={user ? "/billing" : "/signup"}>
@@ -43,7 +43,8 @@ export default async function PricingPage() {
             <div>
               <h2 className="text-xl font-black text-cyan-300">Clear limits</h2>
               <p className="mt-2 text-sm leading-6 text-slate-300">
-                Image and marketing generations are shown plainly for each plan.
+                Each plan shows one shared monthly allowance for image or
+                marketing generations.
               </p>
             </div>
             <div>

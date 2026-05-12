@@ -9,6 +9,7 @@ import {
   listMarketingGenerations
 } from "@/lib/db/queries";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getBillingPlan } from "@/lib/billing/plans";
 import { getUsageSummary } from "@/lib/usage/limits";
 import { OnboardingFlow } from "@/components/onboarding/onboarding-flow";
 
@@ -30,6 +31,10 @@ export default async function DashboardPage() {
     listImageGenerations(supabase, user.id, 5),
     listMarketingGenerations(supabase, user.id, 5)
   ]);
+
+  const currentPlan = getBillingPlan(profile?.plan ?? usage.plan);
+  const totalGenerationsUsed =
+    usage.imageGenerations + usage.marketingGenerations;
 
   const quickActions = [
     {
@@ -101,17 +106,18 @@ export default async function DashboardPage() {
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           <article className="metric-card">
-            <p className="text-sm text-slate-300">Daily images</p>
-            <p className="mt-2 text-3xl font-black">
-              {usage.imageGenerations}/{usage.imageGenerationLimit ?? "∞"}
+            <p className="text-sm text-slate-300">AI generations today</p>
+            <p className="mt-2 text-3xl font-black">{totalGenerationsUsed}</p>
+            <p className="mt-1 text-xs text-slate-400">
+              Images and marketing combined
             </p>
           </article>
           <article className="metric-card">
-            <p className="text-sm text-slate-300">Daily marketing</p>
+            <p className="text-sm text-slate-300">Monthly AI Generations</p>
             <p className="mt-2 text-3xl font-black">
-              {usage.marketingGenerations}/
-              {usage.marketingGenerationLimit ?? "∞"}
+              {currentPlan.monthlyAiGenerations}
             </p>
+            <p className="mt-1 text-xs text-slate-400">Shared monthly pool</p>
           </article>
           <article className="metric-card">
             <p className="text-sm text-slate-300">Projects</p>

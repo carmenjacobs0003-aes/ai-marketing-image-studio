@@ -137,8 +137,8 @@ function buildUsageNotifications(usage?: UsageSummary): AppNotification[] {
       id: `usage-images-${usage.usageDate}`,
       kind: "usage_warning",
       tone: usage.imageGenerations >= imageLimit ? "error" : "warning",
-      title: "Image usage is near limit",
-      body: `${usage.imageGenerations}/${imageLimit} daily image generations used. Unlock higher generation limits to continue.`,
+      title: "AI generation usage is near limit",
+      body: `${usage.imageGenerations}/${imageLimit} AI generations used today. Your allowance is shared across images and marketing.`,
       href: "/billing",
       createdAt: now,
       read: false
@@ -154,8 +154,8 @@ function buildUsageNotifications(usage?: UsageSummary): AppNotification[] {
       id: `usage-marketing-${usage.usageDate}`,
       kind: "usage_warning",
       tone: usage.marketingGenerations >= marketingLimit ? "error" : "warning",
-      title: "Content usage is near limit",
-      body: `${usage.marketingGenerations}/${marketingLimit} daily content generations used. Unlock higher limits to continue.`,
+      title: "AI generation usage is near limit",
+      body: `${usage.marketingGenerations}/${marketingLimit} AI generations used today. Your allowance is shared across images and marketing.`,
       href: "/billing",
       createdAt: now,
       read: false

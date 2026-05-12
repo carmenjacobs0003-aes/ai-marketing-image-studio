@@ -34,14 +34,14 @@ export function PricingCards({ currentPlan }: { currentPlan?: AppPlan }) {
             </div>
             <dl className="mt-6 rounded-2xl border border-white/10 bg-black/50 p-4 text-sm">
               <dt className="font-semibold text-slate-300">
-                Monthly Generation Limits
+                Monthly AI Generations
               </dt>
-              <dd className="mt-3 grid grid-cols-2 gap-3">
+              <dd className="mt-3">
                 <span className="font-black text-white">
-                  Images: {formatPlanLimit(plan.monthlyImageGenerations)}
+                  {formatPlanLimit(plan.monthlyAiGenerations)} AI generations/month
                 </span>
-                <span className="font-black text-white">
-                  Marketing: {formatPlanLimit(plan.monthlyMarketingGenerations)}
+                <span className="mt-2 block text-xs leading-5 text-slate-400">
+                  Use them for images, marketing, or any combination of both.
                 </span>
               </dd>
             </dl>
