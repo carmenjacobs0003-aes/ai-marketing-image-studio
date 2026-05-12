@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { env, validateProductionEnv } from "@/lib/env";
+import { env, getRedisEnv, validateProductionEnv } from "@/lib/env";
 import { summarizeDiagnostics } from "@/lib/monitoring/diagnostics";
 
 export const dynamic = "force-dynamic";
@@ -27,9 +27,7 @@ function healthPayload() {
         env.NEXT_PUBLIC_SUPABASE_URL && env.NEXT_PUBLIC_SUPABASE_ANON_KEY
       ),
       supabaseAdmin: Boolean(env.SUPABASE_SERVICE_ROLE_KEY),
-      redis: Boolean(
-        env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN
-      ),
+      redis: getRedisEnv(env).configured,
       sentry: false,
       openai: Boolean(env.OPENAI_API_KEY),
       paypal: Boolean(env.PAYPAL_CLIENT_ID && env.PAYPAL_CLIENT_SECRET),

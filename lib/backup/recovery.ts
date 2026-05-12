@@ -1,4 +1,4 @@
-import { env } from "@/lib/env";
+import { env, getRedisEnv } from "@/lib/env";
 import { summarizeDiagnostics } from "@/lib/monitoring/diagnostics";
 
 export type RecoveryStep = {
@@ -48,8 +48,6 @@ export function getRecoveryReadinessReport() {
     generatedAt: new Date().toISOString(),
     diagnostics,
     backupGuidance: getDatabaseBackupGuidance(),
-    launchReady:
-      diagnostics.status !== "fail" &&
-      Boolean(env.UPSTASH_REDIS_REST_URL)
+    launchReady: diagnostics.status !== "fail" && getRedisEnv(env).configured
   };
 }

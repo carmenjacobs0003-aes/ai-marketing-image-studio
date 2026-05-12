@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { env, validateProductionEnv } from "@/lib/env";
+import { env, getRedisEnv, validateProductionEnv } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
@@ -29,9 +29,7 @@ export function GET() {
           env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
           env.SUPABASE_SERVICE_ROLE_KEY
         ),
-        redis: Boolean(
-          env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN
-        ),
+        redis: getRedisEnv(env).configured,
         openai: Boolean(env.OPENAI_API_KEY),
         sentry: false,
         paypal: paypalReady

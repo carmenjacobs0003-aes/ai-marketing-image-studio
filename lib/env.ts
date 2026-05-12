@@ -44,6 +44,8 @@ const baseEnvSchema = z.object({
   PAYPAL_AGENCY_PLAN_ID: z.string().optional(),
   UPSTASH_REDIS_REST_URL: z.string().url().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
+  KV_REST_API_URL: z.string().url().optional(),
+  KV_REST_API_TOKEN: z.string().optional(),
   SENTRY_AUTH_TOKEN: z.string().optional(),
   SENTRY_ORG: z.string().optional(),
   SENTRY_PROJECT: z.string().optional(),
@@ -58,14 +60,22 @@ export const productionRequiredKeys = [
   "NEXT_PUBLIC_SUPABASE_ANON_KEY",
   "SUPABASE_SERVICE_ROLE_KEY",
   "OPENAI_API_KEY",
-  "UPSTASH_REDIS_REST_URL",
-  "UPSTASH_REDIS_REST_TOKEN",
   "PAYPAL_CLIENT_ID",
   "PAYPAL_CLIENT_SECRET",
   "NEXT_PUBLIC_PAYPAL_CLIENT_ID",
   "PAYPAL_WEBHOOK_ID",
   "PAYPAL_PRO_PLAN_ID",
   "PAYPAL_AGENCY_PLAN_ID"
+] as const;
+
+export const redisRequiredKeys = [
+  "UPSTASH_REDIS_REST_URL",
+  "UPSTASH_REDIS_REST_TOKEN"
+] as const;
+
+export const redisVercelKvAliasKeys = [
+  "KV_REST_API_URL",
+  "KV_REST_API_TOKEN"
 ] as const;
 
 export const paypalLiveRequiredKeys = [
@@ -87,10 +97,44 @@ export function shouldEnforceProductionEnv(values = process.env) {
   );
 }
 
+export function getRedisEnv(
+  values: Pick<
+    AppEnv,
+    | "UPSTASH_REDIS_REST_URL"
+    | "UPSTASH_REDIS_REST_TOKEN"
+    | "KV_REST_API_URL"
+    | "KV_REST_API_TOKEN"
+  >
+) {
+  const url = values.UPSTASH_REDIS_REST_URL ?? values.KV_REST_API_URL;
+  const token = values.UPSTASH_REDIS_REST_TOKEN ?? values.KV_REST_API_TOKEN;
+  const source = values.UPSTASH_REDIS_REST_URL
+    ? "upstash"
+    : values.KV_REST_API_URL
+      ? "vercel-kv-alias"
+      : null;
+
+  return {
+    url,
+    token,
+    source,
+    configured: Boolean(url && token),
+    missing: [
+      ...(!url ? ["UPSTASH_REDIS_REST_URL"] : []),
+      ...(!token ? ["UPSTASH_REDIS_REST_TOKEN"] : [])
+    ]
+  };
+}
+
 export function validateProductionEnv(values: AppEnv) {
   const missing: string[] = productionRequiredKeys.filter(
     (key) => !values[key]
   );
+  const redisEnv = getRedisEnv(values);
+
+  if (!redisEnv.configured) {
+    missing.push(...redisEnv.missing);
+  }
 
   if (values.PAYPAL_ENV === "live") {
     missing.push(...paypalLiveRequiredKeys.filter((key) => !values[key]));
@@ -98,7 +142,7 @@ export function validateProductionEnv(values: AppEnv) {
 
   return {
     valid: missing.length === 0,
-    missing
+    missing: Array.from(new Set(missing))
   };
 }
 
@@ -106,9 +150,14 @@ function parseEnv() {
   const parsed = envSchema.parse(process.env);
   const productionValidation = validateProductionEnv(parsed);
 
-  if (shouldEnforceProductionEnv() && !productionValidation.valid) {
+  const blockingMissing = productionValidation.missing.filter(
+    (key) =>
+      !redisRequiredKeys.includes(key as (typeof redisRequiredKeys)[number])
+  );
+
+  if (shouldEnforceProductionEnv() && blockingMissing.length > 0) {
     throw new Error(
-      `Missing production environment variables: ${productionValidation.missing.join(", ")}`
+      `Missing production environment variables: ${blockingMissing.join(", ")}`
     );
   }
 

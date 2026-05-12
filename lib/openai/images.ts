@@ -243,10 +243,20 @@ export async function createMarketingImage({
     { label: "openai.image_generation" }
   ).catch(async (error) => {
     const status = getOpenAIStatus(error);
+    const message = normalizeFailureMessage("OpenAI image generation", error);
+
+    logger.error("OpenAI image generation request failed", {
+      model,
+      size,
+      quality,
+      status,
+      error: message
+    });
+
     await logCentralizedError(error, {
       category: "openai",
       provider: "openai",
-      message: normalizeFailureMessage("OpenAI image generation", error),
+      message,
       severity: "critical",
       context: { model, size, quality, status }
     }).catch((loggingError) => {
@@ -261,7 +271,7 @@ export async function createMarketingImage({
             : "Unknown centralized logging failure"
       });
     });
-    throw new Error(normalizeFailureMessage("OpenAI image generation", error));
+    throw new Error(message);
   });
 }
 
