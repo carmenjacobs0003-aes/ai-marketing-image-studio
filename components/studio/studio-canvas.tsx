@@ -21,6 +21,54 @@ type GeneratedImageResponse = {
   storagePath: string;
 };
 
+type ImageGenerationApiResponse =
+  | ({ success: true } & GeneratedImageResponse)
+  | {
+      success: false;
+      error?: string;
+      usage?: UsageSummary;
+    };
+
+function getGenerationErrorMessage(status: number, message?: string) {
+  if (status === 401) {
+    return "Please sign in again before generating an image.";
+  }
+
+  if (status === 429) {
+    return (
+      message ??
+      "Image generation is busy right now. Please wait a moment and try again."
+    );
+  }
+
+  if (status === 503) {
+    return message ?? "Image generation is temporarily unavailable.";
+  }
+
+  if (status >= 500) {
+    return "We could not generate your image right now. Please try again shortly.";
+  }
+
+  return (
+    message ??
+    "Unable to generate image. Please review your prompt and try again."
+  );
+}
+
+async function readGenerationResponse(response: Response) {
+  const text = await response.text();
+
+  if (!text.trim()) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(text) as ImageGenerationApiResponse;
+  } catch {
+    return null;
+  }
+}
+
 export function StudioCanvas({
   projects,
   brandKits,
@@ -61,11 +109,16 @@ export function StudioCanvas({
           brandKitId: brandKitId || undefined
         })
       });
-      const payload = await response.json();
+      const payload = await readGenerationResponse(response);
 
-      if (!response.ok) {
-        setError(payload.error ?? "Unable to generate image.");
-        if (payload.usage) {
+      if (!response.ok || !payload || !payload.success) {
+        setError(
+          getGenerationErrorMessage(
+            response.status,
+            payload && !payload.success ? payload.error : undefined
+          )
+        );
+        if (payload && !payload.success && payload.usage) {
           setUsage(payload.usage);
         }
         return;
