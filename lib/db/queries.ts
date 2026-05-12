@@ -46,7 +46,7 @@ export async function upsertProfile(
     .from("profiles")
     .upsert(profile, { onConflict: "id" })
     .select("*")
-    .Single();;
+    .single();
 
   return requireDatabaseData(data, error, "Unable to save profile");
 }
@@ -283,6 +283,7 @@ export async function createImageGeneration(
   const { data, error } = await supabase
     .from("image_generations")
     .insert(generation)
+    .limit(1)
     .select("*")
     .maybeSingle();
 
@@ -300,6 +301,7 @@ export async function updateImageGeneration(
     .update(updates)
     .eq("id", id)
     .eq("user_id", userId)
+    .limit(1)
     .select("*")
     .maybeSingle();
 
@@ -328,8 +330,9 @@ export async function createMarketingGeneration(
   const { data, error } = await supabase
     .from("marketing_generations")
     .insert(generation)
+    .limit(1)
     .select("*")
-    .single();
+    .maybeSingle();
 
   return requireDatabaseData(
     data,
@@ -349,8 +352,9 @@ export async function updateMarketingGeneration(
     .update(updates)
     .eq("id", id)
     .eq("user_id", userId)
+    .limit(1)
     .select("*")
-    .single();
+    .maybeSingle();
 
   return requireDatabaseData(
     data,
