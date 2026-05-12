@@ -223,8 +223,9 @@ export type Database = {
           status: "queued" | "processing" | "completed" | "failed";
           storage_path: string | null;
           signed_url: string | null;
+          image_url: string | null;
           error_message: string | null;
-          metadata: Json;
+          metadata: Json | null;
           created_at: string;
           updated_at: string;
         };
@@ -238,8 +239,9 @@ export type Database = {
           status?: "queued" | "processing" | "completed" | "failed";
           storage_path?: string | null;
           signed_url?: string | null;
+          image_url?: string | null;
           error_message?: string | null;
-          metadata?: Json;
+          metadata?: Json | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -249,8 +251,9 @@ export type Database = {
           status?: "queued" | "processing" | "completed" | "failed";
           storage_path?: string | null;
           signed_url?: string | null;
+          image_url?: string | null;
           error_message?: string | null;
-          metadata?: Json;
+          metadata?: Json | null;
           updated_at?: string;
         };
         Relationships: [];
