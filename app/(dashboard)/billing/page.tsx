@@ -63,15 +63,14 @@ export default async function BillingPage({
           <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <h1 className="text-3xl font-black tracking-tight sm:text-5xl">
-                {currentPlan.name} plan
+                Billing
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
-                Manage your plan, billing status, renewal timing, and generation
-                limits.
+                Manage your generation limits and subscription plan.
               </p>
             </div>
             <Link className="neon-button" href="/pricing">
-              Compare plans
+              View plans
             </Link>
           </div>
         </header>
@@ -85,13 +84,21 @@ export default async function BillingPage({
 
         <section className="grid gap-4 md:grid-cols-4">
           <article className="metric-card">
-            <p className="text-sm text-slate-400">Current plan</p>
-            <p className="mt-2 text-3xl font-black capitalize text-cyan-300">
-              {profile?.plan ?? "free"}
+            <p className="text-sm text-slate-400">Current Plan</p>
+            <p className="mt-2 text-3xl font-black text-cyan-300">
+              {currentPlan.name}
             </p>
           </article>
           <article className="metric-card">
-            <p className="text-sm text-slate-400">Subscription status</p>
+            <p className="text-sm text-slate-400">Monthly limits</p>
+            <p className="mt-2 text-sm font-semibold leading-6 text-white">
+              Images: {currentPlan.monthlyImageGenerations}
+              <br />
+              Marketing: {currentPlan.monthlyMarketingGenerations}
+            </p>
+          </article>
+          <article className="metric-card">
+            <p className="text-sm text-slate-400">Status</p>
             <p className="mt-2 text-2xl font-black capitalize text-white">
               {(profile?.subscription_status ?? "free").replaceAll("_", " ")}
             </p>
@@ -102,20 +109,14 @@ export default async function BillingPage({
               {formatDate(profile?.subscription_current_period_end)}
             </p>
           </article>
-          <article className="metric-card">
-            <p className="text-sm text-slate-400">PayPal subscription</p>
-            <p className="mt-2 truncate text-sm font-semibold text-cyan-100">
-              {profile?.paypal_subscription_id ?? "Not connected"}
-            </p>
-          </article>
         </section>
 
         <section className="rounded-3xl border border-cyan-300/20 bg-black/80 p-6 ring-1 ring-white/10 md:p-8">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <h2 className="text-2xl font-black">Subscription controls</h2>
+              <h2 className="text-2xl font-black">Subscription</h2>
               <p className="mt-2 text-sm leading-6 text-slate-300">
-                Plan changes are processed through PayPal. Cancellations return
+                Plan changes are handled through PayPal. Cancellations return
                 the account to Free after confirmation.
               </p>
             </div>
@@ -124,7 +125,7 @@ export default async function BillingPage({
               <CancelSubscriptionButton />
             ) : (
               <Link className="ghost-button" href="/pricing">
-                Unlock higher limits
+                View plans
               </Link>
             )}
           </div>

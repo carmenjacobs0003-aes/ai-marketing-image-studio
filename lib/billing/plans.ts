@@ -8,8 +8,8 @@ export type BillingPlan = {
   price: string;
   cadence: string;
   paypalPlanId?: string;
-  dailyMarketingGenerations: number | null;
-  dailyImageGenerations: number | null;
+  monthlyMarketingGenerations: number;
+  monthlyImageGenerations: number;
   features: string[];
   highlighted?: boolean;
 };
@@ -18,49 +18,46 @@ export const billingPlans: BillingPlan[] = [
   {
     id: "free",
     name: "Free",
-    tagline: "Start with essential daily generations.",
-    price: "$0",
-    cadence: "forever",
-    dailyMarketingGenerations: 5,
-    dailyImageGenerations: 3,
+    tagline: "Perfect for testing the platform.",
+    price: "£0",
+    cadence: "per month",
+    monthlyMarketingGenerations: 5,
+    monthlyImageGenerations: 5,
     features: [
-      "5 content generations/day",
-      "3 image generations/day",
-      "Private creative workspace",
-      "Standard generation queue"
+      "Core creative tools",
+      "Private workspace",
+      "Standard processing"
     ]
   },
   {
     id: "pro",
-    name: "Pro",
-    tagline: "Higher limits for active production.",
-    price: "$29",
+    name: "Creator",
+    tagline: "Built for consistent campaign creation.",
+    price: "£10",
     cadence: "per month",
     paypalPlanId: env.PAYPAL_PRO_PLAN_ID,
-    dailyMarketingGenerations: 50,
-    dailyImageGenerations: 50,
+    monthlyMarketingGenerations: 50,
+    monthlyImageGenerations: 50,
     highlighted: true,
     features: [
-      "50 content generations/day",
-      "50 image generations/day",
       "Advanced templates",
-      "Faster generation queue"
+      "Faster processing",
+      "Campaign-ready exports"
     ]
   },
   {
     id: "agency",
-    name: "Agency",
-    tagline: "Expanded usage for client work.",
-    price: "$99",
+    name: "Studio",
+    tagline: "High-volume generation for businesses and agencies.",
+    price: "£50",
     cadence: "per month",
     paypalPlanId: env.PAYPAL_AGENCY_PLAN_ID,
-    dailyMarketingGenerations: null,
-    dailyImageGenerations: null,
+    monthlyMarketingGenerations: 250,
+    monthlyImageGenerations: 250,
     features: [
-      "Fair-use content generations",
-      "Fair-use image generations",
-      "Client-ready limits",
-      "Priority processing"
+      "Priority processing",
+      "Business workflow support",
+      "Business-ready workspace"
     ]
   }
 ];
@@ -83,6 +80,6 @@ export function isPaidPlan(plan: AppPlan) {
   return plan === "pro" || plan === "agency";
 }
 
-export function formatPlanLimit(limit: number | null) {
-  return limit === null ? "Fair use" : `${limit}/day`;
+export function formatPlanLimit(limit: number) {
+  return `${limit}`;
 }

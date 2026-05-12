@@ -32,19 +32,18 @@ export function PricingCards({ currentPlan }: { currentPlan?: AppPlan }) {
               </p>
               <p className="pb-2 text-sm text-slate-400">{plan.cadence}</p>
             </div>
-            <dl className="mt-6 grid grid-cols-2 gap-3 text-sm">
-              <div className="rounded-2xl border border-white/10 bg-black/50 p-3">
-                <dt className="text-slate-400">Marketing</dt>
-                <dd className="mt-1 font-black text-white">
-                  {formatPlanLimit(plan.dailyMarketingGenerations)}
-                </dd>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-black/50 p-3">
-                <dt className="text-slate-400">Images</dt>
-                <dd className="mt-1 font-black text-white">
-                  {formatPlanLimit(plan.dailyImageGenerations)}
-                </dd>
-              </div>
+            <dl className="mt-6 rounded-2xl border border-white/10 bg-black/50 p-4 text-sm">
+              <dt className="font-semibold text-slate-300">
+                Monthly Generation Limits
+              </dt>
+              <dd className="mt-3 grid grid-cols-2 gap-3">
+                <span className="font-black text-white">
+                  Images: {formatPlanLimit(plan.monthlyImageGenerations)}
+                </span>
+                <span className="font-black text-white">
+                  Marketing: {formatPlanLimit(plan.monthlyMarketingGenerations)}
+                </span>
+              </dd>
             </dl>
             <ul className="mt-6 space-y-3 text-sm text-slate-200">
               {plan.features.map((feature) => (
@@ -68,7 +67,7 @@ export function PricingCards({ currentPlan }: { currentPlan?: AppPlan }) {
                 </Link>
               ) : (
                 <UpgradeButton className="neon-button w-full" plan={plan.id}>
-                  Unlock with PayPal
+                  Choose plan
                 </UpgradeButton>
               )}
             </div>
