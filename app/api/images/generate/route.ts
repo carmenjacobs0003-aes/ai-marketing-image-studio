@@ -80,14 +80,14 @@ function jsonError(
 
 async function readRequestJson(request: NextRequest) {
   try {
-    return await request.json();
+    return { ok: true as const, data: await request.json() };
   } catch (error) {
     logger.warn("Invalid image generation request JSON", {
       error:
         error instanceof Error ? error.message : "Unable to parse request JSON",
       requestId: request.headers.get("x-request-id")
     });
-    return null;
+    return { ok: false as const };
   }
 }
 
@@ -118,7 +118,13 @@ export async function POST(request: NextRequest) {
       return jsonError("Unauthorized", 401);
     }
 
-    const parsed = requestSchema.safeParse(await readRequestJson(request));
+    const requestJson = await readRequestJson(request);
+
+    if (!requestJson.ok) {
+      return jsonError("Invalid JSON request body", 400);
+    }
+
+    const parsed = requestSchema.safeParse(requestJson.data);
 
     if (!parsed.success) {
       return jsonError("Invalid image generation request", 400, {
