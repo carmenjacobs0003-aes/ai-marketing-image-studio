@@ -276,6 +276,54 @@ export async function countProjects(
   return count ?? 0;
 }
 
+export const DEFAULT_STALE_IMAGE_GENERATION_TIMEOUT_MS = 20 * 60 * 1000;
+
+export type StaleImageGenerationRecoveryResult = {
+  cutoff: string;
+  recovered: number;
+};
+
+export async function recoverStaleImageGenerations(
+  supabase: TypedSupabaseClient,
+  options: {
+    userId?: string;
+    staleAfterMs?: number;
+    now?: Date;
+  } = {}
+): Promise<StaleImageGenerationRecoveryResult> {
+  const now = options.now ?? new Date();
+  const staleAfterMs =
+    options.staleAfterMs ?? DEFAULT_STALE_IMAGE_GENERATION_TIMEOUT_MS;
+  const cutoff = new Date(now.getTime() - staleAfterMs).toISOString();
+  const recoveredAt = now.toISOString();
+
+  let query = supabase
+    .from("image_generations")
+    .update(
+      {
+        status: "failed",
+        error_message:
+          "Generation timed out before completion. Please try again.",
+        updated_at: recoveredAt
+      },
+      { count: "exact" }
+    )
+    .in("status", ["queued", "processing"])
+    .lt("updated_at", cutoff);
+
+  if (options.userId) {
+    query = query.eq("user_id", options.userId);
+  }
+
+  const { error, count } = await query;
+
+  if (error) {
+    throw error;
+  }
+
+  return { cutoff, recovered: count ?? 0 };
+}
+
 export async function createImageGeneration(
   supabase: TypedSupabaseClient,
   generation: Inserts<"image_generations">
