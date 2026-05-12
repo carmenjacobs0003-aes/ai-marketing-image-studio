@@ -8,15 +8,18 @@ import {
 
 export const runtime = "nodejs";
 
-function getRecoverySecret() {
-  return process.env.RECOVERY_SECRET ?? process.env.CRON_SECRET;
-}
-
 function isAuthorized(request: NextRequest) {
-  const secret = getRecoverySecret();
-  const authorization = request.headers.get("authorization");
+  const cronSecret = process.env.CRON_SECRET;
 
-  return Boolean(secret && authorization === `Bearer ${secret}`);
+  if (process.env.NODE_ENV !== "production") {
+    return true;
+  }
+
+  if (!cronSecret) {
+    return false;
+  }
+
+  return request.headers.get("authorization") === `Bearer ${cronSecret}`;
 }
 
 async function runRecovery(request: NextRequest) {
