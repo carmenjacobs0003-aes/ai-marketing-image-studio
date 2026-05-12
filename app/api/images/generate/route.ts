@@ -101,8 +101,8 @@ type ImageGenerateResponse =
       id: string;
       prompt: string;
       projectId: string | null;
-      signedUrl: string;
-      downloadUrl: string;
+      signedUrl: string | null;
+      downloadUrl: string | null;
       storagePath: string;
     }
   | {
@@ -876,14 +876,46 @@ export async function POST(request: NextRequest) {
       storagePath
     });
     currentStep = "supabase_signed_urls";
-    const [signedUrl, downloadUrl] = await Promise.all([
+    const [signedUrlResult, downloadUrlResult] = await Promise.allSettled([
       createSignedImageUrl(storagePath),
       createSignedDownloadUrl(storagePath)
     ]);
+    const signedUrl =
+      signedUrlResult.status === "fulfilled" ? signedUrlResult.value : null;
+    const downloadUrl =
+      downloadUrlResult.status === "fulfilled" ? downloadUrlResult.value : null;
+
+    if (signedUrlResult.status === "rejected") {
+      logger.error("Supabase signed image URL creation failed after upload", {
+        ...getRequestLogContext(request),
+        userId: user.id,
+        generationId: generation.id,
+        storagePath,
+        error:
+          signedUrlResult.reason instanceof Error
+            ? signedUrlResult.reason.message
+            : String(signedUrlResult.reason)
+      });
+    }
+
+    if (downloadUrlResult.status === "rejected") {
+      logger.error("Supabase signed download URL creation failed after upload", {
+        ...getRequestLogContext(request),
+        userId: user.id,
+        generationId: generation.id,
+        storagePath,
+        error:
+          downloadUrlResult.reason instanceof Error
+            ? downloadUrlResult.reason.message
+            : String(downloadUrlResult.reason)
+      });
+    }
+
     logger.info("Supabase signed URL creation completed", {
       ...getRequestLogContext(request),
       userId: user.id,
       generationId: generation.id,
+      storagePath,
       hasSignedUrl: Boolean(signedUrl),
       hasDownloadUrl: Boolean(downloadUrl)
     });
