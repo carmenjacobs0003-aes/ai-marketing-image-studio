@@ -12,15 +12,23 @@ const baseEnvSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_TEXT_MODEL: z.string().default("gpt-4o-mini"),
-  OPENAI_IMAGE_MODEL: z.string().default("dall-e-3"),
+  OPENAI_IMAGE_MODEL: z.string().default("gpt-image-1"),
   API_TIMEOUT_SECONDS: z.coerce.number().int().positive().default(60),
   PROVIDER_RETRY_ATTEMPTS: z.coerce.number().int().positive().default(3),
   PROVIDER_RETRY_BASE_DELAY_MS: z.coerce.number().int().positive().default(500),
   PROVIDER_RETRY_MAX_DELAY_MS: z.coerce.number().int().positive().default(4000),
   GENERATION_QUEUE_LIMIT: z.coerce.number().int().positive().default(3),
-  GENERATION_QUEUE_WINDOW_SECONDS: z.coerce.number().int().positive().default(120),
+  GENERATION_QUEUE_WINDOW_SECONDS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(120),
   CRITICAL_ALERT_WEBHOOK_URL: z.string().url().optional(),
-  CRITICAL_ALERT_COOLDOWN_SECONDS: z.coerce.number().int().positive().default(300),
+  CRITICAL_ALERT_COOLDOWN_SECONDS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(300),
   IMAGE_GENERATION_RATE_LIMIT: z.coerce.number().int().positive().default(10),
   IMAGE_GENERATION_RATE_LIMIT_WINDOW_SECONDS: z.coerce
     .number()
@@ -57,8 +65,8 @@ export const productionRequiredKeys = [
   "NEXT_PUBLIC_PAYPAL_CLIENT_ID",
   "PAYPAL_WEBHOOK_ID",
   "PAYPAL_PRO_PLAN_ID",
-  "PAYPAL_AGENCY_PLAN_ID",
-  ] as const;
+  "PAYPAL_AGENCY_PLAN_ID"
+] as const;
 
 export const paypalLiveRequiredKeys = [
   "PAYPAL_CLIENT_ID",
