@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent, type MouseEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import type { BrandKit, Project } from "@/lib/db/queries";
 import type { UsageSummary } from "@/lib/usage/limits";
@@ -108,6 +108,10 @@ export function StudioCanvas({
     null
   );
   const [isLoading, setIsLoading] = useState(false);
+  const [submissionQueued, setSubmissionQueued] = useState(false);
+  const submitInFlightRef = useRef(false);
+  const lastSubmitAtRef = useRef(0);
+  const submitDebounceMs = 1000;
   const limitReached =
     usage.imageGenerationLimit !== null &&
     usage.imageGenerations >= usage.imageGenerationLimit;
@@ -120,8 +124,42 @@ export function StudioCanvas({
     }
   }
 
+  function isDuplicateSubmission() {
+    const now = Date.now();
+
+    if (submitInFlightRef.current) {
+      return true;
+    }
+
+    if (now - lastSubmitAtRef.current < submitDebounceMs) {
+      return true;
+    }
+
+    submitInFlightRef.current = true;
+    lastSubmitAtRef.current = now;
+    return false;
+  }
+
+  function onGenerateButtonClick(event: MouseEvent<HTMLButtonElement>) {
+    if (submitInFlightRef.current || submissionQueued) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  }
+
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (isDuplicateSubmission()) {
+      console.info("Duplicate image generation submit ignored", {
+        isLoading,
+        submissionQueued,
+        msSinceLastSubmit: Date.now() - lastSubmitAtRef.current
+      });
+      return;
+    }
+
+    setSubmissionQueued(true);
     setError(null);
     setBackendDebugError(null);
     setIsLoading(true);
@@ -178,9 +216,18 @@ export function StudioCanvas({
           : "Client request failed before a backend JSON response was available."
       );
     } finally {
+      submitInFlightRef.current = false;
+      setSubmissionQueued(false);
       setIsLoading(false);
     }
   }
+
+  const generateDisabled =
+    isLoading ||
+    submissionQueued ||
+    limitReached ||
+    prompt.trim().length < 10 ||
+    submitInFlightRef.current;
 
   return (
     <main className="page-shell grid gap-6 lg:grid-cols-[360px_1fr]">
@@ -264,10 +311,12 @@ export function StudioCanvas({
           ) : null}
           <button
             className="neon-button w-full"
-            disabled={isLoading || limitReached || prompt.trim().length < 10}
+            disabled={generateDisabled}
+            onClick={onGenerateButtonClick}
+            style={{ touchAction: "manipulation" }}
             type="submit"
           >
-            {isLoading ? "Generating..." : "Generate image"}
+            {isLoading || submissionQueued ? "Generating..." : "Generate image"}
           </button>
         </form>
         {backendDebugError ? (
