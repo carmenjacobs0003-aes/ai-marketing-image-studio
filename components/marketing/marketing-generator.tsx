@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import type { BrandKit, MarketingGeneration, Project } from "@/lib/db/queries";
 import Link from "next/link";
@@ -24,8 +24,68 @@ type MarketingGeneratorProps = {
 type MarketingGeneratePayload =
   | {
       generation: MarketingGeneration;
+      usage?: UsageSummary;
     }
-  | { error: string; usage?: UsageSummary; categories?: string[] };
+  | {
+      error: string;
+      usage?: UsageSummary;
+      categories?: string[];
+      fallback?: string;
+      cooldownSeconds?: number;
+    };
+
+const GENERATION_DEBOUNCE_MS = 1200;
+const DEFAULT_ERROR_COOLDOWN_MS = 8000;
+
+function getFriendlyMarketingError(message?: string, status?: number) {
+  const normalized = (message ?? "").toLowerCase();
+
+  if (
+    status === 429 ||
+    /429|rate limit|too many requests|too many/i.test(message ?? "")
+  ) {
+    return "Generation capacity is temporarily busy. Please retry in a moment.";
+  }
+
+  if (
+    /moderation|safety review|blocked by safety|triggered the safety/i.test(
+      message ?? ""
+    )
+  ) {
+    return "Your brief needs a quick revision before we can generate it. Adjust any sensitive claims or restricted content, then try again.";
+  }
+
+  if (/timeout|timed out/.test(normalized)) {
+    return "Generation is taking longer than expected. Your quota was not consumed; please retry in a moment.";
+  }
+
+  if (/quota|limit reached|daily marketing limit/.test(normalized)) {
+    return (
+      message ??
+      "Daily marketing capacity is reached. Upgrade your plan or retry tomorrow."
+    );
+  }
+
+  if (/invalid marketing generation request/.test(normalized)) {
+    return "Add a campaign brief with at least 10 characters before generating.";
+  }
+
+  return message && !/openai|json|provider|stack|exception/i.test(message)
+    ? message
+    : "We couldn’t complete this generation. Please retry in a moment or simplify the brief.";
+}
+
+function getRetryGuidance(message: string) {
+  if (/capacity|busy|retry in a moment/i.test(message)) {
+    return "Tip: wait a few seconds before retrying. Repeated taps can slow the queue.";
+  }
+
+  if (/revision|brief/i.test(message)) {
+    return "Tip: keep the offer clear, remove sensitive or unsafe phrasing, and submit again after the short cooldown.";
+  }
+
+  return "Tip: your draft and quota are safe. You can retry once the button is available.";
+}
 
 const contentTypes: Array<{
   value: MarketingContentType;
@@ -159,6 +219,9 @@ export function MarketingGenerator({
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  const lastSubmitAtRef = useRef(0);
   const limitReached =
     usage.marketingGenerationLimit !== null &&
     usage.marketingGenerations >= usage.marketingGenerationLimit;
@@ -167,6 +230,28 @@ export function MarketingGenerator({
     () => contentTypes.find((item) => item.value === contentType),
     [contentType]
   );
+  const cooldownRemainingSeconds = cooldownUntil
+    ? Math.max(0, Math.ceil((cooldownUntil - now) / 1000))
+    : 0;
+  const isSubmitDisabled =
+    isLoading ||
+    limitReached ||
+    prompt.trim().length < 10 ||
+    cooldownRemainingSeconds > 0;
+
+  useEffect(() => {
+    if (!cooldownUntil) return;
+
+    const timer = window.setInterval(() => setNow(Date.now()), 250);
+
+    return () => window.clearInterval(timer);
+  }, [cooldownUntil]);
+
+  useEffect(() => {
+    if (cooldownUntil && cooldownUntil <= now) {
+      setCooldownUntil(null);
+    }
+  }, [cooldownUntil, now]);
 
   async function refreshUsage() {
     const response = await fetch("/api/me/usage", { cache: "no-store" });
@@ -196,7 +281,10 @@ export function MarketingGenerator({
 
       if (!response.ok) {
         setError(
-          payload.error ?? "Unable to save marketing content to project."
+          getFriendlyMarketingError(
+            payload.error ?? "Unable to save marketing content to project.",
+            response.status
+          )
         );
         return;
       }
@@ -211,9 +299,11 @@ export function MarketingGenerator({
       setSuccessMessage("Marketing content project updated.");
     } catch (saveError) {
       setError(
-        saveError instanceof Error
-          ? saveError.message
-          : "Unable to save marketing content to project."
+        getFriendlyMarketingError(
+          saveError instanceof Error
+            ? saveError.message
+            : "Unable to save marketing content to project."
+        )
       );
     } finally {
       setSavingGenerationId(null);
@@ -222,6 +312,16 @@ export function MarketingGenerator({
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    const submittedAt = Date.now();
+    if (
+      isSubmitDisabled ||
+      submittedAt - lastSubmitAtRef.current < GENERATION_DEBOUNCE_MS
+    ) {
+      return;
+    }
+    lastSubmitAtRef.current = submittedAt;
+    setNow(submittedAt);
     setError(null);
     setSuccessMessage(null);
     setIsLoading(true);
@@ -244,11 +344,23 @@ export function MarketingGenerator({
         if ("usage" in payload && payload.usage) {
           setUsage(payload.usage);
         }
-        setError(
+        const friendlyError = getFriendlyMarketingError(
           "error" in payload
             ? payload.error
-            : "Unable to generate marketing content."
+            : "Unable to generate marketing content.",
+          response.status
         );
+        setError(friendlyError);
+        const nextCooldownSeconds =
+          "cooldownSeconds" in payload && payload.cooldownSeconds
+            ? payload.cooldownSeconds
+            : response.status === 429 ||
+                /revision|capacity|busy/i.test(friendlyError)
+              ? DEFAULT_ERROR_COOLDOWN_MS / 1000
+              : 0;
+        if (nextCooldownSeconds > 0) {
+          setCooldownUntil(Date.now() + nextCooldownSeconds * 1000);
+        }
         return;
       }
 
@@ -260,13 +372,19 @@ export function MarketingGenerator({
         setSuccessMessage(
           "Marketing content generated and saved to your project history."
         );
-        await refreshUsage();
+        if (payload.usage) {
+          setUsage(payload.usage);
+        } else {
+          await refreshUsage();
+        }
       }
     } catch (generationError) {
       setError(
-        generationError instanceof Error
-          ? generationError.message
-          : "Unable to generate marketing content."
+        getFriendlyMarketingError(
+          generationError instanceof Error
+            ? generationError.message
+            : "Unable to generate marketing content."
+        )
       );
     } finally {
       setIsLoading(false);
@@ -274,9 +392,9 @@ export function MarketingGenerator({
   }
 
   return (
-    <main className="p-4 text-white sm:p-6 lg:p-8">
-      <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[400px_1fr]">
-        <section className="glass-card space-y-6 p-5 sm:p-8">
+    <main className="min-h-screen px-4 py-6 text-white sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+      <div className="mx-auto grid max-w-7xl gap-8 xl:grid-cols-[minmax(360px,440px)_1fr] xl:items-start">
+        <section className="glass-card space-y-8 p-5 shadow-[0_0_50px_rgba(34,211,238,0.08)] sm:p-7 xl:sticky xl:top-8 xl:max-h-[calc(100vh-4rem)] xl:overflow-y-auto xl:p-8">
           <div>
             <p className="eyebrow">Marketing</p>
             <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
@@ -287,7 +405,7 @@ export function MarketingGenerator({
               plan checks, safety moderation, and usage tracking.
             </p>
           </div>
-          <div className="rounded-xl border border-cyan-300/20 bg-cyan-300/10 p-4">
+          <div className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
             <p className="text-sm text-cyan-100">
               Daily marketing usage · {usage.plan}
             </p>
@@ -301,7 +419,7 @@ export function MarketingGenerator({
                 : `${usage.remainingMarketingGenerations} generations remaining today`}
             </p>
           </div>
-          <form className="space-y-4" onSubmit={onSubmit}>
+          <form className="space-y-5" onSubmit={onSubmit}>
             <label className="block space-y-2 text-sm font-medium">
               <span>Content focus</span>
               <select
@@ -406,7 +524,7 @@ export function MarketingGenerator({
             <label className="block space-y-2 text-sm font-medium">
               <span>Brief</span>
               <textarea
-                className="field-control min-h-44"
+                className="field-control min-h-52 resize-y leading-6"
                 disabled={isLoading || limitReached}
                 onChange={(event) => setPrompt(event.target.value)}
                 placeholder="Describe your audience, offer, product, goal, keywords, and desired tone..."
@@ -414,14 +532,25 @@ export function MarketingGenerator({
               />
             </label>
             {error ? (
-              <p className="rounded-xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
-                {error}
-              </p>
+              <div
+                className="rounded-2xl border border-red-300/30 bg-red-500/10 p-4 text-sm text-red-100 shadow-[0_0_30px_rgba(248,113,113,0.08)]"
+                role="alert"
+              >
+                <p className="font-black text-white">Generation paused</p>
+                <p className="mt-1 leading-6">{error}</p>
+                <p className="mt-2 text-xs leading-5 text-red-100/80">
+                  {getRetryGuidance(error)}
+                </p>
+              </div>
             ) : null}
             {successMessage ? (
-              <p className="rounded-xl border border-cyan-300/30 bg-cyan-300/10 p-3 text-sm text-cyan-100">
-                {successMessage}
-              </p>
+              <div
+                className="rounded-2xl border border-cyan-300/30 bg-cyan-300/10 p-4 text-sm text-cyan-100 shadow-[0_0_30px_rgba(34,211,238,0.08)]"
+                role="status"
+              >
+                <p className="font-black text-white">Generation complete</p>
+                <p className="mt-1 leading-6">{successMessage}</p>
+              </div>
             ) : null}
             {limitReached ? (
               <p className="rounded-xl border border-cyan-300/20 bg-black p-3 text-sm text-cyan-100">
@@ -429,17 +558,45 @@ export function MarketingGenerator({
                 capacity.
               </p>
             ) : null}
-            <button
-              className="neon-button w-full"
-              disabled={isLoading || limitReached || prompt.trim().length < 10}
-              type="submit"
-            >
-              {isLoading ? "Generating and saving..." : "Generate marketing"}
-            </button>
+            {isLoading ? (
+              <div
+                className="rounded-2xl border border-cyan-300/25 bg-cyan-300/10 p-4 text-sm text-cyan-100"
+                role="status"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="h-3 w-3 animate-ping rounded-full bg-cyan-300 shadow-[0_0_18px_rgba(34,211,238,0.9)]" />
+                  <span className="font-semibold">
+                    Building your campaign pack…
+                  </span>
+                </div>
+                <p className="mt-2 text-xs leading-5 text-slate-300">
+                  We’re checking the brief, matching brand context, and saving
+                  the finished copy to your library.
+                </p>
+              </div>
+            ) : null}
+            <div className="pt-1">
+              <button
+                className="neon-button flex w-full items-center justify-center gap-3 py-3 text-center disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={isSubmitDisabled}
+                type="submit"
+              >
+                {isLoading ? (
+                  <>
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-950/30 border-t-slate-950" />
+                    Generating…
+                  </>
+                ) : cooldownRemainingSeconds > 0 ? (
+                  `Retry in ${cooldownRemainingSeconds}s`
+                ) : (
+                  "Generate marketing"
+                )}
+              </button>
+            </div>
           </form>
         </section>
-        <section className="space-y-4">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <section className="space-y-6">
+          <div className="flex flex-col gap-3 rounded-3xl border border-white/10 bg-black/30 p-5 backdrop-blur-xl sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-sm uppercase tracking-[0.3em] text-cyan-300">
                 Library
@@ -449,8 +606,9 @@ export function MarketingGenerator({
               </h2>
             </div>
             {isLoading ? (
-              <div className="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100">
-                OpenAI is writing your content...
+              <div className="flex items-center gap-2 rounded-full border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-cyan-300" />
+                Writing your content…
               </div>
             ) : null}
           </div>
@@ -460,7 +618,7 @@ export function MarketingGenerator({
 
               return (
                 <article
-                  className="glass-card p-4 shadow-xl shadow-black/20 sm:p-5"
+                  className="glass-card p-5 shadow-xl shadow-black/20 sm:p-6"
                   key={generation.id}
                 >
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
