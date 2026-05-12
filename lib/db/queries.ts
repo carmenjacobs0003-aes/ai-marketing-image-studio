@@ -46,7 +46,7 @@ export async function upsertProfile(
     .from("profiles")
     .upsert(profile, { onConflict: "id" })
     .select("*")
-    .maybeSingle();;
+    .Single();;
 
   return requireDatabaseData(data, error, "Unable to save profile");
 }
@@ -284,7 +284,7 @@ export async function createImageGeneration(
     .from("image_generations")
     .insert(generation)
     .select("*")
-    .single();
+    .maybeSingle();
 
   return requireDatabaseData(data, error, "Unable to create image generation");
 }
@@ -301,7 +301,7 @@ export async function updateImageGeneration(
     .eq("id", id)
     .eq("user_id", userId)
     .select("*")
-    .single();
+    .maybeSingle();
 
   return requireDatabaseData(data, error, "Unable to update image generation");
 }
