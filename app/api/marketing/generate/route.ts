@@ -59,7 +59,76 @@ type MarketingGenerateResponse =
       usage?: Awaited<ReturnType<typeof assertCanGenerateMarketing>>["usage"];
       categories?: string[];
       fallback?: string;
+      cooldownSeconds?: number;
     };
+
+function getPublicMarketingError(message: string) {
+  const normalized = message.toLowerCase();
+
+  if (/429|rate limit|too many requests|too many/.test(normalized)) {
+    return {
+      error:
+        "Generation capacity is temporarily busy. Please retry in a moment.",
+      status: 429,
+      cooldownSeconds: 8
+    };
+  }
+
+  if (
+    /moderation|safety review|blocked by safety|triggered the safety/.test(
+      normalized
+    )
+  ) {
+    return {
+      error:
+        "Your brief needs a quick revision before we can generate it. Adjust any sensitive claims or restricted content, then try again.",
+      status: 400,
+      cooldownSeconds: 8
+    };
+  }
+
+  if (/timeout|timed out/.test(normalized)) {
+    return {
+      error:
+        "Generation is taking longer than expected. Your quota was not consumed; please retry in a moment.",
+      status: 504,
+      cooldownSeconds: 5
+    };
+  }
+
+  if (
+    /not fully configured|api key|authorization|unauthorized|forbidden/.test(
+      normalized
+    )
+  ) {
+    return {
+      error:
+        "Generation service needs attention. Please retry shortly or contact support if it continues.",
+      status: 503,
+      cooldownSeconds: 10
+    };
+  }
+
+  if (
+    /invalid marketing json|incomplete marketing content|did not return marketing content/.test(
+      normalized
+    )
+  ) {
+    return {
+      error:
+        "The draft came back incomplete. Please retry in a moment or simplify the brief.",
+      status: 502,
+      cooldownSeconds: 5
+    };
+  }
+
+  return {
+    error:
+      "We couldn’t complete this generation. Please retry in a moment or simplify the brief.",
+    status: 500,
+    cooldownSeconds: 5
+  };
+}
 
 async function readRequestJson(request: NextRequest) {
   try {
@@ -103,13 +172,18 @@ export async function POST(request: NextRequest) {
   if (!abuse.allowed) {
     await logCentralizedError(new Error(abuse.reason), {
       category: "abuse",
-      message: abuse.reason ?? "Blocked suspicious marketing generation request",
+      message:
+        abuse.reason ?? "Blocked suspicious marketing generation request",
       userId: user.id,
       requestId: request.headers.get("x-request-id"),
       context: { score: abuse.score, signals: abuse.signals }
     });
     return NextResponse.json<MarketingGenerateResponse>(
-      { error: abuse.reason ?? "Blocked suspicious request" },
+      {
+        error:
+          "We paused this request to protect your account. Please wait a moment, then retry with a straightforward campaign brief.",
+        cooldownSeconds: 8
+      },
       { status: 429 }
     );
   }
@@ -124,7 +198,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json<MarketingGenerateResponse>(
       {
         error:
-          "Your generation queue is full. Please wait for current jobs to finish before starting another."
+          "Generation capacity is temporarily busy. Please retry in a moment.",
+        cooldownSeconds: 8
       },
       { status: 429 }
     );
@@ -191,7 +266,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let generation: Awaited<ReturnType<typeof createMarketingGeneration>> | null = null;
+  let generation: Awaited<ReturnType<typeof createMarketingGeneration>> | null =
+    null;
 
   try {
     const moderation = await moderateMarketingInput(payload.prompt);
@@ -200,8 +276,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json<MarketingGenerateResponse>(
         {
           error:
-            "Your brief could not be used because it triggered the safety review. Please revise it and try again.",
-          categories: moderation.categories
+            "Your brief needs a quick revision before we can generate it. Adjust any sensitive claims or restricted content, then try again.",
+          categories: moderation.categories,
+          cooldownSeconds: 8
         },
         { status: 400 }
       );
@@ -289,13 +366,16 @@ export async function POST(request: NextRequest) {
       }
     });
 
+    const publicError = getPublicMarketingError(message);
+
     return NextResponse.json<MarketingGenerateResponse>(
       {
-        error: message,
+        error: publicError.error,
+        cooldownSeconds: publicError.cooldownSeconds,
         fallback:
           "Generation was safely marked failed. Your quota was not consumed; revise or retry when the provider recovers."
       },
-      { status: 500 }
+      { status: publicError.status }
     );
   }
 }

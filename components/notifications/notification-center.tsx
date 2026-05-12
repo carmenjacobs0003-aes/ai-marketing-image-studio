@@ -202,7 +202,16 @@ export function NotificationProvider({
 
   const toast = useCallback((toastInput: Omit<Toast, "id">) => {
     const id = makeId("toast");
-    setToasts((current) => [{ id, ...toastInput }, ...current].slice(0, 4));
+    setToasts((current) => {
+      const withoutDuplicate = current.filter(
+        (item) =>
+          item.tone !== toastInput.tone ||
+          item.title !== toastInput.title ||
+          item.body !== toastInput.body
+      );
+
+      return [{ id, ...toastInput }, ...withoutDuplicate].slice(0, 2);
+    });
     window.setTimeout(() => {
       setToasts((current) => current.filter((item) => item.id !== id));
     }, 5200);
@@ -264,6 +273,12 @@ export function NotificationProvider({
             : input.toString();
 
       if (method && ["POST", "PATCH", "DELETE"].includes(method)) {
+        const suppressGlobalToast = url.includes("/api/marketing/generate");
+
+        if (suppressGlobalToast) {
+          return response;
+        }
+
         if (response.ok) {
           if (url.includes("save-to-project")) {
             notify({
@@ -409,10 +424,10 @@ export function NotificationProvider({
           </section>
         ) : null}
       </div>
-      <div className="fixed bottom-4 right-4 z-50 w-[min(92vw,380px)] space-y-3">
+      <div className="pointer-events-none fixed right-4 top-20 z-50 w-[min(92vw,380px)] space-y-3 sm:right-6 lg:right-8">
         {toasts.map((item) => (
           <div
-            className={`rounded-2xl border p-4 shadow-2xl backdrop-blur-2xl ${toneClasses(item.tone)}`}
+            className={`pointer-events-auto rounded-2xl border p-4 shadow-2xl backdrop-blur-2xl ${toneClasses(item.tone)}`}
             key={item.id}
           >
             <div className="flex items-start gap-3">
