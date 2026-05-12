@@ -27,6 +27,7 @@ import {
   OPENAI_API_KEY_ENV_VAR_NAME
 } from "@/lib/env";
 import { logger } from "@/lib/logger";
+import { recoverStaleGenerations } from "@/lib/recovery/generations";
 import { ApiTimeoutError, withTimeout } from "@/lib/api/timeout";
 import { logCentralizedError } from "@/lib/monitoring/errors";
 import { enforcePromptProtection } from "@/lib/security/abuse";
@@ -625,6 +626,25 @@ export async function POST(request: NextRequest) {
       hasSupabaseServiceRoleKey: Boolean(env.SUPABASE_SERVICE_ROLE_KEY)
     });
 
+    await recoverStaleGenerations(supabase, { userId: user.id })
+      .then((results) => {
+        logger.info("Opportunistic stale generation recovery completed", {
+          ...getRequestLogContext(request),
+          userId: user.id,
+          results
+        });
+      })
+      .catch((recoveryError) => {
+        logger.warn("Opportunistic stale generation recovery failed", {
+          ...getRequestLogContext(request),
+          userId: user.id,
+          error:
+            recoveryError instanceof Error
+              ? recoveryError.message
+              : "Unknown stale generation recovery failure"
+        });
+      });
+
     currentStep = "supabase_prerequisites";
     const [projects, brandKits] = await Promise.all([
       listProjects(supabase, user.id),
@@ -899,16 +919,19 @@ export async function POST(request: NextRequest) {
     }
 
     if (downloadUrlResult.status === "rejected") {
-      logger.error("Supabase signed download URL creation failed after upload", {
-        ...getRequestLogContext(request),
-        userId: user.id,
-        generationId: generation.id,
-        storagePath,
-        error:
-          downloadUrlResult.reason instanceof Error
-            ? downloadUrlResult.reason.message
-            : String(downloadUrlResult.reason)
-      });
+      logger.error(
+        "Supabase signed download URL creation failed after upload",
+        {
+          ...getRequestLogContext(request),
+          userId: user.id,
+          generationId: generation.id,
+          storagePath,
+          error:
+            downloadUrlResult.reason instanceof Error
+              ? downloadUrlResult.reason.message
+              : String(downloadUrlResult.reason)
+        }
+      );
     }
 
     logger.info("Supabase signed URL creation completed", {

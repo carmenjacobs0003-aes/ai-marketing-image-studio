@@ -46,7 +46,7 @@ This checklist is the final Vercel launch gate for SYNTRIX AI.
 6. **Health checks and monitoring**
    - `GET /healthz` returns liveness status and redacted configuration diagnostics.
    - `GET /readyz` returns `200` only when production-required integrations are configured.
-   - Vercel cron pings `/api/health` every 15 minutes.
+   - Do not configure high-frequency Vercel cron jobs on the Hobby plan; stale generation recovery runs opportunistically during image generation and remains available through the protected recovery endpoint when explicitly invoked.
    - Confirm Sentry receives a release event and captures client/server errors.
 7. **PWA, mobile, SEO, and assets**
    - Confirm `/manifest.webmanifest`, `/sw.js`, `/robots.txt`, `/sitemap.xml`, and icon assets return `200`.
