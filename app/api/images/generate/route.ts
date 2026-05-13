@@ -685,7 +685,11 @@ export async function POST(request: NextRequest) {
     }
 
     currentStep = "usage_entitlement";
-    const entitlement = await assertCanGenerateImage(user.id);
+
+const isAdmin =
+  user.email === "carmenjacobs0003@gmail.com";
+
+const entitlement = await assertCanGenerateImage(user.id);
 
     if (!entitlement.allowed) {
       return jsonDebugError(
