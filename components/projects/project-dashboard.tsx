@@ -117,9 +117,14 @@ export function ProjectDashboard({
               {editingId ? "Edit project" : "Create project"}
             </h2>
           </div>
-          <label className="block space-y-2 text-sm font-medium">
+          <label
+            className="block space-y-2 text-sm font-medium"
+            htmlFor="project-name"
+          >
             <span>Name</span>
             <input
+              id="project-name"
+              name="name"
               className="w-full rounded-2xl border border-white/10 bg-black px-4 py-3 outline-none ring-cyan-300 focus:border-cyan-300/80 focus:ring-2"
               onChange={(event) =>
                 setForm((current) => ({ ...current, name: event.target.value }))
@@ -127,9 +132,14 @@ export function ProjectDashboard({
               value={form.name}
             />
           </label>
-          <label className="block space-y-2 text-sm font-medium">
+          <label
+            className="block space-y-2 text-sm font-medium"
+            htmlFor="project-description"
+          >
             <span>Description</span>
             <textarea
+              id="project-description"
+              name="description"
               className="min-h-28 w-full rounded-2xl border border-white/10 bg-black px-4 py-3 outline-none ring-cyan-300 focus:border-cyan-300/80 focus:ring-2"
               onChange={(event) =>
                 setForm((current) => ({
@@ -140,9 +150,14 @@ export function ProjectDashboard({
               value={form.description}
             />
           </label>
-          <label className="block space-y-2 text-sm font-medium">
+          <label
+            className="block space-y-2 text-sm font-medium"
+            htmlFor="project-brand-kit"
+          >
             <span>Brand kit</span>
             <select
+              id="project-brand-kit"
+              name="brandKitId"
               className="w-full rounded-2xl border border-white/10 bg-black px-4 py-3 outline-none ring-cyan-300 focus:border-cyan-300/80 focus:ring-2"
               onChange={(event) =>
                 setForm((current) => ({
@@ -161,9 +176,14 @@ export function ProjectDashboard({
             </select>
           </label>
           {editingId ? (
-            <label className="block space-y-2 text-sm font-medium">
+            <label
+              className="block space-y-2 text-sm font-medium"
+              htmlFor="project-status"
+            >
               <span>Status</span>
               <select
+                id="project-status"
+                name="status"
                 className="w-full rounded-2xl border border-white/10 bg-black px-4 py-3 outline-none ring-cyan-300 focus:border-cyan-300/80 focus:ring-2"
                 onChange={(event) =>
                   setForm((current) => ({

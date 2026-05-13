@@ -414,9 +414,14 @@ export function MarketingGenerator({
             </p>
           </div>
           <form className="space-y-5" onSubmit={onSubmit}>
-            <label className="block space-y-2 text-sm font-medium">
+            <label
+              className="block space-y-2 text-sm font-medium"
+              htmlFor="marketing-content-type"
+            >
               <span>Content focus</span>
               <select
+                id="marketing-content-type"
+                name="contentType"
                 className="field-control"
                 disabled={isLoading || limitReached}
                 onChange={(event) =>
@@ -434,9 +439,14 @@ export function MarketingGenerator({
                 {selectedContentType?.description}
               </span>
             </label>
-            <label className="block space-y-2 text-sm font-medium">
+            <label
+              className="block space-y-2 text-sm font-medium"
+              htmlFor="marketing-template"
+            >
               <span>Reusable template</span>
               <select
+                id="marketing-template"
+                name="templateId"
                 className="field-control"
                 disabled={isLoading || limitReached}
                 onChange={(event) => {
@@ -480,9 +490,14 @@ export function MarketingGenerator({
                 .
               </p>
             ) : null}
-            <label className="block space-y-2 text-sm font-medium">
+            <label
+              className="block space-y-2 text-sm font-medium"
+              htmlFor="marketing-brand-kit"
+            >
               <span>Brand kit</span>
               <select
+                id="marketing-brand-kit"
+                name="brandKitId"
                 className="field-control"
                 disabled={isLoading || limitReached}
                 onChange={(event) => setBrandKitId(event.target.value)}
@@ -497,9 +512,14 @@ export function MarketingGenerator({
                 ))}
               </select>
             </label>
-            <label className="block space-y-2 text-sm font-medium">
+            <label
+              className="block space-y-2 text-sm font-medium"
+              htmlFor="marketing-brief"
+            >
               <span>Brief</span>
               <textarea
+                id="marketing-brief"
+                name="prompt"
                 className="field-control min-h-52 resize-y leading-6"
                 disabled={isLoading || limitReached}
                 onChange={(event) => setPrompt(event.target.value)}

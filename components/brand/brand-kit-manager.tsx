@@ -141,9 +141,15 @@ export function BrandKitManager({ brandKits }: BrandKitManagerProps) {
           ["Tone", "tone"],
           ["Logo URL", "logoUrl"]
         ].map(([label, key]) => (
-          <label className="block space-y-2 text-sm font-medium" key={key}>
+          <label
+            className="block space-y-2 text-sm font-medium"
+            htmlFor={`brand-kit-${key}`}
+            key={key}
+          >
             <span>{label}</span>
             <input
+              id={`brand-kit-${key}`}
+              name={key}
               className="field-control"
               onChange={(event) =>
                 setForm((current) => ({
@@ -155,9 +161,14 @@ export function BrandKitManager({ brandKits }: BrandKitManagerProps) {
             />
           </label>
         ))}
-        <label className="block space-y-2 text-sm font-medium">
+        <label
+          className="block space-y-2 text-sm font-medium"
+          htmlFor="brand-kit-voice"
+        >
           <span>Voice</span>
           <textarea
+            id="brand-kit-voice"
+            name="voice"
             className="field-control min-h-24"
             onChange={(event) =>
               setForm((current) => ({ ...current, voice: event.target.value }))
@@ -165,9 +176,14 @@ export function BrandKitManager({ brandKits }: BrandKitManagerProps) {
             value={form.voice}
           />
         </label>
-        <label className="block space-y-2 text-sm font-medium">
+        <label
+          className="block space-y-2 text-sm font-medium"
+          htmlFor="brand-kit-guidelines"
+        >
           <span>Guidelines</span>
           <textarea
+            id="brand-kit-guidelines"
+            name="guidelines"
             className="field-control min-h-24"
             onChange={(event) =>
               setForm((current) => ({
@@ -180,6 +196,8 @@ export function BrandKitManager({ brandKits }: BrandKitManagerProps) {
         </label>
         <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-sm">
           <input
+            id="brand-kit-is-default"
+            name="isDefault"
             checked={form.isDefault}
             onChange={(event) =>
               setForm((current) => ({

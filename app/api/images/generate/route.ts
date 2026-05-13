@@ -11,6 +11,11 @@ import {
   moderateImagePrompt
 } from "@/lib/openai/images";
 import { rateLimit } from "@/lib/rate-limit";
+import {
+  createPollinationsImage,
+  DEFAULT_POLLINATIONS_IMAGE_MODEL,
+  PollinationsImageGenerationError
+} from "@/lib/pollinations/images";
 import { verifyRedisConnection } from "@/lib/redis/client";
 import {
   uploadGeneratedImage,
@@ -25,7 +30,8 @@ import {
 import {
   env,
   getDeploymentEnvironmentDiagnostics,
-  OPENAI_API_KEY_ENV_VAR_NAME
+  OPENAI_API_KEY_ENV_VAR_NAME,
+  POLLINATIONS_API_KEY_ENV_VAR_NAME
 } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { recoverStaleGenerations } from "@/lib/recovery/generations";
@@ -86,12 +92,18 @@ function resolveImageBrandKit({
   };
 }
 
+const imageProviderSchema = z.enum(["openai", "pollinations"]);
+type ImageGenerationProvider = z.infer<typeof imageProviderSchema>;
+
 const requestSchema = z.object({
   prompt: z.string().trim().min(10).max(2000),
   projectId: z.string().uuid().optional(),
   brandKitId: z.string().uuid().optional(),
+  provider: imageProviderSchema.default("openai"),
+  model: z.string().trim().min(1).max(100).optional(),
   size: z.enum(["1024x1024", "1024x1792", "1792x1024"]).default("1024x1024"),
-  quality: z.enum(["standard", "hd"]).default("standard")
+  quality: z.enum(["standard", "hd"]).default("standard"),
+  seed: z.coerce.number().int().min(0).max(2147483647).optional()
 });
 
 const PUBLIC_IMAGE_GENERATION_UNAVAILABLE_MESSAGE =
@@ -117,6 +129,78 @@ type ImageGenerateResponse =
       diagnostics?: Record<string, unknown>;
       debugReason?: string;
     };
+
+type ProviderImageResult =
+  | {
+      provider: "openai";
+      imageResult: Awaited<ReturnType<typeof createMarketingImage>>;
+      image: Awaited<ReturnType<typeof createMarketingImage>>["data"];
+    }
+  | {
+      provider: "pollinations";
+      imageResult: Awaited<ReturnType<typeof createPollinationsImage>>;
+    };
+
+function resolveSelectedModel(
+  provider: ImageGenerationProvider,
+  model?: string
+) {
+  if (provider === "pollinations") {
+    return model?.trim() || DEFAULT_POLLINATIONS_IMAGE_MODEL;
+  }
+
+  return model?.trim() || env.OPENAI_IMAGE_MODEL;
+}
+
+function parseImageSize(size: z.infer<typeof requestSchema>["size"]) {
+  const [width, height] = size.split("x").map(Number);
+
+  return { width, height };
+}
+
+function createBypassedModeration(reason: string) {
+  return {
+    flagged: false,
+    categories: {},
+    categoryScores: {},
+    moderationId: null,
+    model: "none",
+    requestCount: 0,
+    latencyMs: 0,
+    bypassed: true,
+    bypassReason: reason
+  };
+}
+
+function getProviderDebugReason(
+  error: unknown,
+  provider: ImageGenerationProvider
+) {
+  if (error instanceof ApiTimeoutError) {
+    return `${provider}_request_timed_out`;
+  }
+
+  if (provider === "openai") {
+    return getOpenAIDebugReason(error);
+  }
+
+  return "pollinations_request_failed";
+}
+
+function getProviderErrorStatus(
+  error: unknown,
+  provider: ImageGenerationProvider,
+  openAIStatus?: number
+) {
+  if (
+    provider === "pollinations" &&
+    error instanceof PollinationsImageGenerationError
+  ) {
+    return error.status && error.status >= 400 ? error.status : 500;
+  }
+
+  return getErrorStatus(error, openAIStatus);
+}
 
 function getRequestLogContext(request: NextRequest) {
   return {
@@ -145,7 +229,12 @@ function getRuntimeEnvDiagnostics() {
     imageModelSupported: isSupportedImageModel(env.OPENAI_IMAGE_MODEL),
     apiTimeoutSeconds: env.API_TIMEOUT_SECONDS,
     openaiProjectConfigured: Boolean(env.OPENAI_PROJECT_ID),
-    openaiOrganizationConfigured: Boolean(env.OPENAI_ORGANIZATION)
+    openaiOrganizationConfigured: Boolean(env.OPENAI_ORGANIZATION),
+    pollinationsApiKeyEnvironmentVariable: POLLINATIONS_API_KEY_ENV_VAR_NAME,
+    hasPollinationsKey: Boolean(env.POLLINATIONS_API_KEY),
+    runtimeHasPollinationsKey: Boolean(
+      process.env[POLLINATIONS_API_KEY_ENV_VAR_NAME]
+    )
   };
 }
 
@@ -341,6 +430,7 @@ export async function POST(request: NextRequest) {
     null;
   let supabase: ReturnType<typeof createSupabaseServerClient> | null = null;
   let currentStep = "request_start";
+  let activeProvider: ImageGenerationProvider = "openai";
 
   try {
     currentStep = "environment_detection";
@@ -402,29 +492,35 @@ export async function POST(request: NextRequest) {
     }
 
     const payload = parsed.data;
+    const selectedProvider = payload.provider;
+    activeProvider = selectedProvider;
+    const selectedModel = resolveSelectedModel(selectedProvider, payload.model);
 
-    currentStep = "openai_model_validation";
-    if (!isSupportedImageModel(env.OPENAI_IMAGE_MODEL)) {
+    currentStep = "provider_model_validation";
+    if (
+      selectedProvider === "openai" &&
+      !isSupportedImageModel(selectedModel)
+    ) {
       logger.error(
         "Image generation attempted with unsupported OpenAI image model",
         {
           ...getRequestLogContext(request),
           userId: user.id,
-          model: env.OPENAI_IMAGE_MODEL
+          model: selectedModel
         }
       );
       return jsonDebugError(
         request,
         startedAt,
         currentStep,
-        `Unsupported OpenAI image model: ${env.OPENAI_IMAGE_MODEL}`,
+        `Unsupported OpenAI image model: ${selectedModel}`,
         503,
         PUBLIC_IMAGE_GENERATION_UNAVAILABLE_MESSAGE
       );
     }
 
-    currentStep = "openai_environment_validation";
-    if (!env.OPENAI_API_KEY) {
+    currentStep = "provider_environment_validation";
+    if (selectedProvider === "openai" && !env.OPENAI_API_KEY) {
       logger.error("Image generation attempted without OPENAI_API_KEY", {
         ...getRequestLogContext(request),
         userId: user.id,
@@ -441,6 +537,26 @@ export async function POST(request: NextRequest) {
         PUBLIC_IMAGE_GENERATION_UNAVAILABLE_MESSAGE,
         {},
         { debugReason: "missing_openai_api_key" }
+      );
+    }
+
+    if (selectedProvider === "pollinations" && !env.POLLINATIONS_API_KEY) {
+      logger.error("Image generation attempted without POLLINATIONS_API_KEY", {
+        ...getRequestLogContext(request),
+        userId: user.id,
+        debugReason: "missing_pollinations_api_key",
+        expectedEnvironmentVariable: POLLINATIONS_API_KEY_ENV_VAR_NAME,
+        env: getRuntimeEnvDiagnostics()
+      });
+      return jsonDebugError(
+        request,
+        startedAt,
+        currentStep,
+        `${POLLINATIONS_API_KEY_ENV_VAR_NAME} is missing server-side`,
+        503,
+        PUBLIC_IMAGE_GENERATION_UNAVAILABLE_MESSAGE,
+        {},
+        { debugReason: "missing_pollinations_api_key" }
       );
     }
 
@@ -585,7 +701,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    logger.info("OpenAI moderation start for image generation", {
+    logger.info("Image prompt moderation start for image generation", {
       ...getRequestLogContext(request),
       userId: user.id,
       promptLength: payload.prompt.length,
@@ -593,9 +709,11 @@ export async function POST(request: NextRequest) {
       openaiProjectConfigured: Boolean(env.OPENAI_PROJECT_ID),
       openaiOrganizationConfigured: Boolean(env.OPENAI_ORGANIZATION)
     });
-    currentStep = "openai_moderation";
-    const moderation = await moderateImagePrompt(payload.prompt);
-    logger.info("OpenAI moderation completed for image generation", {
+    currentStep = "prompt_moderation";
+    const moderation = env.OPENAI_API_KEY
+      ? await moderateImagePrompt(payload.prompt)
+      : createBypassedModeration("openai_api_key_missing");
+    logger.info("Image prompt moderation completed for image generation", {
       ...getRequestLogContext(request),
       userId: user.id,
       flagged: moderation.flagged,
@@ -716,7 +834,8 @@ export async function POST(request: NextRequest) {
       userId: user.id,
       projectId: payload.projectId ?? null,
       brandKitId: brandKit?.id ?? null,
-      model: env.OPENAI_IMAGE_MODEL
+      provider: selectedProvider,
+      model: selectedModel
     });
 
     currentStep = "supabase_generation_insert";
@@ -725,12 +844,15 @@ export async function POST(request: NextRequest) {
       project_id: payload.projectId ?? null,
       ...(brandKit ? { brand_kit_id: brandKit.id } : {}),
       prompt: payload.prompt,
-      model: env.OPENAI_IMAGE_MODEL,
+      model: selectedModel,
       status: "queued",
       metadata: toJsonMetadata({
+        provider: selectedProvider,
+        model: selectedModel,
         moderation,
         size: payload.size,
-        quality: payload.quality
+        quality: payload.quality,
+        seed: payload.seed ?? null
       })
     });
 
@@ -752,62 +874,116 @@ export async function POST(request: NextRequest) {
     });
 
     const brandedPrompt = injectBrandIntoImagePrompt(payload.prompt, brandKit);
-    logger.info("OpenAI image request dispatching", {
+    logger.info("Image provider request dispatching", {
       ...getRequestLogContext(request),
       userId: user.id,
       generationId: generation.id,
-      model: env.OPENAI_IMAGE_MODEL,
+      provider: selectedProvider,
+      model: selectedModel,
       size: payload.size,
       quality: payload.quality,
       promptLength: brandedPrompt.length,
+      seed: payload.seed ?? null,
       hasOpenAIKey: Boolean(env.OPENAI_API_KEY),
+      hasPollinationsKey: Boolean(env.POLLINATIONS_API_KEY),
       runtimeHasOpenAIKey: Boolean(process.env[OPENAI_API_KEY_ENV_VAR_NAME]),
+      runtimeHasPollinationsKey: Boolean(
+        process.env[POLLINATIONS_API_KEY_ENV_VAR_NAME]
+      ),
       apiTimeoutSeconds: env.API_TIMEOUT_SECONDS,
-      endpoint: "POST /v1/images/generations",
-      sdkMethod: "openai.images.generate"
+      endpoint:
+        selectedProvider === "openai"
+          ? "POST /v1/images/generations"
+          : "GET https://gen.pollinations.ai/image/{prompt}",
+      sdkMethod:
+        selectedProvider === "openai" ? "openai.images.generate" : "fetch"
     });
-    currentStep = "openai_image_generation";
-    const imageResult = await withTimeout(
-      createMarketingImage({
-        prompt: brandedPrompt,
-        size: payload.size,
-        quality: payload.quality,
-        userId: user.id
-      }),
-      env.API_TIMEOUT_SECONDS * 1000
-    );
-    const image = imageResult.data;
+    currentStep = `${selectedProvider}_image_generation`;
+    const { width, height } = parseImageSize(payload.size);
+    let providerImage: ProviderImageResult;
 
-    logger.info("OpenAI image response received", {
+    if (selectedProvider === "openai") {
+      const imageResult = await withTimeout(
+        createMarketingImage({
+          prompt: brandedPrompt,
+          size: payload.size,
+          quality: payload.quality,
+          userId: user.id,
+          model: selectedModel
+        }),
+        env.API_TIMEOUT_SECONDS * 1000
+      );
+      providerImage = {
+        provider: "openai",
+        imageResult,
+        image: imageResult.data
+      };
+    } else {
+      const imageResult = await withTimeout(
+        createPollinationsImage({
+          prompt: brandedPrompt,
+          model: selectedModel,
+          width,
+          height,
+          seed: payload.seed
+        }),
+        env.API_TIMEOUT_SECONDS * 1000
+      );
+      providerImage = { provider: "pollinations", imageResult };
+    }
+
+    logger.info("Image provider response received", {
       ...getRequestLogContext(request),
       userId: user.id,
       generationId: generation.id,
-      status: imageResult.status,
-      statusText: imageResult.statusText,
-      ok: imageResult.ok,
-      requestId: imageResult.requestId,
-      responseSummary: imageResult.responseSummary,
+      provider: selectedProvider,
+      status: providerImage.imageResult.status,
+      statusText: providerImage.imageResult.statusText,
+      ok: providerImage.imageResult.ok,
+      requestId:
+        providerImage.provider === "openai"
+          ? providerImage.imageResult.requestId
+          : null,
+      responseSummary:
+        providerImage.provider === "openai"
+          ? providerImage.imageResult.responseSummary
+          : {
+              contentType: providerImage.imageResult.contentType,
+              width: providerImage.imageResult.width,
+              height: providerImage.imageResult.height
+            },
       modelAccessDenied: false,
       billingOrQuotaError: false,
       timedOut: false
     });
 
-    currentStep = "openai_json_parsing";
-    logger.info("OpenAI image JSON parsing start", {
+    currentStep = `${selectedProvider}_payload_parsing`;
+    logger.info("Image provider payload parsing start", {
       ...getRequestLogContext(request),
       userId: user.id,
+      provider: selectedProvider,
       generationId: generation.id,
-      requestId: imageResult.requestId,
-      responseSummary: imageResult.responseSummary
+      requestId:
+        providerImage.provider === "openai"
+          ? providerImage.imageResult.requestId
+          : null
     });
-    const imagePayload = await extractGeneratedImagePayload(image, {
-      ...getRequestLogContext(request),
-      userId: user.id,
-      generationId: generation.id,
-      openaiRequestId: imageResult.requestId
-    });
+    const imagePayload =
+      providerImage.provider === "openai"
+        ? await extractGeneratedImagePayload(providerImage.image, {
+            ...getRequestLogContext(request),
+            userId: user.id,
+            generationId: generation.id,
+            openaiRequestId: providerImage.imageResult.requestId
+          })
+        : {
+            base64: providerImage.imageResult.base64,
+            source: "base64" as const,
+            contentType: providerImage.imageResult.contentType,
+            revisedPrompt: null
+          };
     const base64Image = imagePayload.base64;
-    logger.info("OpenAI image JSON parsing completed", {
+    logger.info("Image provider payload parsing completed", {
       ...getRequestLogContext(request),
       userId: user.id,
       generationId: generation.id,
@@ -815,7 +991,7 @@ export async function POST(request: NextRequest) {
       base64Length: base64Image.length,
       contentType: imagePayload.contentType ?? null
     });
-    logger.info("OpenAI image payload validated", {
+    logger.info("Image provider payload validated", {
       ...getRequestLogContext(request),
       userId: user.id,
       generationId: generation.id,
@@ -832,7 +1008,8 @@ export async function POST(request: NextRequest) {
     const storagePath = await uploadGeneratedImage(
       user.id,
       generation.id,
-      base64Image
+      base64Image,
+      imagePayload.contentType ?? "image/png"
     );
     logger.info("Supabase storage upload completed", {
       ...getRequestLogContext(request),
@@ -853,15 +1030,44 @@ export async function POST(request: NextRequest) {
       storage_path: storagePath,
       metadata: toJsonMetadata({
         moderation,
+        provider: selectedProvider,
+        model: selectedModel,
         size: payload.size,
+        width,
+        height,
         quality: payload.quality,
-        openai_created: image.created ?? null,
+        seed: payload.seed ?? null,
+        openai_created:
+          providerImage.provider === "openai"
+            ? (providerImage.image.created ?? null)
+            : null,
         revised_prompt: imagePayload.revisedPrompt ?? null,
-        openai_payload_source: imagePayload.source,
-        openai_payload_content_type: imagePayload.contentType ?? null,
-        openai_request_id: imageResult.requestId ?? null,
-        openai_status: imageResult.status,
-        openai_usage: image.usage ?? null
+        openai_payload_source:
+          providerImage.provider === "openai" ? imagePayload.source : null,
+        openai_payload_content_type:
+          providerImage.provider === "openai"
+            ? (imagePayload.contentType ?? null)
+            : null,
+        openai_request_id:
+          providerImage.provider === "openai"
+            ? (providerImage.imageResult.requestId ?? null)
+            : null,
+        openai_status:
+          providerImage.provider === "openai"
+            ? providerImage.imageResult.status
+            : null,
+        openai_usage:
+          providerImage.provider === "openai"
+            ? (providerImage.image.usage ?? null)
+            : null,
+        pollinations_status:
+          providerImage.provider === "pollinations"
+            ? providerImage.imageResult.status
+            : null,
+        pollinations_content_type:
+          providerImage.provider === "pollinations"
+            ? providerImage.imageResult.contentType
+            : null
       })
     });
     logger.info("Supabase image generation completion update completed", {
@@ -983,10 +1189,8 @@ export async function POST(request: NextRequest) {
     const message = getInternalFailureMessage(error);
     const errorDiagnostics = serializeErrorForDiagnostics(error);
     const openaiDiagnostics = getOpenAIErrorDiagnostics(error);
-    const debugReason =
-      error instanceof ApiTimeoutError
-        ? "openai_request_timed_out"
-        : getOpenAIDebugReason(error);
+    const failedProvider = activeProvider;
+    const debugReason = getProviderDebugReason(error, failedProvider);
 
     logger.error("Image generation failed", {
       ...getRequestLogContext(request),
@@ -1006,7 +1210,9 @@ export async function POST(request: NextRequest) {
       modelAccessDenied:
         debugReason === "openai_model_access_or_permission_denied",
       billingOrQuotaError: debugReason === "openai_billing_or_quota_failure",
-      timedOut: debugReason === "openai_request_timed_out"
+      timedOut:
+        debugReason === "openai_request_timed_out" ||
+        debugReason === "pollinations_request_timed_out"
     });
 
     if (debugReason === "openai_model_access_or_permission_denied") {
@@ -1079,7 +1285,7 @@ export async function POST(request: NextRequest) {
 
     await logCentralizedError(error, {
       category: "generation",
-      provider: "openai",
+      provider: failedProvider,
       message,
       userId,
       requestId: request.headers.get("x-request-id"),
@@ -1109,8 +1315,10 @@ export async function POST(request: NextRequest) {
       startedAt,
       currentStep,
       message,
-      getErrorStatus(error, openaiDiagnostics.status),
-      message,
+      getProviderErrorStatus(error, failedProvider, openaiDiagnostics.status),
+      debugReason === "openai_billing_or_quota_failure"
+        ? "OpenAI image generation failed because of billing or quota limits. Try selecting Pollinations in the Studio provider menu and generate again."
+        : message,
       {
         debugReason,
         diagnostics: isDevelopmentDebugResponse()
@@ -1126,7 +1334,9 @@ export async function POST(request: NextRequest) {
                 debugReason === "openai_model_access_or_permission_denied",
               billingOrQuotaError:
                 debugReason === "openai_billing_or_quota_failure",
-              timedOut: debugReason === "openai_request_timed_out",
+              timedOut:
+                debugReason === "openai_request_timed_out" ||
+                debugReason === "pollinations_request_timed_out",
               debugReason
             }
           : undefined

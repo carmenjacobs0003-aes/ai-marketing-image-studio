@@ -3,19 +3,20 @@ import { z } from "zod";
 
 export const OPENAI_API_KEY_ENV_VAR_NAME = "OPENAI_API_KEY" as const;
 export const OPENAI_IMAGE_MODEL_ENV_VAR_NAME = "OPENAI_IMAGE_MODEL" as const;
+export const POLLINATIONS_API_KEY_ENV_VAR_NAME =
+  "POLLINATIONS_API_KEY" as const;
 export const envLoadedAt = new Date().toISOString();
 
 const baseEnvSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3000"),
   NEXT_PUBLIC_APP_NAME: z.string().default(BRAND_NAME),
-  NEXT_PUBLIC_APP_DESCRIPTION: z
-    .string()
-    .default(BRAND_DESCRIPTION),
+  NEXT_PUBLIC_APP_DESCRIPTION: z.string().default(BRAND_DESCRIPTION),
   NEXT_PUBLIC_SITE_DOMAIN: z.string().optional(),
   NEXT_PUBLIC_SUPABASE_URL: z.string().url().optional(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
   [OPENAI_API_KEY_ENV_VAR_NAME]: z.string().optional(),
+  [POLLINATIONS_API_KEY_ENV_VAR_NAME]: z.string().optional(),
   OPENAI_PROJECT_ID: z.string().optional(),
   OPENAI_ORGANIZATION: z.string().optional(),
   OPENAI_TEXT_MODEL: z.string().default("gpt-4o-mini"),
@@ -112,6 +113,7 @@ export function getDeploymentEnvironmentDiagnostics(
     | "OPENAI_IMAGE_MODEL"
     | "OPENAI_PROJECT_ID"
     | "OPENAI_ORGANIZATION"
+    | "POLLINATIONS_API_KEY"
   >
 ) {
   return {
@@ -128,20 +130,25 @@ export function getDeploymentEnvironmentDiagnostics(
       openaiApiKey: OPENAI_API_KEY_ENV_VAR_NAME,
       openaiImageModel: OPENAI_IMAGE_MODEL_ENV_VAR_NAME,
       openaiProject: "OPENAI_PROJECT_ID",
-      openaiOrganization: "OPENAI_ORGANIZATION"
+      openaiOrganization: "OPENAI_ORGANIZATION",
+      pollinationsApiKey: POLLINATIONS_API_KEY_ENV_VAR_NAME
     },
     runtimeEnvironmentVariables: {
       openaiApiKeyDetected: Boolean(values[OPENAI_API_KEY_ENV_VAR_NAME]),
       openaiImageModel: values[OPENAI_IMAGE_MODEL_ENV_VAR_NAME] ?? null,
       openaiProjectConfigured: Boolean(values.OPENAI_PROJECT_ID),
-      openaiOrganizationConfigured: Boolean(values.OPENAI_ORGANIZATION)
+      openaiOrganizationConfigured: Boolean(values.OPENAI_ORGANIZATION),
+      pollinationsApiKeyDetected: Boolean(
+        values[POLLINATIONS_API_KEY_ENV_VAR_NAME]
+      )
     },
     parsedEnvironmentVariables: parsedEnv
       ? {
           openaiApiKeyDetected: Boolean(parsedEnv.OPENAI_API_KEY),
           openaiImageModel: parsedEnv.OPENAI_IMAGE_MODEL,
           openaiProjectConfigured: Boolean(parsedEnv.OPENAI_PROJECT_ID),
-          openaiOrganizationConfigured: Boolean(parsedEnv.OPENAI_ORGANIZATION)
+          openaiOrganizationConfigured: Boolean(parsedEnv.OPENAI_ORGANIZATION),
+          pollinationsApiKeyDetected: Boolean(parsedEnv.POLLINATIONS_API_KEY)
         }
       : undefined
   };

@@ -25,7 +25,8 @@ export function decodeGeneratedImage(base64Image: string) {
 export async function uploadGeneratedImage(
   userId: string,
   generationId: string,
-  base64Image: string
+  base64Image: string,
+  contentType = "image/png"
 ) {
   const supabase = createSupabaseAdminClient();
   const storagePath = getGeneratedImageStoragePath(userId, generationId);
@@ -35,6 +36,7 @@ export async function uploadGeneratedImage(
     bucket: GENERATED_IMAGES_BUCKET,
     storagePath,
     byteLength: imageBuffer.length,
+    contentType,
     userId,
     generationId
   });
@@ -42,7 +44,7 @@ export async function uploadGeneratedImage(
   const { error } = await supabase.storage
     .from(GENERATED_IMAGES_BUCKET)
     .upload(storagePath, imageBuffer, {
-      contentType: "image/png",
+      contentType,
       upsert: true
     });
 
