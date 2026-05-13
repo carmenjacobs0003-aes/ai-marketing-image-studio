@@ -41,8 +41,8 @@ type ImageGenerationApiResponse =
       usage?: UsageSummary;
     };
 
-const PUBLIC_IMAGE_GENERATION_UNAVAILABLE_MESSAGE =
-  "Image generation is temporarily unavailable. Please try again shortly.";
+const PUBLIC_IMAGE_GENERATION_UNAVAILABLE_MESSAGE = "Unavailable";
+
 const DEFAULT_OPENAI_MODEL = "gpt-image-1";
 const DEFAULT_POLLINATIONS_MODEL = "flux";
 
@@ -51,41 +51,14 @@ function getGenerationErrorMessage(
   message?: string,
   step?: string
 ) {
-  if (message) {
-    return step ? `${message} (failed step: ${step})` : message;
-  }
-
-  if (status >= 500 || status === 503) {
-    return PUBLIC_IMAGE_GENERATION_UNAVAILABLE_MESSAGE;
-  }
-
-  if (status === 401) {
-    return "Please sign in again before generating an image.";
-  }
-
-  if (status === 429) {
-    return "Image generation is busy right now. Please wait a moment and try again.";
-  }
-
-  return "Unable to generate image. Please try again.";
+  return "Unavailable";
 }
 
 function getBackendDebugReason(
   status: number,
   payload: Extract<ImageGenerationApiResponse, { success: false }> | null
 ) {
-  if (!payload) {
-    return `Backend did not return a valid JSON error body. HTTP status: ${status}.`;
-  }
-
-  const parts = [
-    payload.error ? `Error: ${payload.error}` : null,
-    payload.step ? `Step: ${payload.step}` : null,
-    payload.debugReason ? `Debug reason: ${payload.debugReason}` : null,
-    `HTTP status: ${status}`
-  ].filter(Boolean);
-
-  return parts.join(" · ");
+  return "Unavailable";
 }
 
 async function readGenerationResponse(response: Response) {
@@ -107,26 +80,37 @@ export function StudioCanvas({
   usage: initialUsage
 }: StudioCanvasProps) {
   const searchParams = useSearchParams();
+
   const [prompt, setPrompt] = useState(searchParams.get("prompt") ?? "");
   const [brandKitId, setBrandKitId] = useState("");
-  const [provider, setProvider] = useState<ImageGenerationProvider>("openai");
+  const [provider, setProvider] =
+    useState<ImageGenerationProvider>("openai");
+
   const [model, setModel] = useState(DEFAULT_OPENAI_MODEL);
   const [size, setSize] = useState("1024x1024");
   const [seed, setSeed] = useState("");
   const [usage, setUsage] = useState(initialUsage);
-  const [image, setImage] = useState<GeneratedImageResponse | null>(null);
+
+  const [image, setImage] =
+    useState<GeneratedImageResponse | null>(null);
+
   const [error, setError] = useState<string | null>(null);
-  const [backendDebugError, setBackendDebugError] = useState<string | null>(
-    null
-  );
+
+  const [backendDebugError, setBackendDebugError] =
+    useState<string | null>(null);
+
   const [isLoading, setIsLoading] = useState(false);
   const [submissionQueued, setSubmissionQueued] = useState(false);
+
   const submitInFlightRef = useRef(false);
   const activeGenerationRequestRef = useRef(0);
   const lastSubmitAtRef = useRef(0);
   const signedUrlRefreshInFlightRef = useRef(false);
+
   const submitDebounceMs = 1000;
-  const limitReached = usage.totalGenerations >= usage.monthlyGenerationLimit;
+
+  const limitReached =
+    usage.totalGenerations >= usage.monthlyGenerationLimit;
 
   useEffect(() => {
     return () => {
@@ -142,9 +126,13 @@ export function StudioCanvas({
     signedUrlRefreshInFlightRef.current = true;
 
     try {
-      const response = await fetch(`/api/images/${imageId}/signed-url`, {
-        method: "POST"
-      });
+      const response = await fetch(
+        `/api/images/${imageId}/signed-url`,
+        {
+          method: "POST"
+        }
+      );
+
       const payload = (await response.json()) as {
         signedUrl?: string | null;
         downloadUrl?: string | null;
@@ -158,14 +146,15 @@ export function StudioCanvas({
         current?.id === imageId
           ? {
               ...current,
-              signedUrl: payload.signedUrl ?? current.signedUrl,
-              downloadUrl: payload.downloadUrl ?? current.downloadUrl
+              signedUrl:
+                payload.signedUrl ?? current.signedUrl,
+              downloadUrl:
+                payload.downloadUrl ?? current.downloadUrl
             }
           : current
       );
     } catch {
-      // Keep the completed generation recoverable by retrying when state changes
-      // or when the user reloads the library/studio view.
+      // ignore
     } finally {
       signedUrlRefreshInFlightRef.current = false;
     }
@@ -178,7 +167,9 @@ export function StudioCanvas({
   }, [image, refreshSignedUrls]);
 
   async function refreshUsage() {
-    const response = await fetch("/api/me/usage", { cache: "no-store" });
+    const response = await fetch("/api/me/usage", {
+      cache: "no-store"
+    });
 
     if (response.ok) {
       setUsage(await response.json());
@@ -192,36 +183,45 @@ export function StudioCanvas({
       return true;
     }
 
-    if (now - lastSubmitAtRef.current < submitDebounceMs) {
+    if (
+      now - lastSubmitAtRef.current <
+      submitDebounceMs
+    ) {
       return true;
     }
 
     submitInFlightRef.current = true;
     lastSubmitAtRef.current = now;
+
     return false;
   }
 
-  function onGenerateButtonClick(event: MouseEvent<HTMLButtonElement>) {
-    if (submitInFlightRef.current || submissionQueued) {
+  function onGenerateButtonClick(
+    event: MouseEvent<HTMLButtonElement>
+  ) {
+    if (
+      submitInFlightRef.current ||
+      submissionQueued
+    ) {
       event.preventDefault();
       event.stopPropagation();
     }
   }
 
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+  async function onSubmit(
+    event: FormEvent<HTMLFormElement>
+  ) {
     event.preventDefault();
 
     if (isDuplicateSubmission()) {
-      console.info("Duplicate image generation submit ignored", {
-        isLoading,
-        submissionQueued,
-        msSinceLastSubmit: Date.now() - lastSubmitAtRef.current
-      });
       return;
     }
 
-    const requestId = activeGenerationRequestRef.current + 1;
-    activeGenerationRequestRef.current = requestId;
+    const requestId =
+      activeGenerationRequestRef.current + 1;
+
+    activeGenerationRequestRef.current =
+      requestId;
 
     setSubmissionQueued(true);
     setError(null);
@@ -229,76 +229,110 @@ export function StudioCanvas({
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/images/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt,
-          brandKitId: brandKitId || undefined,
-          provider,
-          model: model.trim() || undefined,
-          size,
-          seed: seed.trim() ? Number(seed) : undefined
-        })
-      });
-      const payload = await readGenerationResponse(response);
+      const response = await fetch(
+        "/api/images/generate",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+          body: JSON.stringify({
+            prompt,
+            brandKitId:
+              brandKitId || undefined,
+            provider,
+            model:
+              model.trim() || undefined,
+            size,
+            seed: seed.trim()
+              ? Number(seed)
+              : undefined
+          })
+        }
+      );
 
-      if (!response.ok || !payload || !payload.success) {
-        const errorPayload = payload && !payload.success ? payload : null;
-        console.error("Image generation API returned an error", {
-          status: response.status,
-          statusText: response.statusText,
-          payload: errorPayload
-        });
-        if (activeGenerationRequestRef.current !== requestId) return;
-
-        setError(
-          getGenerationErrorMessage(
-            response.status,
-            errorPayload?.publicError ?? errorPayload?.error,
-            errorPayload?.step
-          )
+      const payload =
+        await readGenerationResponse(
+          response
         );
+
+      if (
+        !response.ok ||
+        !payload ||
+        !payload.success
+      ) {
+        const errorPayload =
+          payload && !payload.success
+            ? payload
+            : null;
+
+        if (
+          activeGenerationRequestRef.current !==
+          requestId
+        ) {
+          return;
+        }
+
+        setError("Unavailable");
+
         setBackendDebugError(
-          getBackendDebugReason(response.status, errorPayload)
+          "Unavailable"
         );
-        if (payload && !payload.success && payload.usage) {
+
+        if (
+          payload &&
+          !payload.success &&
+          payload.usage
+        ) {
           setUsage(payload.usage);
         }
+
         return;
       }
 
-      if (activeGenerationRequestRef.current !== requestId) return;
+      if (
+        activeGenerationRequestRef.current !==
+        requestId
+      ) {
+        return;
+      }
 
       setImage(payload);
       setPrompt("");
-      await refreshUsage();
-    } catch (caughtError) {
-      if (activeGenerationRequestRef.current !== requestId) return;
 
-      console.error("Image generation submit failed before API JSON response", {
-        error:
-          caughtError instanceof Error
-            ? caughtError.message
-            : String(caughtError)
-      });
-      setError(PUBLIC_IMAGE_GENERATION_UNAVAILABLE_MESSAGE);
+      await refreshUsage();
+    } catch {
+      if (
+        activeGenerationRequestRef.current !==
+        requestId
+      ) {
+        return;
+      }
+
+      setError("Unavailable");
+
       setBackendDebugError(
-        caughtError instanceof Error
-          ? `Client request failed before a backend JSON response was available: ${caughtError.message}`
-          : "Client request failed before a backend JSON response was available."
+        "Unavailable"
       );
     } finally {
-      if (activeGenerationRequestRef.current === requestId) {
+      if (
+        activeGenerationRequestRef.current ===
+        requestId
+      ) {
         submitInFlightRef.current = false;
+
         setSubmissionQueued(false);
         setIsLoading(false);
       }
     }
   }
 
-  function onProviderChange(nextProvider: ImageGenerationProvider) {
+  function onProviderChange(
+    nextProvider: ImageGenerationProvider
+  ) {
     setProvider(nextProvider);
+
     setModel(
       nextProvider === "pollinations"
         ? DEFAULT_POLLINATIONS_MODEL
@@ -318,61 +352,94 @@ export function StudioCanvas({
       <aside className="glass-card space-y-6 p-6">
         <div>
           <p className="eyebrow">Studio</p>
+
           <h1 className="mt-2 text-3xl font-black tracking-tight">
             Generate an image
           </h1>
+
           <p className="mt-2 text-sm leading-6 text-slate-300">
-            Generate cinematic visual assets from a single prompt. Completed
-            images are stored in your private library.
+            Generate cinematic visual assets from a
+            single prompt. Completed images are
+            stored in your private library.
           </p>
         </div>
+
         <div className="rounded-2xl border border-cyan-300/30 bg-cyan-300/10 p-4 shadow-lg shadow-cyan-500/10">
           <p className="text-sm text-cyan-100">
             Monthly pooled usage · {usage.plan}
           </p>
+
           <p className="mt-1 text-2xl font-black">
-            {usage.totalGenerations}/{usage.monthlyGenerationLimit}
+            {usage.totalGenerations}/
+            {usage.monthlyGenerationLimit}
           </p>
+
           <p className="text-xs text-slate-300">
-            {usage.remainingGenerations} generations remaining this month. Use
-            them in any combination up to {usage.monthlyGenerationLimit} total
-            monthly generations.
+            {usage.remainingGenerations}
+            generations remaining this month.
           </p>
         </div>
-        <form className="space-y-4" onSubmit={onSubmit}>
+
+        <form
+          className="space-y-4"
+          onSubmit={onSubmit}
+        >
           <label
             className="block space-y-2 text-sm font-medium"
             htmlFor="studio-prompt"
           >
             <span>Prompt</span>
+
             <textarea
               id="studio-prompt"
               name="prompt"
               className="field-control min-h-44"
-              disabled={isLoading || limitReached}
-              onChange={(event) => setPrompt(event.target.value)}
-              placeholder="Describe the product, lighting, camera style, composition, and background..."
+              disabled={
+                isLoading || limitReached
+              }
+              onChange={(event) =>
+                setPrompt(
+                  event.target.value
+                )
+              }
+              placeholder="Describe the product..."
               value={prompt}
             />
           </label>
+
           <label
             className="block space-y-2 text-sm font-medium"
             htmlFor="studio-brand-kit"
           >
             <span>Brand kit</span>
+
             <select
               id="studio-brand-kit"
               name="brandKitId"
               className="field-control"
-              disabled={isLoading || limitReached}
-              onChange={(event) => setBrandKitId(event.target.value)}
+              disabled={
+                isLoading || limitReached
+              }
+              onChange={(event) =>
+                setBrandKitId(
+                  event.target.value
+                )
+              }
               value={brandKitId}
             >
-              <option value="">Auto: default brand kit</option>
+              <option value="">
+                Auto: default brand kit
+              </option>
+
               {brandKits.map((brandKit) => (
-                <option key={brandKit.id} value={brandKit.id}>
+                <option
+                  key={brandKit.id}
+                  value={brandKit.id}
+                >
                   {brandKit.name}
-                  {brandKit.is_default ? " · default" : ""}
+                  {brandKit.is_default
+                    ? " · default"
+                    : ""}
                 </option>
               ))}
             </select>
@@ -383,111 +450,59 @@ export function StudioCanvas({
             htmlFor="studio-provider"
           >
             <span>Provider</span>
+
             <select
               id="studio-provider"
               name="provider"
               className="field-control"
-              disabled={isLoading || limitReached}
+              disabled={
+                isLoading || limitReached
+              }
               onChange={(event) =>
-                onProviderChange(event.target.value as ImageGenerationProvider)
+                onProviderChange(
+                  event.target.value as ImageGenerationProvider
+                )
               }
               value={provider}
             >
-              <option value="openai">OpenAI</option>
-              <option value="pollinations">Pollinations</option>
+              <option value="openai">
+                OpenAI
+              </option>
+
+              <option value="pollinations">
+                Pollinations
+              </option>
             </select>
           </label>
-          <label
-            className="block space-y-2 text-sm font-medium"
-            htmlFor="studio-model"
-          >
-            <span>Model</span>
-            <input
-              id="studio-model"
-              name="model"
-              className="field-control"
-              disabled={isLoading || limitReached}
-              onChange={(event) => setModel(event.target.value)}
-              placeholder={
-                provider === "pollinations"
-                  ? DEFAULT_POLLINATIONS_MODEL
-                  : DEFAULT_OPENAI_MODEL
-              }
-              value={model}
-            />
-          </label>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label
-              className="block space-y-2 text-sm font-medium"
-              htmlFor="studio-size"
-            >
-              <span>Size</span>
-              <select
-                id="studio-size"
-                name="size"
-                className="field-control"
-                disabled={isLoading || limitReached}
-                onChange={(event) => setSize(event.target.value)}
-                value={size}
-              >
-                <option value="1024x1024">1024 × 1024</option>
-                <option value="1024x1792">1024 × 1792</option>
-                <option value="1792x1024">1792 × 1024</option>
-              </select>
-            </label>
-            <label
-              className="block space-y-2 text-sm font-medium"
-              htmlFor="studio-seed"
-            >
-              <span>Seed</span>
-              <input
-                id="studio-seed"
-                name="seed"
-                className="field-control"
-                disabled={isLoading || limitReached || provider === "openai"}
-                inputMode="numeric"
-                min="0"
-                onChange={(event) => setSeed(event.target.value)}
-                placeholder="Optional"
-                type="number"
-                value={seed}
-              />
-            </label>
-          </div>
-          {error ? (
-            <p className="rounded-2xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
-              {error}
-            </p>
-          ) : null}
-          {limitReached ? (
-            <p className="rounded-2xl border border-cyan-300/20 bg-black p-3 text-sm text-cyan-100">
-              Monthly generation limit reached. Upgrade for more total monthly
-              generations.
-            </p>
-          ) : null}
+
           <button
             className="neon-button w-full"
             disabled={generateDisabled}
-            onClick={onGenerateButtonClick}
-            style={{ touchAction: "manipulation" }}
+            onClick={
+              onGenerateButtonClick
+            }
+            style={{
+              touchAction:
+                "manipulation"
+            }}
             type="submit"
           >
-            {isLoading || submissionQueued ? "Generating..." : "Generate image"}
+            {isLoading ||
+            submissionQueued
+              ? "Generating..."
+              : "Generate image"}
           </button>
         </form>
-        {backendDebugError ? (
-          <div className="rounded-2xl border border-amber-300/30 bg-amber-400/10 p-3 text-sm text-amber-100">
-            <p className="font-semibold">Backend debug reason</p>
-            <p className="mt-1 break-words">{backendDebugError}</p>
-          </div>
-        ) : null}
       </aside>
+
       <section className="glass-card p-4 shadow-2xl shadow-cyan-950/20 sm:p-6">
         <div className="flex h-full min-h-[460px] items-center justify-center rounded-2xl border border-dashed border-cyan-300/30 bg-black p-4 text-center text-slate-300">
           {isLoading ? (
             <div className="w-full max-w-xl animate-pulse space-y-4">
               <div className="aspect-square rounded-3xl border border-cyan-300/20 bg-cyan-300/10 shadow-2xl shadow-cyan-500/10" />
+
               <div className="mx-auto h-4 w-2/3 rounded-full bg-white/10" />
+
               <div className="mx-auto h-4 w-1/2 rounded-full bg-white/10" />
             </div>
           ) : image?.signedUrl ? (
@@ -498,24 +513,33 @@ export function StudioCanvas({
                   className="object-contain"
                   fill
                   sizes="(min-width: 1024px) 60vw, 100vw"
-                  onError={() => refreshSignedUrls(image.id)}
+                  onError={() =>
+                    refreshSignedUrls(
+                      image.id
+                    )
+                  }
                   src={image.signedUrl}
                 />
               </div>
+
               <div className="space-y-4 border-t border-white/10 p-4 text-left sm:flex sm:items-center sm:justify-between sm:gap-4 sm:space-y-0">
                 <div>
                   <p className="text-sm font-semibold text-white">
                     Generation saved
                   </p>
+
                   <p className="mt-1 line-clamp-2 text-sm text-slate-300">
                     {image.prompt}
                   </p>
                 </div>
+
                 {image.downloadUrl ? (
                   <a
                     className="inline-flex w-full justify-center ghost-button px-4 py-2 text-sm sm:w-auto"
                     download
-                    href={image.downloadUrl}
+                    href={
+                      image.downloadUrl
+                    }
                   >
                     Download
                   </a>
@@ -523,11 +547,15 @@ export function StudioCanvas({
               </div>
             </article>
           ) : image?.storagePath ? (
-            <p>Restoring saved preview...</p>
+            <p>
+              Restoring saved preview...
+            </p>
           ) : (
             <p>
-              Generated visuals appear here with preview, download, and project
-              save options.
+              Generated visuals appear
+              here with preview,
+              download, and project save
+              options.
             </p>
           )}
         </div>
