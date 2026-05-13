@@ -288,7 +288,7 @@ export function CommunityGallery(props: CommunityGalleryProps) {
       <div className="relative z-10 mx-auto max-w-7xl space-y-8">
         <nav className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Link className="text-xl font-black text-white" href="/">
-            AI<span className="text-cyan-300">Studio</span>
+            SYNTRIX<span className="text-cyan-300">ai</span>
           </Link>
           <div className="flex gap-2">
             <Link className="ghost-button px-4 py-2 text-sm" href="/login">
