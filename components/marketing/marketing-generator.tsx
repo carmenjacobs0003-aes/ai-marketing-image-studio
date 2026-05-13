@@ -250,6 +250,7 @@ export function MarketingGenerator({
   const [isLoading, setIsLoading] = useState(false);
   const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const activeGenerationRequestRef = useRef(0);
   const lastSubmitAtRef = useRef(0);
   const limitReached = usage.totalGenerations >= usage.monthlyGenerationLimit;
   const canUsePremiumTemplates = isPaidPlan(usage.plan);
@@ -265,6 +266,12 @@ export function MarketingGenerator({
     limitReached ||
     prompt.trim().length < 10 ||
     cooldownRemainingSeconds > 0;
+
+  useEffect(() => {
+    return () => {
+      activeGenerationRequestRef.current += 1;
+    };
+  }, []);
 
   useEffect(() => {
     if (!cooldownUntil) return;
@@ -299,6 +306,9 @@ export function MarketingGenerator({
       return;
     }
     lastSubmitAtRef.current = submittedAt;
+    const requestId = activeGenerationRequestRef.current + 1;
+    activeGenerationRequestRef.current = requestId;
+
     setNow(submittedAt);
     setError(null);
     setSuccessMessage(null);
@@ -318,6 +328,8 @@ export function MarketingGenerator({
       const payload = (await response.json()) as MarketingGeneratePayload;
 
       if (!response.ok) {
+        if (activeGenerationRequestRef.current !== requestId) return;
+
         if ("usage" in payload && payload.usage) {
           setUsage(payload.usage);
         }
@@ -341,6 +353,8 @@ export function MarketingGenerator({
         return;
       }
 
+      if (activeGenerationRequestRef.current !== requestId) return;
+
       if ("generation" in payload) {
         setGenerations((current) =>
           [payload.generation, ...current].slice(0, 8)
@@ -356,6 +370,8 @@ export function MarketingGenerator({
         }
       }
     } catch (generationError) {
+      if (activeGenerationRequestRef.current !== requestId) return;
+
       setError(
         getFriendlyMarketingError(
           generationError instanceof Error
@@ -364,7 +380,9 @@ export function MarketingGenerator({
         )
       );
     } finally {
-      setIsLoading(false);
+      if (activeGenerationRequestRef.current === requestId) {
+        setIsLoading(false);
+      }
     }
   }
 
