@@ -21,6 +21,7 @@ export type AppNotification = {
   body: string;
   href?: string;
   createdAt: string;
+  expiresAt?: string | null;
   read: boolean;
   realtime?: boolean;
 };

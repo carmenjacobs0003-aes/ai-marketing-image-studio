@@ -3,7 +3,7 @@
 import { BRAND_NAME } from "@/lib/branding";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useSearchParams } from "next/navigation";
-import type { BrandKit, MarketingGeneration, Project } from "@/lib/db/queries";
+import type { BrandKit, MarketingGeneration } from "@/lib/db/queries";
 import Link from "next/link";
 import {
   marketingTemplates,
@@ -22,7 +22,6 @@ import {
 type MarketingGeneratorProps = {
   usage: UsageSummary;
   generations: MarketingGeneration[];
-  projects: Project[];
   brandKits: BrandKit[];
 };
 
@@ -235,7 +234,6 @@ function MarketingOutputView({ output }: { output: MarketingOutput }) {
 export function MarketingGenerator({
   usage: initialUsage,
   generations: initialGenerations,
-  projects,
   brandKits
 }: MarketingGeneratorProps) {
   const searchParams = useSearchParams();
@@ -243,14 +241,10 @@ export function MarketingGenerator({
   const [contentType, setContentType] = useState<MarketingContentType>(
     "complete_marketing_pack"
   );
-  const [projectId, setProjectId] = useState("");
   const [brandKitId, setBrandKitId] = useState("");
   const [templateId, setTemplateId] = useState("");
   const [usage, setUsage] = useState(initialUsage);
   const [generations, setGenerations] = useState(initialGenerations);
-  const [savingGenerationId, setSavingGenerationId] = useState<string | null>(
-    null
-  );
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -294,55 +288,6 @@ export function MarketingGenerator({
     }
   }
 
-  async function saveGenerationToProject(
-    generationId: string,
-    nextProjectId: string | null
-  ) {
-    setSavingGenerationId(generationId);
-    setError(null);
-
-    try {
-      const response = await fetch(
-        `/api/marketing/${generationId}/save-to-project`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ projectId: nextProjectId })
-        }
-      );
-      const payload = await response.json();
-
-      if (!response.ok) {
-        setError(
-          getFriendlyMarketingError(
-            payload.error ?? "Unable to save marketing content to project.",
-            response.status
-          )
-        );
-        return;
-      }
-
-      setGenerations((current) =>
-        current.map((item) =>
-          item.id === generationId
-            ? { ...item, project_id: payload.projectId }
-            : item
-        )
-      );
-      setSuccessMessage("Campaign content project updated.");
-    } catch (saveError) {
-      setError(
-        getFriendlyMarketingError(
-          saveError instanceof Error
-            ? saveError.message
-            : "Unable to save marketing content to project."
-        )
-      );
-    } finally {
-      setSavingGenerationId(null);
-    }
-  }
-
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -366,7 +311,6 @@ export function MarketingGenerator({
         body: JSON.stringify({
           prompt,
           contentType,
-          projectId: projectId || undefined,
           brandKitId: brandKitId || undefined,
           templateId: templateId || undefined
         })
@@ -519,22 +463,6 @@ export function MarketingGenerator({
               </p>
             ) : null}
             <label className="block space-y-2 text-sm font-medium">
-              <span>Save to project</span>
-              <select
-                className="field-control"
-                disabled={isLoading || limitReached}
-                onChange={(event) => setProjectId(event.target.value)}
-                value={projectId}
-              >
-                <option value="">Marketing library only</option>
-                {projects.map((project) => (
-                  <option key={project.id} value={project.id}>
-                    {project.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="block space-y-2 text-sm font-medium">
               <span>Brand kit</span>
               <select
                 className="field-control"
@@ -542,7 +470,7 @@ export function MarketingGenerator({
                 onChange={(event) => setBrandKitId(event.target.value)}
                 value={brandKitId}
               >
-                <option value="">Auto: project/default brand kit</option>
+                <option value="">Auto: default brand kit</option>
                 {brandKits.map((brandKit) => (
                   <option key={brandKit.id} value={brandKit.id}>
                     {brandKit.name}
@@ -600,8 +528,8 @@ export function MarketingGenerator({
                   </span>
                 </div>
                 <p className="mt-2 text-xs leading-5 text-slate-300">
-                  {BRAND_NAME} is checking the brief, applying brand context, and
-                  saving the finished content.
+                  {BRAND_NAME} is checking the brief, applying brand context,
+                  and saving the finished content.
                 </p>
               </div>
             ) : null}
@@ -671,29 +599,6 @@ export function MarketingGenerator({
                       sourceId={generation.id}
                     />
                   </div>
-                  <label className="mt-4 block space-y-2 text-sm">
-                    <span className="text-slate-300">
-                      Save content to project
-                    </span>
-                    <select
-                      className="field-control py-2"
-                      disabled={savingGenerationId === generation.id}
-                      onChange={(event) =>
-                        saveGenerationToProject(
-                          generation.id,
-                          event.target.value || null
-                        )
-                      }
-                      value={generation.project_id ?? ""}
-                    >
-                      <option value="">Marketing library only</option>
-                      {projects.map((project) => (
-                        <option key={project.id} value={project.id}>
-                          {project.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
                   {output ? (
                     <MarketingOutputView output={output} />
                   ) : (

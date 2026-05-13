@@ -1,16 +1,13 @@
 import { ImageLibraryGrid } from "@/components/images/image-library-grid";
 import { requireUser } from "@/lib/auth/session";
-import { listImageGenerations, listProjects } from "@/lib/db/queries";
+import { listImageGenerations } from "@/lib/db/queries";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { withSignedImageUrls } from "@/lib/storage/images";
 
 export default async function ImagesPage() {
   const user = await requireUser("/images");
   const supabase = createSupabaseServerClient();
-  const [images, projects] = await Promise.all([
-    listImageGenerations(supabase, user.id, 24),
-    listProjects(supabase, user.id)
-  ]);
+  const images = await listImageGenerations(supabase, user.id, 24);
   const imagesWithPreviews = await withSignedImageUrls(images);
 
   return (
@@ -22,11 +19,11 @@ export default async function ImagesPage() {
             Generated image library
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
-            Preview generated visuals, download files, and attach finished
-            concepts to active projects.
+            Preview generated visuals, download files, and publish finished
+            concepts to the gallery.
           </p>
         </header>
-        <ImageLibraryGrid images={imagesWithPreviews} projects={projects} />
+        <ImageLibraryGrid images={imagesWithPreviews} />
       </div>
     </main>
   );

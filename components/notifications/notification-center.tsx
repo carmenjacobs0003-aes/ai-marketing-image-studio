@@ -51,6 +51,44 @@ const NotificationContext = createContext<NotificationContextValue | null>(
 );
 const STORAGE_KEY = "syntrix-ai.notifications.v1";
 
+const DEFAULT_NOTIFICATION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+function addMilliseconds(date: Date, milliseconds: number) {
+  return new Date(date.getTime() + milliseconds).toISOString();
+}
+
+function isActiveNotification(notification: AppNotification, now = new Date()) {
+  if (!notification.expiresAt) return true;
+  const expiresAt = Date.parse(notification.expiresAt);
+  return Number.isNaN(expiresAt) || expiresAt >= now.getTime();
+}
+
+function sortNotificationsNewestFirst(notifications: AppNotification[]) {
+  return [...notifications].sort((a, b) => {
+    const bTime = Date.parse(b.createdAt);
+    const aTime = Date.parse(a.createdAt);
+    return (
+      (Number.isNaN(bTime) ? 0 : bTime) - (Number.isNaN(aTime) ? 0 : aTime)
+    );
+  });
+}
+
+function compactActiveNotifications(notifications: AppNotification[]) {
+  const now = new Date();
+  const unique = new Map<string, AppNotification>();
+
+  sortNotificationsNewestFirst(notifications).forEach((notification) => {
+    if (
+      isActiveNotification(notification, now) &&
+      !unique.has(notification.id)
+    ) {
+      unique.set(notification.id, notification);
+    }
+  });
+
+  return Array.from(unique.values()).slice(0, 20);
+}
+
 function makeId(prefix: string) {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -86,7 +124,9 @@ function toneClasses(tone: NotificationTone) {
 }
 
 function defaultNotifications(email?: string | null): AppNotification[] {
-  const now = new Date().toISOString();
+  const nowDate = new Date();
+  const now = nowDate.toISOString();
+  const expiresAt = addMilliseconds(nowDate, DEFAULT_NOTIFICATION_TTL_MS);
 
   return [
     {
@@ -97,6 +137,7 @@ function defaultNotifications(email?: string | null): AppNotification[] {
       body: `Your generation workspace is online${email ? ` for ${email}` : ""}. Start setup to prepare your first generation.`,
       href: "/dashboard?onboarding=1",
       createdAt: now,
+      expiresAt,
       read: false
     },
     {
@@ -107,6 +148,7 @@ function defaultNotifications(email?: string | null): AppNotification[] {
       body: "Set notifications, email digests, and creator preferences.",
       href: "/settings",
       createdAt: now,
+      expiresAt,
       read: false
     },
     {
@@ -114,9 +156,10 @@ function defaultNotifications(email?: string | null): AppNotification[] {
       kind: "achievement",
       tone: "info",
       title: "Achievements are being prepared",
-      body: "First project, first save, and gallery activity achievements will appear here.",
+      body: "First generation, first save, and gallery activity achievements will appear here.",
       href: "/settings#achievements",
       createdAt: now,
+      expiresAt,
       read: true
     }
   ];
@@ -125,7 +168,9 @@ function defaultNotifications(email?: string | null): AppNotification[] {
 function buildUsageNotifications(usage?: UsageSummary): AppNotification[] {
   if (!usage) return [];
   const notifications: AppNotification[] = [];
-  const now = new Date().toISOString();
+  const nowDate = new Date();
+  const now = nowDate.toISOString();
+  const expiresAt = addMilliseconds(nowDate, 24 * 60 * 60 * 1000);
   const limit = usage.monthlyGenerationLimit;
 
   if (limit > 0 && usage.totalGenerations / limit >= 0.8) {
@@ -137,6 +182,7 @@ function buildUsageNotifications(usage?: UsageSummary): AppNotification[] {
       body: `${usage.totalGenerations}/${limit} total monthly generations used. Use images and marketing in any combination up to your monthly limit.`,
       href: "/billing",
       createdAt: now,
+      expiresAt,
       read: false
     });
   }
@@ -150,6 +196,7 @@ function buildUsageNotifications(usage?: UsageSummary): AppNotification[] {
       body: "Creator includes 50 total monthly generations across image and marketing tools.",
       href: "/billing",
       createdAt: now,
+      expiresAt,
       read: false
     });
   }
@@ -204,12 +251,20 @@ export function NotificationProvider({
       const next: AppNotification = {
         id: notification.id ?? makeId("notification"),
         createdAt: notification.createdAt ?? new Date().toISOString(),
+        expiresAt:
+          notification.expiresAt ??
+          addMilliseconds(new Date(), DEFAULT_NOTIFICATION_TTL_MS),
         read: notification.read ?? false,
         realtime: true,
         ...notification
       };
+      if (!isActiveNotification(next)) return;
+
       setNotifications((current) =>
-        [next, ...current.filter((item) => item.id !== next.id)].slice(0, 20)
+        compactActiveNotifications([
+          next,
+          ...current.filter((item) => item.id !== next.id)
+        ])
       );
       toast({ tone: next.tone, title: next.title, body: next.body });
     },
@@ -228,18 +283,20 @@ export function NotificationProvider({
       }
     }
 
-    const merged = [
-      ...buildUsageNotifications(usage),
-      ...parsed,
-      ...defaultNotifications(email)
-    ];
-    const unique = new Map<string, AppNotification>();
-    merged.forEach((notification) => unique.set(notification.id, notification));
-    setNotifications(Array.from(unique.values()).slice(0, 20));
+    setNotifications(
+      compactActiveNotifications([
+        ...buildUsageNotifications(usage),
+        ...parsed,
+        ...defaultNotifications(email)
+      ])
+    );
   }, [email, usage]);
 
   useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(notifications));
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(compactActiveNotifications(notifications))
+    );
   }, [notifications]);
 
   useEffect(() => {
@@ -267,16 +324,16 @@ export function NotificationProvider({
               kind: "saved_generation",
               tone: "success",
               title: "Generation saved",
-              body: "Your asset was saved to the selected project.",
-              href: "/projects"
+              body: "Your asset was saved to your library.",
+              href: "/images"
             });
           } else if (url.includes("/api/projects")) {
             notify({
               kind: "achievement",
               tone: "success",
-              title: "Project progress updated",
-              body: "Your first-project setup checklist has been refreshed.",
-              href: "/projects"
+              title: "Workspace updated",
+              body: "Your workspace changes were saved.",
+              href: "/dashboard"
             });
           } else if (url.includes("/favorite") || url.includes("/metric")) {
             notify({
@@ -310,7 +367,11 @@ export function NotificationProvider({
     };
   }, [notify, toast]);
 
-  const unreadCount = notifications.filter(
+  const activeNotifications = useMemo(
+    () => compactActiveNotifications(notifications),
+    [notifications]
+  );
+  const unreadCount = activeNotifications.filter(
     (notification) => !notification.read
   ).length;
   const value = useMemo(() => ({ notify, toast }), [notify, toast]);
@@ -344,7 +405,9 @@ export function NotificationProvider({
                   className="ghost-button px-3 py-2 text-xs"
                   onClick={() =>
                     setNotifications((current) =>
-                      current.map((item) => ({ ...item, read: true }))
+                      compactActiveNotifications(
+                        current.map((item) => ({ ...item, read: true }))
+                      )
                     )
                   }
                   type="button"
@@ -361,7 +424,7 @@ export function NotificationProvider({
               </div>
             </div>
             <div className="max-h-[70vh] space-y-2 overflow-y-auto p-3">
-              {notifications.map((notification) => {
+              {activeNotifications.map((notification) => {
                 const Icon = iconFor(notification.kind);
                 const content = (
                   <div

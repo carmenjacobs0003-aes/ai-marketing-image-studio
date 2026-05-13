@@ -2,7 +2,6 @@ import Link from "next/link";
 import { ArrowRight, ImageIcon, Megaphone, Sparkles } from "lucide-react";
 import { requireUser } from "@/lib/auth/session";
 import {
-  countProjects,
   getProfile,
   listBrandKits,
   listImageGenerations,
@@ -15,21 +14,14 @@ import { OnboardingFlow } from "@/components/onboarding/onboarding-flow";
 export default async function DashboardPage() {
   const user = await requireUser("/dashboard");
   const supabase = createSupabaseServerClient();
-  const [
-    usage,
-    profile,
-    projectCount,
-    brandKits,
-    imageGenerations,
-    marketingGenerations
-  ] = await Promise.all([
-    getUsageSummary(user.id),
-    getProfile(supabase, user.id),
-    countProjects(supabase, user.id),
-    listBrandKits(supabase, user.id),
-    listImageGenerations(supabase, user.id, 5),
-    listMarketingGenerations(supabase, user.id, 5)
-  ]);
+  const [usage, profile, brandKits, imageGenerations, marketingGenerations] =
+    await Promise.all([
+      getUsageSummary(user.id),
+      getProfile(supabase, user.id),
+      listBrandKits(supabase, user.id),
+      listImageGenerations(supabase, user.id, 5),
+      listMarketingGenerations(supabase, user.id, 5)
+    ]);
 
   const quickActions = [
     {
@@ -95,11 +87,10 @@ export default async function DashboardPage() {
           hasGenerations={
             imageGenerations.length + marketingGenerations.length > 0
           }
-          hasProjects={projectCount > 0}
           profileComplete={Boolean(profile?.full_name)}
         />
 
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <article className="metric-card">
             <p className="text-sm text-slate-300">Monthly generations</p>
             <p className="mt-2 text-3xl font-black">
@@ -111,10 +102,6 @@ export default async function DashboardPage() {
             <p className="mt-2 text-3xl font-black">
               {usage.remainingGenerations}
             </p>
-          </article>
-          <article className="metric-card">
-            <p className="text-sm text-slate-300">Projects</p>
-            <p className="mt-2 text-3xl font-black">{projectCount}</p>
           </article>
           <article className="metric-card md:col-span-2">
             <p className="text-sm text-slate-300">Plan access</p>

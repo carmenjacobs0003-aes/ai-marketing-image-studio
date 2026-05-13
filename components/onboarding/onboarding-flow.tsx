@@ -51,12 +51,10 @@ function writeStored(value: StoredOnboarding) {
 }
 
 export function OnboardingFlow({
-  hasProjects,
   hasBrandKits,
   hasGenerations,
   profileComplete
 }: {
-  hasProjects: boolean;
   hasBrandKits: boolean;
   hasGenerations: boolean;
   profileComplete: boolean;
@@ -69,16 +67,9 @@ export function OnboardingFlow({
     next.add("welcome");
     if (profileComplete) next.add("profile");
     if (hasBrandKits) next.add("brand");
-    if (hasProjects) next.add("project");
     if (hasGenerations) next.add("generate");
     return Array.from(next);
-  }, [
-    hasBrandKits,
-    hasGenerations,
-    hasProjects,
-    profileComplete,
-    stored.completed
-  ]);
+  }, [hasBrandKits, hasGenerations, profileComplete, stored.completed]);
   const progress = getOnboardingProgress(completed);
   const nextStep =
     onboardingSteps.find((step) => !completed.includes(step.id)) ??
@@ -137,8 +128,8 @@ export function OnboardingFlow({
                 {progress.percent}% complete
               </h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-                Complete your profile, create a brand kit, set up a project, and
-                generate your first asset.
+                Complete your profile, create a brand kit, and generate your
+                first asset.
               </p>
             </div>
           </div>
@@ -184,8 +175,8 @@ export function OnboardingFlow({
                   Set up your creative system in minutes.
                 </h1>
                 <p className="mt-4 text-sm leading-6 text-slate-300">
-                  {BRAND_NAME} tracks setup progress, project readiness, saves,
-                  gallery activity, usage warnings, and plan updates.
+                  {BRAND_NAME} tracks setup progress, saves, gallery activity,
+                  usage warnings, and plan updates.
                 </p>
                 <div className="mt-8 rounded-3xl border border-cyan-300/20 bg-cyan-300/[0.06] p-5">
                   <div className="flex items-center gap-3">
