@@ -27,6 +27,9 @@ export const metadata: Metadata = {
     template: `%s | ${metadataTitle}`
   },
   description,
+  verification: {
+  google: "dZXbMwxccSadp8u4NiSQagPM2v40Xq2Fkm5eD31B2kI"
+},
   keywords: [
     "AI marketing images",
     "AI ad creative",
