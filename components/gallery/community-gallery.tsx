@@ -13,6 +13,7 @@ import {
   Search,
   Sparkles
 } from "lucide-react";
+import { SyntrixLogo } from "@/components/brand/syntrix-logo";
 import type { GalleryItem, GallerySort } from "@/lib/gallery/types";
 
 type CommunityGalleryProps = {
@@ -287,8 +288,8 @@ export function CommunityGallery(props: CommunityGalleryProps) {
     <main className="aurora-shell min-h-screen px-4 py-8 sm:px-6 lg:px-8">
       <div className="relative z-10 mx-auto max-w-7xl space-y-8">
         <nav className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <Link className="text-xl font-black text-white" href="/">
-            SYNTRIX<span className="text-cyan-300">ai</span>
+          <Link href="/">
+            <SyntrixLogo />
           </Link>
           <div className="flex gap-2">
             <Link className="ghost-button px-4 py-2 text-sm" href="/login">

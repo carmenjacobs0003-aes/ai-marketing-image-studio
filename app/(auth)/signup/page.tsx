@@ -18,10 +18,7 @@ export default function SignupPage({
         className="glass-card relative z-10 w-full max-w-md space-y-6 p-6 sm:p-8"
       >
         <div className="space-y-4 text-center sm:text-left">
-          <SyntrixLogo
-            className="justify-center sm:justify-start"
-            imageClassName="h-12"
-          />
+          <SyntrixLogo className="block" />
           <p className="eyebrow">Create account</p>
           <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
             Create your {BRAND_NAME} account
