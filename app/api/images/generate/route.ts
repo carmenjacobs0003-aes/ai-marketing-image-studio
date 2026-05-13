@@ -1317,7 +1317,7 @@ export async function POST(request: NextRequest) {
       message,
       getProviderErrorStatus(error, failedProvider, openaiDiagnostics.status),
       debugReason === "openai_billing_or_quota_failure"
-        ? "OpenAI image generation failed because of billing or quota limits. Try selecting Pollinations in the Studio provider menu and generate again."
+        ? "Unavailable. Try selecting Pollinations in the Studio provider menu and generate again."
         : message,
       {
         debugReason,
