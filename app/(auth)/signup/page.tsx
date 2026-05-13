@@ -2,6 +2,7 @@ import Link from "next/link";
 import { SyntrixLogo } from "@/components/brand/syntrix-logo";
 import { AuthSubmitButton } from "@/components/auth/auth-submit-button";
 import { signUpWithPassword } from "@/app/(auth)/actions";
+import { BRAND_NAME } from "@/lib/branding";
 
 export default function SignupPage({
   searchParams
@@ -23,7 +24,7 @@ export default function SignupPage({
           />
           <p className="eyebrow">Create account</p>
           <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
-            Create your SYNTRIX AI account
+            Create your {BRAND_NAME} account
           </h1>
           <p className="text-sm leading-6 text-slate-300">
             Create a private workspace for AI visuals, campaign content, brand

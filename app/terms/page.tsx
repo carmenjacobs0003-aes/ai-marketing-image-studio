@@ -1,6 +1,7 @@
+import { BRAND_NAME } from "@/lib/branding";
 export const metadata = {
   title: "Terms of Service",
-  description: "Terms for using SYNTRIX AI."
+  description: `Terms for using ${BRAND_NAME}.`
 };
 
 export default function TermsPage() {
@@ -17,7 +18,7 @@ export default function TermsPage() {
           </p>
           <div className="mt-8 space-y-6 text-slate-300">
             <p>
-              By using SYNTRIX AI, you agree to use the platform lawfully, keep
+              By using {BRAND_NAME}, you agree to use the platform lawfully, keep
               your credentials secure, and ensure that prompts, brand assets,
               and generated outputs comply with applicable laws and third-party
               rights.

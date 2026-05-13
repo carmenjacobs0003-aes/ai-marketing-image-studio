@@ -1,3 +1,4 @@
+import { BRAND_DESCRIPTION, BRAND_NAME } from "@/lib/branding";
 import { z } from "zod";
 
 export const OPENAI_API_KEY_ENV_VAR_NAME = "OPENAI_API_KEY" as const;
@@ -6,10 +7,10 @@ export const envLoadedAt = new Date().toISOString();
 
 const baseEnvSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3000"),
-  NEXT_PUBLIC_APP_NAME: z.string().default("SYNTRIX AI"),
+  NEXT_PUBLIC_APP_NAME: z.string().default(BRAND_NAME),
   NEXT_PUBLIC_APP_DESCRIPTION: z
     .string()
-    .default("Generate cinematic visual assets and campaign copy with AI."),
+    .default(BRAND_DESCRIPTION),
   NEXT_PUBLIC_SITE_DOMAIN: z.string().optional(),
   NEXT_PUBLIC_SUPABASE_URL: z.string().url().optional(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional(),

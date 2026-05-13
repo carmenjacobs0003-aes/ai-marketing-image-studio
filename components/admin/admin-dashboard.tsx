@@ -1,3 +1,4 @@
+import { BRAND_NAME } from "@/lib/branding";
 import {
   Activity,
   AlertTriangle,
@@ -261,7 +262,7 @@ export function AdminDashboard({ data, query = "", status = "all", updateUserAct
                   <p className="text-xs font-black uppercase tracking-[0.18em] text-white">{incident.label} · {incident.value}</p>
                   <p className="mt-1 text-sm text-slate-300">{incident.detail}</p>
                 </div>
-              )) : <p className="empty-state text-sm">All production diagnostics are clear. SYNTRIX AI monitoring is ready.</p>}
+              )) : <p className="empty-state text-sm">All production diagnostics are clear. {BRAND_NAME} monitoring is ready.</p>}
             </div>
           </Panel>
           <Panel title="Audit logging" eyebrow="Audit trail" icon={<BarChart3 className="h-6 w-6 text-cyan-300" />}>

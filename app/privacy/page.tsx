@@ -1,6 +1,7 @@
+import { BRAND_NAME } from "@/lib/branding";
 export const metadata = {
   title: "Privacy Policy",
-  description: "Privacy practices for SYNTRIX AI."
+  description: `Privacy practices for ${BRAND_NAME}.`
 };
 
 export default function PrivacyPolicyPage() {
@@ -17,7 +18,7 @@ export default function PrivacyPolicyPage() {
           </p>
           <div className="mt-8 space-y-6 text-slate-300">
             <p>
-              SYNTRIX AI collects account, billing, usage, prompt, generated
+              {BRAND_NAME} collects account, billing, usage, prompt, generated
               content, and support information needed to operate the service,
               secure accounts, process subscriptions, and improve product
               quality.

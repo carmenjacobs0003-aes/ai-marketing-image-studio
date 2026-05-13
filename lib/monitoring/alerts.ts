@@ -1,3 +1,4 @@
+import { BRAND_NAME } from "@/lib/branding";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
@@ -47,7 +48,7 @@ export async function sendCriticalAlert(alert: CriticalAlert) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      service: "SYNTRIX AI",
+      service: BRAND_NAME,
       severity,
       title: alert.title,
       message: alert.message,

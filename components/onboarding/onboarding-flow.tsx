@@ -1,5 +1,6 @@
 "use client";
 
+import { BRAND_NAME } from "@/lib/branding";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -183,7 +184,7 @@ export function OnboardingFlow({
                   Set up your creative system in minutes.
                 </h1>
                 <p className="mt-4 text-sm leading-6 text-slate-300">
-                  SYNTRIX AI tracks setup progress, project readiness, saves,
+                  {BRAND_NAME} tracks setup progress, project readiness, saves,
                   gallery activity, usage warnings, and plan updates.
                 </p>
                 <div className="mt-8 rounded-3xl border border-cyan-300/20 bg-cyan-300/[0.06] p-5">
