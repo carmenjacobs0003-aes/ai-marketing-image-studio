@@ -28,7 +28,7 @@ export default function SignupPage({
           </h1>
           <p className="text-sm leading-6 text-slate-300">
             Create a private workspace for AI visuals, campaign content, brand
-            systems, projects, and billing.
+            systems, gallery, and billing.
           </p>
         </div>
         {searchParams.error ? (

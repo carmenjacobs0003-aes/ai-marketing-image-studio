@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ImageGeneration, Project } from "@/lib/db/queries";
+import type { ImageGeneration } from "@/lib/db/queries";
 import type { ImageWithSignedUrl } from "@/lib/storage/images";
 import { PublishGalleryButton } from "@/components/gallery/publish-gallery-button";
 
@@ -10,13 +10,11 @@ type ImageCard = ImageWithSignedUrl<ImageGeneration>;
 
 type ImageLibraryGridProps = {
   images: ImageCard[];
-  projects: Project[];
 };
 
-export function ImageLibraryGrid({ images, projects }: ImageLibraryGridProps) {
+export function ImageLibraryGrid({ images }: ImageLibraryGridProps) {
   const [items, setItems] = useState(images);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [savingId, setSavingId] = useState<string | null>(null);
   const refreshInFlightRef = useRef<Set<string>>(new Set());
 
   const refreshSignedUrls = useCallback(async (imageId: string) => {
@@ -81,46 +79,6 @@ export function ImageLibraryGrid({ images, projects }: ImageLibraryGridProps) {
     });
   }, [items, refreshSignedUrls]);
 
-  async function saveToProject(imageId: string, projectId: string | null) {
-    setSavingId(imageId);
-    setErrors((current) => ({ ...current, [imageId]: "" }));
-
-    try {
-      const response = await fetch(`/api/images/${imageId}/save-to-project`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId })
-      });
-      const payload = await response.json();
-
-      if (!response.ok) {
-        setErrors((current) => ({
-          ...current,
-          [imageId]: payload.error ?? "Unable to save image to project."
-        }));
-        return;
-      }
-
-      setItems((current) =>
-        current.map((item) =>
-          item.id === imageId
-            ? { ...item, project_id: payload.projectId }
-            : item
-        )
-      );
-    } catch (error) {
-      setErrors((current) => ({
-        ...current,
-        [imageId]:
-          error instanceof Error
-            ? error.message
-            : "Unable to save image to project."
-      }));
-    } finally {
-      setSavingId(null);
-    }
-  }
-
   if (!items.length) {
     return (
       <div className="empty-state sm:col-span-2 lg:col-span-3">
@@ -132,7 +90,7 @@ export function ImageLibraryGrid({ images, projects }: ImageLibraryGridProps) {
         </h2>
         <p className="mt-2 text-sm leading-6">
           Generate your first visual in Studio to enable previews, downloads,
-          and project saves.
+          downloads, and gallery publishing.
         </p>
       </div>
     );
@@ -172,24 +130,6 @@ export function ImageLibraryGrid({ images, projects }: ImageLibraryGridProps) {
                 {new Date(image.created_at).toLocaleString()}
               </p>
             </div>
-            <label className="block space-y-2 text-sm">
-              <span className="text-slate-300">Save to project</span>
-              <select
-                className="field-control py-2"
-                disabled={savingId === image.id}
-                onChange={(event) =>
-                  saveToProject(image.id, event.target.value || null)
-                }
-                value={image.project_id ?? ""}
-              >
-                <option value="">Image library only</option>
-                {projects.map((project) => (
-                  <option key={project.id} value={project.id}>
-                    {project.name}
-                  </option>
-                ))}
-              </select>
-            </label>
             {image.status === "completed" ? (
               <PublishGalleryButton
                 defaultPrompt={image.prompt}

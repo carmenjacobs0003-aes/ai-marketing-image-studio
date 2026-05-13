@@ -2,7 +2,6 @@ export type OnboardingStepId =
   | "welcome"
   | "profile"
   | "brand"
-  | "project"
   | "generate"
   | "publish";
 
@@ -17,7 +16,7 @@ export const onboardingSteps: OnboardingStep[] = [
   {
     id: "welcome",
     title: "Open your workspace",
-    body: "Learn where projects, brand kits, and generators live.",
+    body: "Learn where brand kits, generators, templates, and billing live.",
     href: "/dashboard"
   },
   {
@@ -31,12 +30,6 @@ export const onboardingSteps: OnboardingStep[] = [
     title: "Create a brand system",
     body: "Save voice, colors, fonts, product notes, and default creative constraints.",
     href: "/brand"
-  },
-  {
-    id: "project",
-    title: "Create your first project",
-    body: "Create a reusable project for content, visuals, and saved assets.",
-    href: "/projects"
   },
   {
     id: "generate",

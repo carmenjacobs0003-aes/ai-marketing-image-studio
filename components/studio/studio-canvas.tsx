@@ -10,11 +10,10 @@ import {
   type MouseEvent
 } from "react";
 import { useSearchParams } from "next/navigation";
-import type { BrandKit, Project } from "@/lib/db/queries";
+import type { BrandKit } from "@/lib/db/queries";
 import type { UsageSummary } from "@/lib/usage/limits";
 
 type StudioCanvasProps = {
-  projects: Project[];
   brandKits: BrandKit[];
   usage: UsageSummary;
 };
@@ -100,13 +99,11 @@ async function readGenerationResponse(response: Response) {
 }
 
 export function StudioCanvas({
-  projects,
   brandKits,
   usage: initialUsage
 }: StudioCanvasProps) {
   const searchParams = useSearchParams();
   const [prompt, setPrompt] = useState(searchParams.get("prompt") ?? "");
-  const [projectId, setProjectId] = useState("");
   const [brandKitId, setBrandKitId] = useState("");
   const [usage, setUsage] = useState(initialUsage);
   const [image, setImage] = useState<GeneratedImageResponse | null>(null);
@@ -219,7 +216,6 @@ export function StudioCanvas({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt,
-          projectId: projectId || undefined,
           brandKitId: brandKitId || undefined
         })
       });
@@ -316,22 +312,6 @@ export function StudioCanvas({
             />
           </label>
           <label className="block space-y-2 text-sm font-medium">
-            <span>Save to project</span>
-            <select
-              className="field-control"
-              disabled={isLoading || limitReached}
-              onChange={(event) => setProjectId(event.target.value)}
-              value={projectId}
-            >
-              <option value="">Image library only</option>
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block space-y-2 text-sm font-medium">
             <span>Brand kit</span>
             <select
               className="field-control"
@@ -339,7 +319,7 @@ export function StudioCanvas({
               onChange={(event) => setBrandKitId(event.target.value)}
               value={brandKitId}
             >
-              <option value="">Auto: project/default brand kit</option>
+              <option value="">Auto: default brand kit</option>
               {brandKits.map((brandKit) => (
                 <option key={brandKit.id} value={brandKit.id}>
                   {brandKit.name}

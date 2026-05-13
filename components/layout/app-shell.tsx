@@ -4,7 +4,6 @@ import {
   BarChart3,
   Brush,
   CreditCard,
-  FolderKanban,
   GalleryHorizontalEnd,
   Megaphone,
   Settings,
@@ -25,28 +24,30 @@ const navItems = [
 
   { href: "/marketing", label: "Marketing", icon: Megaphone },
 
-  { href: "/projects", label: "Projects", icon: FolderKanban },
-
   { href: "/gallery", label: "Gallery", icon: GalleryHorizontalEnd },
 
   { href: "/brand", label: "Brand Kits", icon: Brush },
 
   { href: "/billing", label: "Billing", icon: CreditCard },
 
-  { href: "/settings", label: "Settings", icon: Settings },
-
-  { href: "/admin", label: "Admin", icon: Shield }
+  { href: "/settings", label: "Settings", icon: Settings }
 ];
+
+const adminNavItem = { href: "/admin", label: "Admin", icon: Shield };
 
 export function AppShell({
   children,
   user,
-  usage
+  usage,
+  showAdminNav = false
 }: {
   children: React.ReactNode;
   user?: User;
   usage?: UsageSummary;
+  showAdminNav?: boolean;
 }) {
+  const visibleNavItems = showAdminNav ? [...navItems, adminNavItem] : navItems;
+
   return (
     <NotificationProvider email={user?.email} usage={usage}>
       <div className="aurora-shell">
@@ -70,7 +71,7 @@ export function AppShell({
                 aria-label="Protected app navigation"
                 className="mt-3 space-y-1.5"
               >
-                {navItems.map((item) => {
+                {visibleNavItems.map((item) => {
                   const Icon = item.icon;
 
                   return (
@@ -116,7 +117,7 @@ export function AppShell({
             aria-label="Protected app navigation"
             className="flex gap-2 overflow-x-auto px-4 pb-4"
           >
-            {navItems.map((item) => (
+            {visibleNavItems.map((item) => (
               <Link
                 className="shrink-0 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-semibold text-slate-300 transition hover:border-cyan-300/70 hover:bg-cyan-300/10 hover:text-cyan-100"
                 href={item.href}

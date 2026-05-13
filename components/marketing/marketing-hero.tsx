@@ -49,7 +49,7 @@ export function MarketingHero() {
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-base leading-8 text-slate-300 sm:text-lg lg:mx-0 lg:text-xl">
             {BRAND_NAME} is a private creative operating system for cinematic
-            image generation, campaign copy, brand systems, projects, and
+            image generation, campaign copy, brand systems, gallery, and
             billing.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center lg:justify-start">

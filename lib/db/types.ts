@@ -371,6 +371,7 @@ export type Database = {
           metadata: Json;
           read_at: string | null;
           emailed_at: string | null;
+          expires_at: string | null;
           created_at: string;
         };
         Insert: {
@@ -396,6 +397,7 @@ export type Database = {
           metadata?: Json;
           read_at?: string | null;
           emailed_at?: string | null;
+          expires_at?: string | null;
           created_at?: string;
         };
         Update: {
@@ -419,6 +421,7 @@ export type Database = {
           metadata?: Json;
           read_at?: string | null;
           emailed_at?: string | null;
+          expires_at?: string | null;
         };
         Relationships: [];
       };
