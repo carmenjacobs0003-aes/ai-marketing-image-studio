@@ -1,11 +1,13 @@
-import type { AppPlan } from "@/lib/db/types";
+import type { AppPlan, DailyUsageKind } from "@/lib/db/types";
 import {
   getMonthlyUsage,
   getMonthlyUsageFromDailyTotals,
   getProfile,
+  incrementDailyUsage,
   incrementMonthlyUsage
 } from "@/lib/db/queries";
 import { getBillingPlan } from "@/lib/billing/plans";
+import { logger } from "@/lib/logger";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type UsageLimit = number;
@@ -41,23 +43,52 @@ function remaining(limit: UsageLimit, used: number): UsageLimit {
   return Math.max(limit - used, 0);
 }
 
-function isMissingMonthlyUsageSchemaError(error: unknown) {
+function getErrorField(error: unknown, field: "code" | "message") {
+  if (!error || typeof error !== "object") {
+    return "";
+  }
+
+  const record = error as Record<"code" | "message", unknown>;
+  const value = field in record ? record[field] : undefined;
+
+  return value === undefined ? "" : String(value);
+}
+
+function getNestedErrorCause(error: unknown) {
+  if (!error || typeof error !== "object" || !("cause" in error)) {
+    return undefined;
+  }
+
+  return error.cause;
+}
+
+export function isMissingMonthlyUsageSchemaError(error: unknown) {
   if (!error || typeof error !== "object") {
     return false;
   }
 
-  const code = "code" in error ? String(error.code) : "";
-  const message = "message" in error ? String(error.message) : "";
+  const code = getErrorField(error, "code");
+  const message = getErrorField(error, "message");
+  const cause = getNestedErrorCause(error);
+  const causeCode = getErrorField(cause, "code");
+  const causeMessage = getErrorField(cause, "message");
+  const combinedMessage = `${message} ${causeMessage}`;
 
   return (
     code === "42P01" ||
     code === "42703" ||
+    code === "PGRST202" ||
     code === "PGRST204" ||
     code === "PGRST205" ||
-    (message.includes("monthly_usage") &&
-      (message.includes("schema cache") ||
-        message.includes("does not exist") ||
-        message.includes("Could not find")))
+    causeCode === "42P01" ||
+    causeCode === "42703" ||
+    causeCode === "PGRST202" ||
+    causeCode === "PGRST204" ||
+    causeCode === "PGRST205" ||
+    (/monthly_usage|increment_monthly_usage/.test(combinedMessage) &&
+      /schema cache|does not exist|Could not find|could not find|function|relation/.test(
+        combinedMessage
+      ))
   );
 }
 
@@ -143,8 +174,56 @@ export function assertCanGenerateImage(userId: string) {
   return assertCanUse(userId);
 }
 
-export async function recordSuccessfulUsage(userId: string, quantity = 1) {
+export async function recordSuccessfulUsage(
+  userId: string,
+  quantity = 1,
+  fallbackKind?: DailyUsageKind
+) {
   const supabase = createSupabaseServerClient();
 
-  return incrementMonthlyUsage(supabase, userId, quantity);
+  try {
+    return await incrementMonthlyUsage(supabase, userId, quantity);
+  } catch (error) {
+    if (!isMissingMonthlyUsageSchemaError(error)) {
+      throw error;
+    }
+
+    const cause = getNestedErrorCause(error);
+
+    logger.error(
+      "Monthly usage recording failed due to operational schema drift",
+      {
+        userId,
+        quantity,
+        fallbackKind: fallbackKind ?? null,
+        operationalIssue: "monthly_usage_schema_or_rpc_missing",
+        error: error instanceof Error ? error.message : String(error),
+        cause:
+          cause instanceof Error ? cause.message : cause ? String(cause) : null
+      }
+    );
+
+    if (!fallbackKind) {
+      throw error;
+    }
+
+    const fallbackUsage = await incrementDailyUsage(
+      supabase,
+      userId,
+      fallbackKind,
+      quantity
+    );
+
+    logger.warn(
+      "Recorded usage with daily usage fallback after monthly schema drift",
+      {
+        userId,
+        quantity,
+        fallbackKind,
+        operationalIssue: "monthly_usage_schema_or_rpc_missing"
+      }
+    );
+
+    return fallbackUsage;
+  }
 }

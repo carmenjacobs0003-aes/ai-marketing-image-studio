@@ -19,6 +19,7 @@ import {
 } from "@/lib/storage/images";
 import {
   assertCanGenerateImage,
+  isMissingMonthlyUsageSchemaError,
   recordSuccessfulUsage
 } from "@/lib/usage/limits";
 import {
@@ -876,13 +877,30 @@ export async function POST(request: NextRequest) {
       counter: "monthly_pooled_generations"
     });
     currentStep = "usage_recording";
-    await recordSuccessfulUsage(user.id);
-    logger.info("Usage counter increment completed", {
-      ...getRequestLogContext(request),
-      userId: user.id,
-      generationId: generation.id,
-      counter: "monthly_pooled_generations"
-    });
+    try {
+      await recordSuccessfulUsage(user.id, 1, "image_generations");
+      logger.info("Usage counter increment completed", {
+        ...getRequestLogContext(request),
+        userId: user.id,
+        generationId: generation.id,
+        counter: "monthly_pooled_generations"
+      });
+    } catch (usageError) {
+      const schemaDrift = isMissingMonthlyUsageSchemaError(usageError);
+      logger.error("Usage recording failed after completed image generation", {
+        ...getRequestLogContext(request),
+        userId: user.id,
+        generationId: generation.id,
+        storagePath,
+        counter: "monthly_pooled_generations",
+        completedImagePreserved: true,
+        operationalIssue: schemaDrift
+          ? "monthly_usage_schema_or_rpc_missing"
+          : "usage_recording_failed_after_completion",
+        error:
+          usageError instanceof Error ? usageError.message : String(usageError)
+      });
+    }
 
     logger.info("Image generation completed", {
       userId: user.id,
@@ -1032,7 +1050,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (supabase && generation && userId) {
+    if (supabase && generation && userId && currentStep !== "usage_recording") {
       await updateImageGeneration(supabase, generation.id, userId, {
         status: "failed",
         error_message: message
@@ -1046,6 +1064,17 @@ export async function POST(request: NextRequest) {
               : "Unknown image generation status update failure"
         });
       });
+    } else if (generation && currentStep === "usage_recording") {
+      logger.error(
+        "Preserving completed image generation after usage recording failure",
+        {
+          ...getRequestLogContext(request),
+          userId,
+          generationId: generation.id,
+          step: currentStep,
+          completedImagePreserved: true
+        }
+      );
     }
 
     await logCentralizedError(error, {
