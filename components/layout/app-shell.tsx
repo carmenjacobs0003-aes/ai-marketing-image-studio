@@ -59,7 +59,7 @@ export function AppShell({
               className="group flex items-center justify-center rounded-3xl border border-cyan-300/25 bg-white/[0.045] p-4 shadow-glow transition hover:-translate-y-0.5 hover:border-cyan-300/70 hover:bg-cyan-300/[0.08]"
               href="/dashboard"
             >
-              <SyntrixLogo imageClassName="h-12" />
+              <SyntrixLogo />
             </Link>
 
             <div className="mt-5 rounded-3xl border border-white/10 bg-black/55 p-3 backdrop-blur-xl">
@@ -109,7 +109,7 @@ export function AppShell({
         <header className="sticky top-0 z-30 border-b border-cyan-300/15 bg-black/70 backdrop-blur-2xl lg:hidden">
           <div className="flex items-center justify-between gap-4 px-4 py-4">
             <Link aria-label={`${BRAND_NAME} dashboard`} href="/dashboard">
-              <SyntrixLogo imageClassName="h-9" />
+              <SyntrixLogo />
             </Link>
             <LogoutButton className="px-3 py-2" />
           </div>

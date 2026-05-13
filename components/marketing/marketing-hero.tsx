@@ -14,7 +14,7 @@ export function MarketingHero() {
     <main className="aurora-shell flex min-h-screen flex-col px-4 text-white sm:px-6 lg:px-8">
       <header className="relative z-20 mx-auto flex w-full max-w-7xl items-center justify-between gap-4 py-5 sm:py-6">
         <Link aria-label={`${BRAND_NAME} home`} href="/">
-          <SyntrixLogo priority imageClassName="h-11 sm:h-12" />
+          <SyntrixLogo />
         </Link>
         <nav
           aria-label="Primary navigation"
@@ -94,7 +94,7 @@ export function MarketingHero() {
       </section>
 
       <footer className="relative z-10 mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-3 border-t border-white/10 py-6 text-sm text-slate-400 sm:flex-row">
-        <SyntrixLogo imageClassName="h-8" />
+        <SyntrixLogo />
         <p>
           © {new Date().getFullYear()} {BRAND_NAME}. Creative system online.
         </p>
