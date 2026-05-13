@@ -1,3 +1,4 @@
+import { BRAND_NAME } from "@/lib/branding";
 import { CommunityGallery } from "@/components/gallery/community-gallery";
 import { listPublicGalleryItems } from "@/lib/gallery/db";
 import type { GalleryItem, GallerySort } from "@/lib/gallery/types";
@@ -59,7 +60,7 @@ async function signGalleryItems(items: GalleryItem[]) {
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Gallery | SYNTRIX AI",
+  title: `Gallery | ${BRAND_NAME}`,
   description:
     "Browse reusable AI visuals, campaign generations, prompts, and creator profiles."
 };

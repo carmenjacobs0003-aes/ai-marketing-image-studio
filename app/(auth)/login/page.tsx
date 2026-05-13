@@ -2,6 +2,7 @@ import Link from "next/link";
 import { SyntrixLogo } from "@/components/brand/syntrix-logo";
 import { AuthSubmitButton } from "@/components/auth/auth-submit-button";
 import { signInWithPassword } from "@/app/(auth)/actions";
+import { BRAND_NAME } from "@/lib/branding";
 
 export default function LoginPage({
   searchParams
@@ -23,7 +24,7 @@ export default function LoginPage({
           />
           <p className="eyebrow">Welcome back</p>
           <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
-            Log in to SYNTRIX AI
+            Log in to {BRAND_NAME}
           </h1>
           <p className="text-sm leading-6 text-slate-300">
             Access your private workspace for campaigns, image history, brand

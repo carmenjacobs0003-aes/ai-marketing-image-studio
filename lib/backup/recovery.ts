@@ -1,3 +1,4 @@
+import { BRAND_NAME } from "@/lib/branding";
 import { env, getRedisEnv } from "@/lib/env";
 import { summarizeDiagnostics } from "@/lib/monitoring/diagnostics";
 
@@ -44,7 +45,7 @@ export function getRecoveryReadinessReport() {
   const diagnostics = summarizeDiagnostics();
 
   return {
-    service: "SYNTRIX AI",
+    service: BRAND_NAME,
     generatedAt: new Date().toISOString(),
     diagnostics,
     backupGuidance: getDatabaseBackupGuidance(),

@@ -1,12 +1,20 @@
 import type { MetadataRoute } from "next";
-import { BRAND_DESCRIPTION, BRAND_NAME } from "@/lib/branding";
+import {
+  BRAND_DESCRIPTION,
+  BRAND_ICON_192_SRC,
+  BRAND_ICON_512_SRC,
+  BRAND_MASKABLE_ICON_SRC,
+  BRAND_NAME,
+  BRAND_OG_IMAGE_SRC,
+  BRAND_SHORT_NAME
+} from "@/lib/branding";
 
 export default function manifest(): MetadataRoute.Manifest {
   const name = process.env.NEXT_PUBLIC_APP_NAME ?? BRAND_NAME;
 
   return {
     name,
-    short_name: "SYNTRIX AI",
+    short_name: BRAND_SHORT_NAME,
     description: process.env.NEXT_PUBLIC_APP_DESCRIPTION ?? BRAND_DESCRIPTION,
     start_url: "/dashboard?source=pwa",
     scope: "/",
@@ -21,12 +29,12 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ["business", "productivity", "graphics"],
     screenshots: [
       {
-        src: "/icons/og-image.svg",
+        src: BRAND_OG_IMAGE_SRC,
         sizes: "1200x630",
         type: "image/svg+xml"
       },
       {
-        src: "/icons/icon-512.svg",
+        src: BRAND_ICON_512_SRC,
         sizes: "512x512",
         type: "image/svg+xml"
       }
@@ -39,7 +47,7 @@ export default function manifest(): MetadataRoute.Manifest {
         url: "/studio?source=pwa-shortcut",
         icons: [
           {
-            src: "/icons/icon-192.svg",
+            src: BRAND_ICON_192_SRC,
             sizes: "192x192",
             type: "image/svg+xml"
           }
@@ -52,7 +60,7 @@ export default function manifest(): MetadataRoute.Manifest {
         url: "/marketing?source=pwa-shortcut",
         icons: [
           {
-            src: "/icons/icon-192.svg",
+            src: BRAND_ICON_192_SRC,
             sizes: "192x192",
             type: "image/svg+xml"
           }
@@ -61,19 +69,19 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
     icons: [
       {
-        src: "/icons/icon-192.svg",
+        src: BRAND_ICON_192_SRC,
         sizes: "192x192",
         type: "image/svg+xml",
         purpose: "any"
       },
       {
-        src: "/icons/icon-512.svg",
+        src: BRAND_ICON_512_SRC,
         sizes: "512x512",
         type: "image/svg+xml",
         purpose: "any"
       },
       {
-        src: "/icons/maskable-icon.svg",
+        src: BRAND_MASKABLE_ICON_SRC,
         sizes: "512x512",
         type: "image/svg+xml",
         purpose: "maskable"

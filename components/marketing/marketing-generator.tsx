@@ -1,5 +1,6 @@
 "use client";
 
+import { BRAND_NAME } from "@/lib/branding";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import type { BrandKit, MarketingGeneration, Project } from "@/lib/db/queries";
@@ -599,7 +600,7 @@ export function MarketingGenerator({
                   </span>
                 </div>
                 <p className="mt-2 text-xs leading-5 text-slate-300">
-                  SYNTRIX AI is checking the brief, applying brand context, and
+                  {BRAND_NAME} is checking the brief, applying brand context, and
                   saving the finished content.
                 </p>
               </div>

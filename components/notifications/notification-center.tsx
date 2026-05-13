@@ -23,6 +23,7 @@ import {
   X,
   Zap
 } from "lucide-react";
+import { BRAND_NAME } from "@/lib/branding";
 import type {
   AppNotification,
   NotificationKind,
@@ -92,7 +93,7 @@ function defaultNotifications(email?: string | null): AppNotification[] {
       id: "welcome-command-deck",
       kind: "welcome",
       tone: "success",
-      title: "Welcome to SYNTRIX AI",
+      title: `Welcome to ${BRAND_NAME}`,
       body: `Your generation workspace is online${email ? ` for ${email}` : ""}. Start setup to prepare your first generation.`,
       href: "/dashboard?onboarding=1",
       createdAt: now,

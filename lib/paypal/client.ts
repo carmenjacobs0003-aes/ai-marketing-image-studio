@@ -1,3 +1,4 @@
+import { BRAND_NAME } from "@/lib/branding";
 import { env } from "@/lib/env";
 import { logCentralizedError } from "@/lib/monitoring/errors";
 import { normalizeFailureMessage, withRetry } from "@/lib/resilience";
@@ -120,7 +121,7 @@ export async function createPayPalSubscription(input: {
       plan_id: input.planId,
       custom_id: input.userId,
       application_context: {
-        brand_name: "SYNTRIX AI",
+        brand_name: BRAND_NAME,
         locale: "en-US",
         shipping_preference: "NO_SHIPPING",
         user_action: "SUBSCRIBE_NOW",

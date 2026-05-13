@@ -1,3 +1,4 @@
+import { BRAND_NAME } from "@/lib/branding";
 import type {
   AppNotification,
   EmailNotificationJob
@@ -32,7 +33,7 @@ export function buildWeeklyDigest(
   return {
     userId: input.userId,
     to: input.email,
-    subject: "Your SYNTRIX AI weekly creative signal",
+    subject: `Your ${BRAND_NAME} weekly creative signal`,
     template: "weekly-digest",
     payload: {
       generatedImages: input.generatedImages,

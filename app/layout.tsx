@@ -1,11 +1,21 @@
 import type { Metadata, Viewport } from "next";
 import { ServiceWorkerRegistration } from "@/components/pwa/service-worker-registration";
-import { BRAND_DESCRIPTION, BRAND_NAME } from "@/lib/branding";
+import {
+  BRAND_APPLE_TOUCH_ICON_SRC,
+  BRAND_DESCRIPTION,
+  BRAND_ICON_192_SRC,
+  BRAND_ICON_512_SRC,
+  BRAND_ICON_SRC,
+  BRAND_METADATA_TITLE,
+  BRAND_NAME,
+  BRAND_OG_IMAGE_SRC
+} from "@/lib/branding";
 import "@/styles/globals.css";
 
 const appUrl =
   process.env.NEXT_PUBLIC_APP_URL ?? "https://www.syntrixai.co.uk";
 const appName = process.env.NEXT_PUBLIC_APP_NAME ?? BRAND_NAME;
+const metadataTitle = process.env.NEXT_PUBLIC_APP_NAME ?? BRAND_METADATA_TITLE;
 const description =
   process.env.NEXT_PUBLIC_APP_DESCRIPTION ?? BRAND_DESCRIPTION;
 
@@ -13,8 +23,8 @@ export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
   applicationName: appName,
   title: {
-    default: appName,
-    template: `%s | ${appName}`
+    default: metadataTitle,
+    template: `%s | ${metadataTitle}`
   },
   description,
   keywords: [
@@ -33,13 +43,13 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [
-      { url: "/icons/icon.svg", type: "image/svg+xml" },
-      { url: "/icons/icon-192.svg", sizes: "192x192", type: "image/svg+xml" },
-      { url: "/icons/icon-512.svg", sizes: "512x512", type: "image/svg+xml" }
+      { url: BRAND_ICON_SRC, type: "image/svg+xml" },
+      { url: BRAND_ICON_192_SRC, sizes: "192x192", type: "image/svg+xml" },
+      { url: BRAND_ICON_512_SRC, sizes: "512x512", type: "image/svg+xml" }
     ],
     apple: [
       {
-        url: "/icons/apple-touch-icon.svg",
+        url: BRAND_APPLE_TOUCH_ICON_SRC,
         sizes: "180x180",
         type: "image/svg+xml"
       }
@@ -53,7 +63,7 @@ export const metadata: Metadata = {
     description,
     images: [
       {
-        url: "/icons/og-image.svg",
+        url: BRAND_OG_IMAGE_SRC,
         width: 1200,
         height: 630,
         alt: `${appName} neon blue AI creative dashboard`
@@ -64,7 +74,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: appName,
     description,
-    images: ["/icons/og-image.svg"]
+    images: [BRAND_OG_IMAGE_SRC]
   },
   appleWebApp: {
     capable: true,
@@ -98,12 +108,12 @@ export default function RootLayout({
       <head>
         <link
           rel="apple-touch-startup-image"
-          href="/icons/og-image.svg"
+          href={BRAND_OG_IMAGE_SRC}
           media="(orientation: landscape)"
         />
         <link
           rel="apple-touch-startup-image"
-          href="/icons/icon-512.svg"
+          href={BRAND_ICON_512_SRC}
           media="(orientation: portrait)"
         />
       </head>
