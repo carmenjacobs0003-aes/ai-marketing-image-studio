@@ -114,10 +114,17 @@ export function StudioCanvas({
   const [isLoading, setIsLoading] = useState(false);
   const [submissionQueued, setSubmissionQueued] = useState(false);
   const submitInFlightRef = useRef(false);
+  const activeGenerationRequestRef = useRef(0);
   const lastSubmitAtRef = useRef(0);
   const signedUrlRefreshInFlightRef = useRef(false);
   const submitDebounceMs = 1000;
   const limitReached = usage.totalGenerations >= usage.monthlyGenerationLimit;
+
+  useEffect(() => {
+    return () => {
+      activeGenerationRequestRef.current += 1;
+    };
+  }, []);
 
   const refreshSignedUrls = useCallback(async (imageId: string) => {
     if (signedUrlRefreshInFlightRef.current) {
@@ -205,6 +212,9 @@ export function StudioCanvas({
       return;
     }
 
+    const requestId = activeGenerationRequestRef.current + 1;
+    activeGenerationRequestRef.current = requestId;
+
     setSubmissionQueued(true);
     setError(null);
     setBackendDebugError(null);
@@ -228,6 +238,8 @@ export function StudioCanvas({
           statusText: response.statusText,
           payload: errorPayload
         });
+        if (activeGenerationRequestRef.current !== requestId) return;
+
         setError(
           getGenerationErrorMessage(
             response.status,
@@ -244,10 +256,14 @@ export function StudioCanvas({
         return;
       }
 
+      if (activeGenerationRequestRef.current !== requestId) return;
+
       setImage(payload);
       setPrompt("");
       await refreshUsage();
     } catch (caughtError) {
+      if (activeGenerationRequestRef.current !== requestId) return;
+
       console.error("Image generation submit failed before API JSON response", {
         error:
           caughtError instanceof Error
@@ -261,9 +277,11 @@ export function StudioCanvas({
           : "Client request failed before a backend JSON response was available."
       );
     } finally {
-      submitInFlightRef.current = false;
-      setSubmissionQueued(false);
-      setIsLoading(false);
+      if (activeGenerationRequestRef.current === requestId) {
+        submitInFlightRef.current = false;
+        setSubmissionQueued(false);
+        setIsLoading(false);
+      }
     }
   }
 

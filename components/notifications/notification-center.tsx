@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   createContext,
   useCallback,
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode
 } from "react";
@@ -49,9 +51,28 @@ type NotificationContextValue = {
 const NotificationContext = createContext<NotificationContextValue | null>(
   null
 );
-const STORAGE_KEY = "syntrix-ai.notifications.v1";
+const STORAGE_KEY = "syntrix-ai.notifications.v2";
+const LEGACY_STORAGE_KEYS = ["syntrix-ai.notifications.v1"];
 
 const DEFAULT_NOTIFICATION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const TEMPORARY_TOAST_TTL_MS = 5200;
+const DURABLE_NOTIFICATION_KINDS = new Set<NotificationKind>([
+  "welcome",
+  "upgrade",
+  "usage_warning",
+  "profile_completion",
+  "achievement",
+  "weekly_digest",
+  "system"
+]);
+
+function isDurableNotification(notification: AppNotification) {
+  return (
+    DURABLE_NOTIFICATION_KINDS.has(notification.kind) &&
+    notification.tone !== "error" &&
+    !notification.realtime
+  );
+}
 
 function addMilliseconds(date: Date, milliseconds: number) {
   return new Date(date.getTime() + milliseconds).toISOString();
@@ -87,6 +108,12 @@ function compactActiveNotifications(notifications: AppNotification[]) {
   });
 
   return Array.from(unique.values()).slice(0, 20);
+}
+
+function compactDurableNotifications(notifications: AppNotification[]) {
+  return compactActiveNotifications(notifications).filter(
+    isDurableNotification
+  );
 }
 
 function makeId(prefix: string) {
@@ -225,9 +252,19 @@ export function NotificationProvider({
   email?: string | null;
   usage?: UsageSummary;
 }) {
+  const pathname = usePathname();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [open, setOpen] = useState(false);
+  const toastTimeoutsRef = useRef<number[]>([]);
+
+  const clearToasts = useCallback(() => {
+    toastTimeoutsRef.current.forEach((timeoutId) =>
+      window.clearTimeout(timeoutId)
+    );
+    toastTimeoutsRef.current = [];
+    setToasts([]);
+  }, []);
 
   const toast = useCallback((toastInput: Omit<Toast, "id">) => {
     const id = makeId("toast");
@@ -241,9 +278,14 @@ export function NotificationProvider({
 
       return [{ id, ...toastInput }, ...withoutDuplicate].slice(0, 2);
     });
-    window.setTimeout(() => {
+
+    const timeoutId = window.setTimeout(() => {
       setToasts((current) => current.filter((item) => item.id !== id));
-    }, 5200);
+      toastTimeoutsRef.current = toastTimeoutsRef.current.filter(
+        (currentTimeoutId) => currentTimeoutId !== timeoutId
+      );
+    }, TEMPORARY_TOAST_TTL_MS);
+    toastTimeoutsRef.current.push(timeoutId);
   }, []);
 
   const notify = useCallback<NotificationContextValue["notify"]>(
@@ -283,10 +325,14 @@ export function NotificationProvider({
       }
     }
 
+    LEGACY_STORAGE_KEYS.forEach((legacyKey) =>
+      window.localStorage.removeItem(legacyKey)
+    );
+
     setNotifications(
       compactActiveNotifications([
         ...buildUsageNotifications(usage),
-        ...parsed,
+        ...compactDurableNotifications(parsed),
         ...defaultNotifications(email)
       ])
     );
@@ -295,28 +341,77 @@ export function NotificationProvider({
   useEffect(() => {
     window.localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify(compactActiveNotifications(notifications))
+      JSON.stringify(compactDurableNotifications(notifications))
     );
   }, [notifications]);
 
   useEffect(() => {
+    const cleanupInterval = window.setInterval(() => {
+      setNotifications((current) => compactActiveNotifications(current));
+    }, 60 * 1000);
+
+    return () => window.clearInterval(cleanupInterval);
+  }, []);
+
+  useEffect(() => {
+    clearToasts();
+    setOpen(false);
+  }, [clearToasts, pathname]);
+
+  useEffect(() => {
+    const handlePageHide = () => clearToasts();
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        clearToasts();
+      }
+    };
+
+    window.addEventListener("pagehide", handlePageHide);
+    window.addEventListener("pageshow", handlePageShow);
+
+    return () => {
+      window.removeEventListener("pagehide", handlePageHide);
+      window.removeEventListener("pageshow", handlePageShow);
+      clearToasts();
+    };
+  }, [clearToasts]);
+
+  useEffect(() => {
     const originalFetch = window.fetch;
+    let fetchSequence = 0;
+
     window.fetch = async (input, init) => {
-      const response = await originalFetch(input, init);
-      const method = init?.method?.toUpperCase();
+      const method =
+        init?.method?.toUpperCase() ??
+        (input instanceof Request ? input.method.toUpperCase() : undefined);
       const url =
         typeof input === "string"
           ? input
           : input instanceof Request
             ? input.url
             : input.toString();
+      const isMutation = Boolean(
+        method && ["POST", "PATCH", "DELETE"].includes(method)
+      );
+      const requestSequence = isMutation ? ++fetchSequence : fetchSequence;
 
-      if (method && ["POST", "PATCH", "DELETE"].includes(method)) {
-        const suppressGlobalToast = url.includes("/api/marketing/generate");
+      if (isMutation) {
+        clearToasts();
+      }
+
+      const response = await originalFetch(input, init);
+
+      if (isMutation && requestSequence === fetchSequence) {
+        const suppressGlobalToast =
+          url.includes("/api/marketing/generate") ||
+          url.includes("/api/images/generate") ||
+          url.includes("/signed-url");
 
         if (suppressGlobalToast) {
           return response;
         }
+
+        clearToasts();
 
         if (response.ok) {
           if (url.includes("save-to-project")) {
@@ -365,7 +460,7 @@ export function NotificationProvider({
     return () => {
       window.fetch = originalFetch;
     };
-  }, [notify, toast]);
+  }, [clearToasts, notify, toast]);
 
   const activeNotifications = useMemo(
     () => compactActiveNotifications(notifications),
