@@ -4,7 +4,11 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import type { BrandKit, MarketingGeneration, Project } from "@/lib/db/queries";
 import Link from "next/link";
-import { marketingTemplates } from "@/lib/templates/catalog";
+import {
+  marketingTemplates,
+  type MarketingTemplate,
+  type TemplateCategory
+} from "@/lib/templates/catalog";
 import { isPaidPlan } from "@/lib/billing/plans";
 import { PublishGalleryButton } from "@/components/gallery/publish-gallery-button";
 import type { UsageSummary } from "@/lib/usage/limits";
@@ -85,6 +89,36 @@ function getRetryGuidance(message: string) {
   }
 
   return "Tip: your draft and quota are safe. You can retry once the button is available.";
+}
+
+const templateSelectorCategories: Record<TemplateCategory, string> = {
+  social: "Social Campaign",
+  email: "Email Campaign",
+  seo: "SEO Campaign",
+  industry: "Business Campaign"
+};
+
+const templateSelectorNames: Record<string, string> = {
+  "social-launch-sprint": "Social Launch Sequence",
+  "social-founder-led": "Founder-Led Social",
+  "email-nurture-sequence": "3-Step Nurture Email",
+  "email-winback": "Win-Back Email",
+  "seo-comparison": "SEO Comparison Article",
+  "seo-how-to-guide": "SEO How-To Guide",
+  "industry-saas": "B2B Software Campaign",
+  "industry-ecommerce": "Ecommerce Campaign",
+  "industry-local-services": "Local Service Campaign"
+};
+
+function getTemplateSelectorLabel(
+  template: MarketingTemplate,
+  locked: boolean
+) {
+  const name = templateSelectorNames[template.id] ?? template.name;
+  const category = templateSelectorCategories[template.category];
+  const planLabel = locked ? " — Creator Plan Required" : "";
+
+  return `${name} — ${category}${planLabel}`;
 }
 
 const contentTypes: Array<{
@@ -456,7 +490,7 @@ export function MarketingGenerator({
                 }}
                 value={templateId}
               >
-                <option value="">No template</option>
+                <option value="">Blank Campaign</option>
                 {marketingTemplates.map((template) => {
                   const locked = Boolean(
                     template.premium && !canUsePremiumTemplates
@@ -468,9 +502,7 @@ export function MarketingGenerator({
                       key={template.id}
                       value={template.id}
                     >
-                      {template.name} · {template.category}
-                      {template.premium ? " · advanced" : ""}
-                      {locked ? " · upgrade required" : ""}
+                      {getTemplateSelectorLabel(template, locked)}
                     </option>
                   );
                 })}
@@ -478,7 +510,7 @@ export function MarketingGenerator({
             </label>
             {!canUsePremiumTemplates ? (
               <p className="rounded-xl border border-cyan-300/20 bg-black p-3 text-xs text-cyan-100">
-                Advanced templates are locked on Free.{" "}
+                Creator Plan Required for premium campaigns.{" "}
                 <Link className="font-semibold underline" href="/pricing">
                   Unlock Pro or Agency
                 </Link>
