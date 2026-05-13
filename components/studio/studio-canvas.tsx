@@ -42,7 +42,7 @@ type ImageGenerationApiResponse =
     };
 
 const PUBLIC_IMAGE_GENERATION_UNAVAILABLE_MESSAGE =
-  "Image generation is temporarily unavailable. Please try again shortly.";
+  "Unavailable";
 const DEFAULT_OPENAI_MODEL = "gpt-image-1";
 const DEFAULT_POLLINATIONS_MODEL = "flux";
 
@@ -51,41 +51,7 @@ function getGenerationErrorMessage(
   message?: string,
   step?: string
 ) {
-  if (message) {
-    return step ? `${message} (failed step: ${step})` : message;
-  }
-
-  if (status >= 500 || status === 503) {
-    return PUBLIC_IMAGE_GENERATION_UNAVAILABLE_MESSAGE;
-  }
-
-  if (status === 401) {
-    return "Please sign in again before generating an image.";
-  }
-
-  if (status === 429) {
-    return "Image generation is busy right now. Please wait a moment and try again.";
-  }
-
-  return "Unable to generate image. Please try again.";
-}
-
-function getBackendDebugReason(
-  status: number,
-  payload: Extract<ImageGenerationApiResponse, { success: false }> | null
-) {
-  if (!payload) {
-    return `Backend did not return a valid JSON error body. HTTP status: ${status}.`;
-  }
-
-  const parts = [
-    payload.error ? `Error: ${payload.error}` : null,
-    payload.step ? `Step: ${payload.step}` : null,
-    payload.debugReason ? `Debug reason: ${payload.debugReason}` : null,
-    `HTTP status: ${status}`
-  ].filter(Boolean);
-
-  return parts.join(" · ");
+  return "Unavailable";
 }
 
 async function readGenerationResponse(response: Response) {
@@ -116,9 +82,6 @@ export function StudioCanvas({
   const [usage, setUsage] = useState(initialUsage);
   const [image, setImage] = useState<GeneratedImageResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [backendDebugError, setBackendDebugError] = useState<string | null>(
-    null
-  );
   const [isLoading, setIsLoading] = useState(false);
   const [submissionQueued, setSubmissionQueued] = useState(false);
   const submitInFlightRef = useRef(false);
@@ -225,7 +188,6 @@ export function StudioCanvas({
 
     setSubmissionQueued(true);
     setError(null);
-    setBackendDebugError(null);
     setIsLoading(true);
 
     try {
@@ -241,30 +203,26 @@ export function StudioCanvas({
           seed: seed.trim() ? Number(seed) : undefined
         })
       });
+
       const payload = await readGenerationResponse(response);
 
       if (!response.ok || !payload || !payload.success) {
         const errorPayload = payload && !payload.success ? payload : null;
+
         console.error("Image generation API returned an error", {
           status: response.status,
           statusText: response.statusText,
           payload: errorPayload
         });
+
         if (activeGenerationRequestRef.current !== requestId) return;
 
-        setError(
-          getGenerationErrorMessage(
-            response.status,
-            errorPayload?.publicError ?? errorPayload?.error,
-            errorPayload?.step
-          )
-        );
-        setBackendDebugError(
-          getBackendDebugReason(response.status, errorPayload)
-        );
+        setError("Unavailable");
+
         if (payload && !payload.success && payload.usage) {
           setUsage(payload.usage);
         }
+
         return;
       }
 
@@ -282,12 +240,8 @@ export function StudioCanvas({
             ? caughtError.message
             : String(caughtError)
       });
-      setError(PUBLIC_IMAGE_GENERATION_UNAVAILABLE_MESSAGE);
-      setBackendDebugError(
-        caughtError instanceof Error
-          ? `Client request failed before a backend JSON response was available: ${caughtError.message}`
-          : "Client request failed before a backend JSON response was available."
-      );
+
+      setError("Unavailable");
     } finally {
       if (activeGenerationRequestRef.current === requestId) {
         submitInFlightRef.current = false;
@@ -326,25 +280,30 @@ export function StudioCanvas({
             images are stored in your private library.
           </p>
         </div>
+
         <div className="rounded-2xl border border-cyan-300/30 bg-cyan-300/10 p-4 shadow-lg shadow-cyan-500/10">
           <p className="text-sm text-cyan-100">
             Monthly pooled usage · {usage.plan}
           </p>
+
           <p className="mt-1 text-2xl font-black">
             {usage.totalGenerations}/{usage.monthlyGenerationLimit}
           </p>
+
           <p className="text-xs text-slate-300">
             {usage.remainingGenerations} generations remaining this month. Use
             them in any combination up to {usage.monthlyGenerationLimit} total
             monthly generations.
           </p>
         </div>
+
         <form className="space-y-4" onSubmit={onSubmit}>
           <label
             className="block space-y-2 text-sm font-medium"
             htmlFor="studio-prompt"
           >
             <span>Prompt</span>
+
             <textarea
               id="studio-prompt"
               name="prompt"
@@ -355,11 +314,13 @@ export function StudioCanvas({
               value={prompt}
             />
           </label>
+
           <label
             className="block space-y-2 text-sm font-medium"
             htmlFor="studio-brand-kit"
           >
             <span>Brand kit</span>
+
             <select
               id="studio-brand-kit"
               name="brandKitId"
@@ -369,6 +330,7 @@ export function StudioCanvas({
               value={brandKitId}
             >
               <option value="">Auto: default brand kit</option>
+
               {brandKits.map((brandKit) => (
                 <option key={brandKit.id} value={brandKit.id}>
                   {brandKit.name}
@@ -383,6 +345,7 @@ export function StudioCanvas({
             htmlFor="studio-provider"
           >
             <span>Provider</span>
+
             <select
               id="studio-provider"
               name="provider"
@@ -397,11 +360,13 @@ export function StudioCanvas({
               <option value="pollinations">Pollinations</option>
             </select>
           </label>
+
           <label
             className="block space-y-2 text-sm font-medium"
             htmlFor="studio-model"
           >
             <span>Model</span>
+
             <input
               id="studio-model"
               name="model"
@@ -416,12 +381,14 @@ export function StudioCanvas({
               value={model}
             />
           </label>
+
           <div className="grid gap-3 sm:grid-cols-2">
             <label
               className="block space-y-2 text-sm font-medium"
               htmlFor="studio-size"
             >
               <span>Size</span>
+
               <select
                 id="studio-size"
                 name="size"
@@ -435,11 +402,13 @@ export function StudioCanvas({
                 <option value="1792x1024">1792 × 1024</option>
               </select>
             </label>
+
             <label
               className="block space-y-2 text-sm font-medium"
               htmlFor="studio-seed"
             >
               <span>Seed</span>
+
               <input
                 id="studio-seed"
                 name="seed"
@@ -454,17 +423,20 @@ export function StudioCanvas({
               />
             </label>
           </div>
+
           {error ? (
             <p className="rounded-2xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
-              {error}
+              Unavailable
             </p>
           ) : null}
+
           {limitReached ? (
             <p className="rounded-2xl border border-cyan-300/20 bg-black p-3 text-sm text-cyan-100">
               Monthly generation limit reached. Upgrade for more total monthly
               generations.
             </p>
           ) : null}
+
           <button
             className="neon-button w-full"
             disabled={generateDisabled}
@@ -475,19 +447,16 @@ export function StudioCanvas({
             {isLoading || submissionQueued ? "Generating..." : "Generate image"}
           </button>
         </form>
-        {backendDebugError ? (
-          <div className="rounded-2xl border border-amber-300/30 bg-amber-400/10 p-3 text-sm text-amber-100">
-            <p className="font-semibold">Backend debug reason</p>
-            <p className="mt-1 break-words">{backendDebugError}</p>
-          </div>
-        ) : null}
       </aside>
+
       <section className="glass-card p-4 shadow-2xl shadow-cyan-950/20 sm:p-6">
         <div className="flex h-full min-h-[460px] items-center justify-center rounded-2xl border border-dashed border-cyan-300/30 bg-black p-4 text-center text-slate-300">
           {isLoading ? (
             <div className="w-full max-w-xl animate-pulse space-y-4">
               <div className="aspect-square rounded-3xl border border-cyan-300/20 bg-cyan-300/10 shadow-2xl shadow-cyan-500/10" />
+
               <div className="mx-auto h-4 w-2/3 rounded-full bg-white/10" />
+
               <div className="mx-auto h-4 w-1/2 rounded-full bg-white/10" />
             </div>
           ) : image?.signedUrl ? (
@@ -502,15 +471,18 @@ export function StudioCanvas({
                   src={image.signedUrl}
                 />
               </div>
+
               <div className="space-y-4 border-t border-white/10 p-4 text-left sm:flex sm:items-center sm:justify-between sm:gap-4 sm:space-y-0">
                 <div>
                   <p className="text-sm font-semibold text-white">
                     Generation saved
                   </p>
+
                   <p className="mt-1 line-clamp-2 text-sm text-slate-300">
                     {image.prompt}
                   </p>
                 </div>
+
                 {image.downloadUrl ? (
                   <a
                     className="inline-flex w-full justify-center ghost-button px-4 py-2 text-sm sm:w-auto"
