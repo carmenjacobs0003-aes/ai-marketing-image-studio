@@ -517,6 +517,39 @@ export async function getMonthlyUsage(
   return data;
 }
 
+export async function getMonthlyUsageFromDailyTotals(
+  supabase: TypedSupabaseClient,
+  userId: string,
+  usageMonth: string
+) {
+  const monthStart = new Date(usageMonth);
+  const nextMonth = new Date(monthStart);
+  nextMonth.setUTCMonth(nextMonth.getUTCMonth() + 1);
+  const nextUsageMonth = nextMonth.toISOString().slice(0, 10);
+
+  const { data, error } = await supabase
+    .from("daily_usage")
+    .select("marketing_generations,image_generations")
+    .eq("user_id", userId)
+    .gte("usage_date", usageMonth)
+    .lt("usage_date", nextUsageMonth);
+
+  if (error) {
+    throw error;
+  }
+
+  const rows = (data ?? []) as Pick<
+    DailyUsage,
+    "marketing_generations" | "image_generations"
+  >[];
+
+  return rows.reduce(
+    (total, row) =>
+      total + (row.marketing_generations ?? 0) + (row.image_generations ?? 0),
+    0
+  );
+}
+
 export async function incrementMonthlyUsage(
   supabase: TypedSupabaseClient,
   userId: string,

@@ -1,6 +1,7 @@
 import type { AppPlan } from "@/lib/db/types";
 import {
   getMonthlyUsage,
+  getMonthlyUsageFromDailyTotals,
   getProfile,
   incrementMonthlyUsage
 } from "@/lib/db/queries";
@@ -40,6 +41,26 @@ function remaining(limit: UsageLimit, used: number): UsageLimit {
   return Math.max(limit - used, 0);
 }
 
+function isMissingMonthlyUsageSchemaError(error: unknown) {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const code = "code" in error ? String(error.code) : "";
+  const message = "message" in error ? String(error.message) : "";
+
+  return (
+    code === "42P01" ||
+    code === "42703" ||
+    code === "PGRST204" ||
+    code === "PGRST205" ||
+    (message.includes("monthly_usage") &&
+      (message.includes("schema cache") ||
+        message.includes("does not exist") ||
+        message.includes("Could not find")))
+  );
+}
+
 export function getPlanMonthlyLimit(plan: AppPlan) {
   return getBillingPlan(plan).monthlyPooledGenerations;
 }
@@ -50,13 +71,31 @@ export async function getUsageSummary(
 ): Promise<UsageSummary> {
   const supabase = createSupabaseServerClient();
   const usageMonth = toUsageMonth(date);
-  const [profile, usage] = await Promise.all([
+  const [profile, usageResult] = await Promise.all([
     getProfile(supabase, userId),
     getMonthlyUsage(supabase, userId, usageMonth)
+      .then((usage) => ({ usage, fallbackTotalGenerations: null }))
+      .catch(async (error: unknown) => {
+        if (!isMissingMonthlyUsageSchemaError(error)) {
+          throw error;
+        }
+
+        return {
+          usage: null,
+          fallbackTotalGenerations: await getMonthlyUsageFromDailyTotals(
+            supabase,
+            userId,
+            usageMonth
+          )
+        };
+      })
   ]);
   const plan = profile?.plan ?? "free";
   const billingPlan = getBillingPlan(plan);
-  const totalGenerations = usage?.total_generations ?? 0;
+  const totalGenerations =
+    usageResult.usage?.total_generations ??
+    usageResult.fallbackTotalGenerations ??
+    0;
   const monthlyGenerationLimit = billingPlan.monthlyPooledGenerations;
 
   return {
