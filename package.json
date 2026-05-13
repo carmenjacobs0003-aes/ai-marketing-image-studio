@@ -16,7 +16,8 @@
     "vercel:build": "npm run typecheck && next build",
     "diagnostics": "node scripts/diagnostics.mjs",
     "recovery:generations": "node scripts/recover-generations.mjs",
-    "verify:production-gallery": "node scripts/verify-production-gallery.mjs"
+    "verify:production-gallery": "node scripts/verify-production-gallery.mjs",
+    "verify:production-projects": "node scripts/verify-production-projects.mjs"
   },
   "dependencies": {
     "@sentry/nextjs": "^8.55.0",
