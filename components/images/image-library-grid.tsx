@@ -144,7 +144,44 @@ export function ImageLibraryGrid({ images }: ImageLibraryGridProps) {
               </p>
             ) : null}
             <div className="flex flex-col gap-2 sm:flex-row">
-              {image.signedUrl ? (
+
+  {image.status === "failed" ? (
+    <button
+      className="inline-flex flex-1 justify-center ghost-button px-4 py-2 text-sm"
+      onClick={async () => {
+        try {
+          const response = await fetch("/api/images/retry", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              imageId: image.id
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error("Retry failed");
+          }
+
+          window.location.reload();
+        } catch (error) {
+          setErrors((current) => ({
+            ...current,
+            [image.id]:
+              error instanceof Error
+                ? error.message
+                : "Retry failed"
+          }));
+        }
+      }}
+      type="button"
+    >
+      Retry
+    </button>
+  ) : null}
+
+  {image.signedUrl ? (
                 <a
                   className="inline-flex flex-1 justify-center ghost-button px-4 py-2 text-sm"
                   href={image.signedUrl}
