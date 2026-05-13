@@ -317,6 +317,8 @@ export function CommunityGallery(props: CommunityGalleryProps) {
           <label className="relative">
             <Search className="pointer-events-none absolute left-4 top-3.5 h-4 w-4 text-cyan-300" />
             <input
+              id="gallery-search"
+              name="q"
               className="field-control pl-11"
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search prompts, tags, categories..."
@@ -324,6 +326,8 @@ export function CommunityGallery(props: CommunityGalleryProps) {
             />
           </label>
           <select
+            id="gallery-category"
+            name="category"
             className="field-control"
             onChange={(event) => setCategory(event.target.value)}
             value={category}
@@ -336,6 +340,8 @@ export function CommunityGallery(props: CommunityGalleryProps) {
             ))}
           </select>
           <select
+            id="gallery-sort"
+            name="sort"
             className="field-control"
             onChange={(event) =>
               router.push(

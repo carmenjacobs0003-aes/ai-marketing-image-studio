@@ -33,31 +33,45 @@ export default function SignupPage({
             {searchParams.error}
           </p>
         ) : null}
-        <input type="hidden" name="redirectTo" value={redirectTo} />
-        <label className="block space-y-2 text-sm font-medium">
+        <input
+          id="redirect-to"
+          type="hidden"
+          name="redirectTo"
+          value={redirectTo}
+        />
+        <label
+          className="block space-y-2 text-sm font-medium"
+          htmlFor="full-name"
+        >
           <span>Name</span>
           <input
             autoComplete="name"
+            id="full-name"
             className="field-control"
             name="fullName"
             type="text"
             required
           />
         </label>
-        <label className="block space-y-2 text-sm font-medium">
+        <label className="block space-y-2 text-sm font-medium" htmlFor="email">
           <span>Email</span>
           <input
             autoComplete="email"
+            id="email"
             className="field-control"
             name="email"
             type="email"
             required
           />
         </label>
-        <label className="block space-y-2 text-sm font-medium">
+        <label
+          className="block space-y-2 text-sm font-medium"
+          htmlFor="password"
+        >
           <span>Password</span>
           <input
             autoComplete="new-password"
+            id="password"
             className="field-control"
             name="password"
             type="password"

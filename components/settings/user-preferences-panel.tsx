@@ -149,13 +149,27 @@ export function UserPreferencesPanel({
             </div>
           </div>
           <div className="mt-5 space-y-4">
-            <label className="block space-y-2 text-sm font-medium">
+            <label
+              className="block space-y-2 text-sm font-medium"
+              htmlFor="settings-email"
+            >
               <span>Email</span>
-              <input className="field-control" disabled value={email ?? ""} />
+              <input
+                id="settings-email"
+                name="email"
+                className="field-control"
+                disabled
+                value={email ?? ""}
+              />
             </label>
-            <label className="block space-y-2 text-sm font-medium">
+            <label
+              className="block space-y-2 text-sm font-medium"
+              htmlFor="settings-display-name"
+            >
               <span>Display name</span>
               <input
+                id="settings-display-name"
+                name="displayName"
                 className="field-control"
                 onChange={(event) => setDisplayName(event.target.value)}
                 placeholder="Your creator name"

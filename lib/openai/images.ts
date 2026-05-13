@@ -80,6 +80,7 @@ export type GenerateMarketingImageInput = {
   size?: ImageGenerationSize;
   quality?: ImageGenerationQuality;
   userId?: string;
+  model?: string;
 };
 
 export type ImageGenerationResult = {
@@ -456,10 +457,10 @@ export async function createMarketingImage({
   prompt,
   size = "1024x1024",
   quality = "auto",
-  userId
+  userId,
+  model = env.OPENAI_IMAGE_MODEL
 }: GenerateMarketingImageInput): Promise<ImageGenerationResult> {
   const openai = createOpenAIClient();
-  const model = env.OPENAI_IMAGE_MODEL;
   const normalized = normalizeImageGenerationOptions(model, size, quality);
   const request: ImageGenerateParams = {
     model,

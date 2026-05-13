@@ -18,6 +18,8 @@ type StudioCanvasProps = {
   usage: UsageSummary;
 };
 
+type ImageGenerationProvider = "openai" | "pollinations";
+
 type GeneratedImageResponse = {
   id: string;
   prompt: string;
@@ -41,6 +43,8 @@ type ImageGenerationApiResponse =
 
 const PUBLIC_IMAGE_GENERATION_UNAVAILABLE_MESSAGE =
   "Image generation is temporarily unavailable. Please try again shortly.";
+const DEFAULT_OPENAI_MODEL = "gpt-image-1";
+const DEFAULT_POLLINATIONS_MODEL = "flux";
 
 function getGenerationErrorMessage(
   status: number,
@@ -105,6 +109,10 @@ export function StudioCanvas({
   const searchParams = useSearchParams();
   const [prompt, setPrompt] = useState(searchParams.get("prompt") ?? "");
   const [brandKitId, setBrandKitId] = useState("");
+  const [provider, setProvider] = useState<ImageGenerationProvider>("openai");
+  const [model, setModel] = useState(DEFAULT_OPENAI_MODEL);
+  const [size, setSize] = useState("1024x1024");
+  const [seed, setSeed] = useState("");
   const [usage, setUsage] = useState(initialUsage);
   const [image, setImage] = useState<GeneratedImageResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -226,7 +234,11 @@ export function StudioCanvas({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt,
-          brandKitId: brandKitId || undefined
+          brandKitId: brandKitId || undefined,
+          provider,
+          model: model.trim() || undefined,
+          size,
+          seed: seed.trim() ? Number(seed) : undefined
         })
       });
       const payload = await readGenerationResponse(response);
@@ -285,6 +297,15 @@ export function StudioCanvas({
     }
   }
 
+  function onProviderChange(nextProvider: ImageGenerationProvider) {
+    setProvider(nextProvider);
+    setModel(
+      nextProvider === "pollinations"
+        ? DEFAULT_POLLINATIONS_MODEL
+        : DEFAULT_OPENAI_MODEL
+    );
+  }
+
   const generateDisabled =
     isLoading ||
     submissionQueued ||
@@ -319,9 +340,14 @@ export function StudioCanvas({
           </p>
         </div>
         <form className="space-y-4" onSubmit={onSubmit}>
-          <label className="block space-y-2 text-sm font-medium">
+          <label
+            className="block space-y-2 text-sm font-medium"
+            htmlFor="studio-prompt"
+          >
             <span>Prompt</span>
             <textarea
+              id="studio-prompt"
+              name="prompt"
               className="field-control min-h-44"
               disabled={isLoading || limitReached}
               onChange={(event) => setPrompt(event.target.value)}
@@ -329,9 +355,14 @@ export function StudioCanvas({
               value={prompt}
             />
           </label>
-          <label className="block space-y-2 text-sm font-medium">
+          <label
+            className="block space-y-2 text-sm font-medium"
+            htmlFor="studio-brand-kit"
+          >
             <span>Brand kit</span>
             <select
+              id="studio-brand-kit"
+              name="brandKitId"
               className="field-control"
               disabled={isLoading || limitReached}
               onChange={(event) => setBrandKitId(event.target.value)}
@@ -346,6 +377,83 @@ export function StudioCanvas({
               ))}
             </select>
           </label>
+
+          <label
+            className="block space-y-2 text-sm font-medium"
+            htmlFor="studio-provider"
+          >
+            <span>Provider</span>
+            <select
+              id="studio-provider"
+              name="provider"
+              className="field-control"
+              disabled={isLoading || limitReached}
+              onChange={(event) =>
+                onProviderChange(event.target.value as ImageGenerationProvider)
+              }
+              value={provider}
+            >
+              <option value="openai">OpenAI</option>
+              <option value="pollinations">Pollinations</option>
+            </select>
+          </label>
+          <label
+            className="block space-y-2 text-sm font-medium"
+            htmlFor="studio-model"
+          >
+            <span>Model</span>
+            <input
+              id="studio-model"
+              name="model"
+              className="field-control"
+              disabled={isLoading || limitReached}
+              onChange={(event) => setModel(event.target.value)}
+              placeholder={
+                provider === "pollinations"
+                  ? DEFAULT_POLLINATIONS_MODEL
+                  : DEFAULT_OPENAI_MODEL
+              }
+              value={model}
+            />
+          </label>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label
+              className="block space-y-2 text-sm font-medium"
+              htmlFor="studio-size"
+            >
+              <span>Size</span>
+              <select
+                id="studio-size"
+                name="size"
+                className="field-control"
+                disabled={isLoading || limitReached}
+                onChange={(event) => setSize(event.target.value)}
+                value={size}
+              >
+                <option value="1024x1024">1024 × 1024</option>
+                <option value="1024x1792">1024 × 1792</option>
+                <option value="1792x1024">1792 × 1024</option>
+              </select>
+            </label>
+            <label
+              className="block space-y-2 text-sm font-medium"
+              htmlFor="studio-seed"
+            >
+              <span>Seed</span>
+              <input
+                id="studio-seed"
+                name="seed"
+                className="field-control"
+                disabled={isLoading || limitReached || provider === "openai"}
+                inputMode="numeric"
+                min="0"
+                onChange={(event) => setSeed(event.target.value)}
+                placeholder="Optional"
+                type="number"
+                value={seed}
+              />
+            </label>
+          </div>
           {error ? (
             <p className="rounded-2xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
               {error}
