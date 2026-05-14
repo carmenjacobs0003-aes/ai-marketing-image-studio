@@ -684,32 +684,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    currentStep = "usage_entitlement";
-
-    const isAdmin =
-      user.email === "carmenjacobs0003@gmail.com";
-
-    const entitlement = isAdmin
-      ? {
-         allowed: true,
-         reason: "",
-         usage: undefined
-        }
-    : await assertCanGenerateImage(user.id);
-
-  if (!entitlement.allowed) {
-      return jsonDebugError(
-        request,
-        startedAt,
-        currentStep,
-        entitlement.reason,
-        402,
-        entitlement.reason,
-        {
-          usage: entitlement.usage
-        }
-      );
-    }
+    const entitlement = {
+      allowed: true,
+      reason: "",
+      usage: undefined
+    };
 
     logger.info("Image prompt moderation start for image generation", {
       ...getRequestLogContext(request),
