@@ -126,7 +126,6 @@ export function StudioCanvas({
   const lastSubmitAtRef = useRef(0);
   const signedUrlRefreshInFlightRef = useRef(false);
   const submitDebounceMs = 1000;
-  const limitReached = usage.totalGenerations >= usage.monthlyGenerationLimit;
 
   useEffect(() => {
     return () => {
