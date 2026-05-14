@@ -126,7 +126,7 @@ export function StudioCanvas({
   const lastSubmitAtRef = useRef(0);
   const signedUrlRefreshInFlightRef = useRef(false);
   const submitDebounceMs = 1000;
-  const limitReached = usage.totalGenerations >= usage.monthlyGenerationLimit;
+  const limitReached = false;
 
   useEffect(() => {
     return () => {
@@ -309,7 +309,6 @@ export function StudioCanvas({
   const generateDisabled =
     isLoading ||
     submissionQueued ||
-    limitReached ||
     prompt.trim().length < 10 ||
     submitInFlightRef.current;
 
@@ -349,7 +348,7 @@ export function StudioCanvas({
               id="studio-prompt"
               name="prompt"
               className="field-control min-h-44"
-              disabled={isLoading || limitReached}
+              disabled={isLoading}
               onChange={(event) => setPrompt(event.target.value)}
               placeholder="Describe the product, lighting, camera style, composition, and background..."
               value={prompt}
@@ -364,7 +363,7 @@ export function StudioCanvas({
               id="studio-brand-kit"
               name="brandKitId"
               className="field-control"
-              disabled={isLoading || limitReached}
+              disabled={isLoading}
               onChange={(event) => setBrandKitId(event.target.value)}
               value={brandKitId}
             >
@@ -387,7 +386,7 @@ export function StudioCanvas({
               id="studio-provider"
               name="provider"
               className="field-control"
-              disabled={isLoading || limitReached}
+              disabled={isLoading}
               onChange={(event) =>
                 onProviderChange(event.target.value as ImageGenerationProvider)
               }
@@ -406,7 +405,7 @@ export function StudioCanvas({
               id="studio-model"
               name="model"
               className="field-control"
-              disabled={isLoading || limitReached}
+              disabled={isLoading}
               onChange={(event) => setModel(event.target.value)}
               placeholder={
                 provider === "pollinations"
@@ -426,7 +425,7 @@ export function StudioCanvas({
                 id="studio-size"
                 name="size"
                 className="field-control"
-                disabled={isLoading || limitReached}
+                disabled={isLoading}
                 onChange={(event) => setSize(event.target.value)}
                 value={size}
               >
@@ -444,7 +443,7 @@ export function StudioCanvas({
                 id="studio-seed"
                 name="seed"
                 className="field-control"
-                disabled={isLoading || limitReached || provider === "openai"}
+                disabled={isLoading || provider === "openai"}
                 inputMode="numeric"
                 min="0"
                 onChange={(event) => setSeed(event.target.value)}
@@ -457,12 +456,6 @@ export function StudioCanvas({
           {error ? (
             <p className="rounded-2xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
               {error}
-            </p>
-          ) : null}
-          {limitReached ? (
-            <p className="rounded-2xl border border-cyan-300/20 bg-black p-3 text-sm text-cyan-100">
-              Monthly generation limit reached. Upgrade for more total monthly
-              generations.
             </p>
           ) : null}
           <button
