@@ -684,19 +684,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const entitlement = {
-      allowed: true,
-      reason: "",
-      usage: undefined
-    };
-
     logger.info("Image prompt moderation start for image generation", {
-      ...getRequestLogContext(request),
-      userId: user.id,
-      promptLength: payload.prompt.length,
-      expectedModerationCalls: 1,
-      openaiProjectConfigured: Boolean(env.OPENAI_PROJECT_ID),
-      openaiOrganizationConfigured: Boolean(env.OPENAI_ORGANIZATION)
+    ...getRequestLogContext(request),
+    userId: user.id,
+    promptLength: payload.prompt.length,
+    expectedModerationCalls: 1,
+    openaiProjectConfigured: Boolean(env.OPENAI_PROJECT_ID),
+    openaiOrganizationConfigured: Boolean(env.OPENAI_ORGANIZATION)
     });
     currentStep = "prompt_moderation";
     const moderation = env.OPENAI_API_KEY
