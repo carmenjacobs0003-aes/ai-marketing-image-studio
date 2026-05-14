@@ -684,12 +684,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const entitlement = {
-      allowed: true,
-      reason: "",
-      usage: undefined
-    };
-
     logger.info("Image prompt moderation start for image generation", {
       ...getRequestLogContext(request),
       userId: user.id,
