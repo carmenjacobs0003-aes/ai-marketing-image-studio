@@ -454,7 +454,7 @@ export function StudioCanvas({
           </div>
           {error ? (
             <p className="rounded-2xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
-              {error}
+              {Unavailable}
             </p>
           ) : null}
           <button
@@ -467,13 +467,8 @@ export function StudioCanvas({
             {isLoading || submissionQueued ? "Generating..." : "Generate image"}
           </button>
         </form>
-        {backendDebugError ? (
-          <div className="rounded-2xl border border-amber-300/30 bg-amber-400/10 p-3 text-sm text-amber-100">
-            <p className="font-semibold">Backend debug reason</p>
-            <p className="mt-1 break-words">{backendDebugError}</p>
-          </div>
-        ) : null}
-      </aside>
+        
+        </aside>
       <section className="glass-card p-4 shadow-2xl shadow-cyan-950/20 sm:p-6">
         <div className="flex h-full min-h-[460px] items-center justify-center rounded-2xl border border-dashed border-cyan-300/30 bg-black p-4 text-center text-slate-300">
           {isLoading ? (
