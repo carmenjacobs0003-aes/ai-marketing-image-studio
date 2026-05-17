@@ -116,9 +116,6 @@ export function StudioCanvas({
   const [usage, setUsage] = useState(initialUsage);
   const [image, setImage] = useState<GeneratedImageResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [backendDebugError, setBackendDebugError] = useState<string | null>(
-    null
-  );
   const [isLoading, setIsLoading] = useState(false);
   const [submissionQueued, setSubmissionQueued] = useState(false);
   const submitInFlightRef = useRef(false);
@@ -224,7 +221,6 @@ export function StudioCanvas({
 
     setSubmissionQueued(true);
     setError(null);
-    setBackendDebugError(null);
     setIsLoading(true);
 
     try {
@@ -258,8 +254,7 @@ export function StudioCanvas({
             errorPayload?.step
           )
         );
-        setBackendDebugError(
-          getBackendDebugReason(response.status, errorPayload)
+           getBackendDebugReason(response.status, errorPayload)
         );
         if (payload && !payload.success && payload.usage) {
           setUsage(payload.usage);
@@ -282,8 +277,7 @@ export function StudioCanvas({
             : String(caughtError)
       });
       setError(PUBLIC_IMAGE_GENERATION_UNAVAILABLE_MESSAGE);
-      setBackendDebugError(
-        caughtError instanceof Error
+      caughtError instanceof Error
           ? `Client request failed before a backend JSON response was available: ${caughtError.message}`
           : "Client request failed before a backend JSON response was available."
       );
